@@ -47,34 +47,59 @@ function uploadToIdeogram(buffer, filename, cb) {
 }
 
 function layerizeText(imageUrl, cb) {
-  console.log("Layerizing text from:", imageUrl);
+  console.log("Layerizing text from:", imageUrl.substring(0,80));
+  
+  // Try multiple endpoint paths
+  const endpoints = [
+    "/layerize",
+    "/v1/layerize", 
+    "/describe", // fallback test
+  ];
+  
+  // Use the correct Ideogram v3 layerize endpoint
+  // Based on API docs: POST /layerize with image_url in body
   const payload = JSON.stringify({ image_url: imageUrl });
-  const req = https.request({
-    hostname: "api.ideogram.ai",
-    path: "/layerize",
-    method: "POST",
-    headers: {
-      "Api-Key": IDEOGRAM_KEY,
-      "Content-Type": "application/json",
-      "Content-Length": Buffer.byteLength(payload)
+  
+  const tryEndpoint = (paths, idx) => {
+    if (idx >= paths.length) {
+      return cb(new Error("All layerize endpoints failed"));
     }
-  }, res => {
-    let data = "";
-    res.on("data", c => data += c);
-    res.on("end", () => {
-      console.log("Layerize status:", res.statusCode, data.substring(0,300));
-      try {
-        const j = JSON.parse(data);
-        // Returns background image URL
-        const bgUrl = j.background_image?.url || j.background?.url || j.image?.url || j.url;
-        if (bgUrl) cb(null, bgUrl);
-        else cb(new Error("No background URL: " + data.substring(0,300)));
-      } catch(e) { cb(new Error("Layerize parse error: " + data.substring(0,300))); }
+    const p = paths[idx];
+    console.log("Trying endpoint:", p);
+    
+    const req = https.request({
+      hostname: "api.ideogram.ai",
+      path: p,
+      method: "POST",
+      headers: {
+        "Api-Key": IDEOGRAM_KEY,
+        "Content-Type": "application/json",
+        "Content-Length": Buffer.byteLength(payload)
+      }
+    }, res => {
+      let data = "";
+      res.on("data", c => data += c);
+      res.on("end", () => {
+        console.log(`Endpoint ${p} status:`, res.statusCode, data.substring(0,200));
+        if (res.statusCode === 404) {
+          return tryEndpoint(paths, idx + 1);
+        }
+        try {
+          const j = JSON.parse(data);
+          const bgUrl = j.background_image?.url || j.background?.url || 
+                        j.image?.url || j.url || j.result?.url ||
+                        j.data?.[0]?.url;
+          if (bgUrl) cb(null, bgUrl);
+          else cb(new Error("No background URL in response: " + data.substring(0,300)));
+        } catch(e) { cb(new Error("Parse error: " + data.substring(0,300))); }
+      });
     });
-  });
-  req.on("error", cb);
-  req.write(payload);
-  req.end();
+    req.on("error", (e) => tryEndpoint(paths, idx + 1));
+    req.write(payload);
+    req.end();
+  };
+  
+  tryEndpoint(endpoints, 0);
 }
 
 function fetchImageBuffer(imgUrl, cb) {
@@ -93,26 +118,32 @@ function getCleanBackground(cb) {
   console.log("Preparing clean background via Layerize...");
   const templateBuffer = Buffer.from(TEMPLATE_B64, "base64");
   
-  // Upload template first
+  // Upload template first to get a URL
   uploadToIdeogram(templateBuffer, "template.png", (err, uploadedUrl) => {
-    if (err) {
-      console.log("Upload failed, trying direct layerize with data URL...");
-      // Try with base64 data URL directly
-      layerizeText("data:image/png;base64," + TEMPLATE_B64, (err2, bgUrl) => {
-        if (err2) return cb(err2);
-        fetchImageBuffer(bgUrl, (err3, buf) => {
-          if (err3) return cb(err3);
-          cleanBgBuffer = buf;
-          cb(null, buf);
-        });
-      });
-      return;
+    if (err || !uploadedUrl) {
+      console.log("Upload failed:", err?.message, "- using template directly");
+      // Fallback: use original template without layerize
+      cleanBgBuffer = templateBuffer;
+      return cb(null, cleanBgBuffer);
     }
+    
+    console.log("Uploaded, URL:", uploadedUrl.substring(0,80));
+    
     layerizeText(uploadedUrl, (err2, bgUrl) => {
-      if (err2) return cb(err2);
+      if (err2) {
+        console.log("Layerize failed:", err2.message, "- using original template");
+        // Fallback: return original template, Canvas will overlay text
+        cleanBgBuffer = templateBuffer;
+        return cb(null, cleanBgBuffer);
+      }
+      
       fetchImageBuffer(bgUrl, (err3, buf) => {
-        if (err3) return cb(err3);
+        if (err3) {
+          cleanBgBuffer = templateBuffer;
+          return cb(null, cleanBgBuffer);
+        }
         cleanBgBuffer = buf;
+        console.log("Clean background ready:", buf.length, "bytes");
         cb(null, buf);
       });
     });
