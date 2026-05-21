@@ -72,7 +72,7 @@ body{font-family:'DM Sans',sans-serif;background:#08080f;color:#fff;min-height:1
     <div class="lstep" id="lstep2"><div class="lstep-dot"></div>Text & Layout einfügen</div>
     <div class="lstep" id="lstep3"><div class="lstep-dot"></div>Fertigstellen</div>
   </div>
-  <div class="loading-sub" id="loadingSub">GPT Image 2 arbeitet...<br>Das dauert ca. 30–60 Sekunden.</div>
+  <div class="loading-sub" id="loadingSub">Ideogram generiert deinen Flyer...<br>Das dauert ca. 15–30 Sekunden.</div>
 </div>
 <div class="logo">
   <div class="logo-mark">N</div>
@@ -137,7 +137,7 @@ async function generate(){
   });
   document.getElementById('lstep1').classList.add('active');
   document.getElementById('loadingTitle').textContent='Hintergrund wird generiert...';
-  document.getElementById('loadingSub').textContent='Schritt 1 von 2 · GPT Image 2 generiert den Hintergrund.';
+  document.getElementById('loadingSub').textContent='Schritt 1 von 2 · Ideogram analysiert das Template und generiert.';
   if(!val('fName')||!val('fDate')){showErr('Bitte Event-Name und Datum ausfüllen.');return;}
   clearErr();
   const btn=document.getElementById('genBtn');
@@ -177,12 +177,12 @@ async function generate(){
     }, 800);
     const data=JSON.parse(text);
     const img=data.data?.[0];
-    if(img?.b64_json)lastResult='data:image/png;base64,'+img.b64_json;
-    else if(img?.url)lastResult=img.url;
+    if(data?.url)lastResult=data.url;
+    else if(data?.data?.[0]?.url)lastResult=data.data[0].url;
     else throw new Error('Kein Bild: '+text.substring(0,200));
     document.getElementById('resultImg').src=lastResult;
     document.getElementById('resultWrap').style.display='flex';
-    document.getElementById('hint').textContent='✓ Flyer fertig · GPT Image 2';
+    document.getElementById('hint').textContent='✓ Flyer fertig · Ideogram v2';
   }catch(e){
     showErr(e.message||'Fehler.');
     document.getElementById('loadingOverlay').classList.remove('active');
