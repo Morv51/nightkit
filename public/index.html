@@ -129,6 +129,92 @@ function setStep(n){
     document.getElementById('step'+i).classList.toggle('active',i===n);
   });
 }
+// Canvas text compositing on clean background
+function renderFlyerOnCanvas(bgB64, event) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const W = img.width, H = img.height;
+      const ctx = canvas.getContext('2d');
+      
+      // Draw clean background
+      ctx.drawImage(img, 0, 0);
+      
+      const name    = event.name    || '';
+      const venue   = event.venue   || '';
+      const day     = (event.day    || 'SAMSTAG').toUpperCase();
+      const date    = event.date    || '';
+      const time    = event.time    || '';
+      const entry   = event.entry   || '';
+      const dj      = event.dj      || '';
+      const genre   = event.genre   || '';
+      const details = [time&&`Einlass: ${time} Uhr`, entry&&`Eintritt: ${entry}`].filter(Boolean).join(' | ');
+
+      const sh = (c='rgba(0,0,0,0.95)', b=18, ox=2, oy=3) => {
+        ctx.shadowColor=c; ctx.shadowBlur=b; ctx.shadowOffsetX=ox; ctx.shadowOffsetY=oy;
+      };
+      const ns = () => { ctx.shadowColor='transparent'; ctx.shadowBlur=0; ctx.shadowOffsetX=0; ctx.shadowOffsetY=0; };
+
+      // TOP LEFT: Event name
+      ctx.textAlign='left';
+      ctx.fillStyle='#fff';
+      ctx.font=`800 ${W*.042}px Syne, sans-serif`;
+      sh(); ctx.fillText(name.toUpperCase(), W*.055, H*.185); ns();
+
+      // Genre subline
+      if(genre) {
+        ctx.fillStyle='rgba(255,255,255,0.78)';
+        ctx.font=`500 ${W*.022}px DM Sans, sans-serif`;
+        sh('rgba(0,0,0,0.9)',10,1,1);
+        ctx.fillText(genre.toUpperCase().split(/[,\s]+/).join(' · '), W*.055, H*.228); ns();
+      }
+      if(dj) {
+        ctx.fillStyle='rgba(255,255,255,0.55)';
+        ctx.font=`400 ${W*.02}px DM Sans, sans-serif`;
+        sh('rgba(0,0,0,0.9)',8);
+        ctx.fillText(dj, W*.055, H*.265); ns();
+      }
+
+      // TOP RIGHT: Day + Date box
+      const bW=W*.22, bX=W*.725, bY=H*.06;
+      ctx.textAlign='center';
+      ctx.fillStyle='rgba(255,255,255,0.92)';
+      ctx.font=`700 ${W*.022}px DM Sans, sans-serif`;
+      sh('rgba(0,0,0,0.95)',10); ctx.fillText(day, bX+bW/2, bY+H*.026); ns();
+      const bH=H*.08, bYy=bY+H*.032;
+      ctx.fillStyle='rgba(0,0,0,0.3)';
+      ctx.fillRect(bX, bYy, bW, bH);
+      ctx.strokeStyle='rgba(255,255,255,0.92)'; ctx.lineWidth=2;
+      ctx.strokeRect(bX, bYy, bW, bH);
+      ctx.fillStyle='#fff'; ctx.font=`800 ${W*.052}px Syne, sans-serif`;
+      sh('rgba(0,0,0,0.9)',12); ctx.fillText(date, bX+bW/2, bYy+bH*.75); ns();
+
+      // BOTTOM RIGHT: Venue
+      ctx.textAlign='right';
+      ctx.fillStyle='rgba(255,255,255,0.92)';
+      ctx.font=`800 ${W*.032}px Syne, sans-serif`;
+      sh('rgba(0,0,0,0.9)',12); ctx.fillText(venue, W*.945, H*.875); ns();
+      if(dj) {
+        ctx.fillStyle='rgba(255,255,255,0.5)'; ctx.font=`400 ${W*.018}px DM Sans, sans-serif`;
+        sh('rgba(0,0,0,0.9)',8); ctx.fillText('DJ: '+dj, W*.945, H*.905); ns();
+      }
+
+      // BOTTOM CENTER: details
+      if(details) {
+        ctx.textAlign='center'; ctx.fillStyle='rgba(255,255,255,0.45)';
+        ctx.font=`400 ${W*.018}px DM Sans, sans-serif`;
+        sh('rgba(0,0,0,0.8)',8); ctx.fillText(details, W/2, H*.938); ns();
+      }
+
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.src = 'data:image/png;base64,' + bgB64;
+  });
+}
+
 async function generate(){
   // Show loading overlay
   document.getElementById('loadingOverlay').classList.add('active');
@@ -136,8 +222,8 @@ async function generate(){
     document.getElementById(id).className='lstep';
   });
   document.getElementById('lstep1').classList.add('active');
-  document.getElementById('loadingTitle').textContent='Hintergrund wird generiert...';
-  document.getElementById('loadingSub').textContent='Schritt 1 von 2 · Ideogram analysiert das Template und generiert.';
+  document.getElementById('loadingTitle').textContent='Text aus Template entfernen...';
+  document.getElementById('loadingSub').textContent='Schritt 1 von 2 · Ideogram Layerize entfernt den alten Text.';
   if(!val('fName')||!val('fDate')){showErr('Bitte Event-Name und Datum ausfüllen.');return;}
   clearErr();
   const btn=document.getElementById('genBtn');
