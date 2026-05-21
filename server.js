@@ -52,7 +52,7 @@ function layerizeText(cb) {
       }
       try {
         const j = JSON.parse(data);
-        const bgUrl = j.background_image?.url || j.image?.url || j.url || j.data?.[0]?.url;
+        const bgUrl = j.base_image_url || j.background_image?.url || j.image?.url || j.url;
         if (!bgUrl) {
           console.log("No URL in layerize response, using original");
           cleanBgBuffer = imgBuffer;
