@@ -35,17 +35,19 @@ function buildPrompt(ev) {
   if(time) detailsText += "- Entry time: \"Einlass: " + time + " Uhr\"\n";
   if(entry) detailsText += "- Entry price: \"Eintritt: " + entry + "\"\n";
 
-  return "Edit this nightclub event flyer. Keep ALL visual elements exactly the same — the pumpkin scarecrow, the woman with green glowing eye, the dark silhouette, all red blood paint effects, the green graffiti logo, all textures, colors, backgrounds, and decorative elements.\n\n" +
-    "Only change the text to these new values:\n" +
+  return "Edit this nightclub event flyer.\n\n" +
+    "VISUAL ELEMENTS - keep 100% identical: the pumpkin scarecrow figure, the woman with green glowing eye makeup, the dark hooded silhouette on the right, ALL red blood/paint splatter effects, the green graffiti diamond logo, all dark textures and backgrounds, the vertical green line separator, the red dripping horizontal banners.\n\n" +
+    "TEXT - replace ALL existing text with EXACTLY these new values and nothing else:\n" +
     prefixText +
-    "- Main title (large grunge white text): \"" + name + "\"\n" +
-    "- Edition banner (red dripping banner): \"" + genre + "\"\n" +
-    "- Day: \"" + day + "\"\n" +
-    "- Date: \"" + date + "\"\n" +
-    djText +
-    "- Website at bottom: \"" + contact + "\"\n" +
+    "- Large grunge white title text: \"" + name + "\" (this replaces whatever title text exists)\n" +
+    "- Red banner text: \"" + genre + "\"\n" +
+    "- Green date section day: \"" + day + "\"\n" +
+    "- Green date section date: \"" + date + "\"\n" +
+    "- ONLY these DJ/act names (remove ALL others, show ONLY what is listed here):\n" + djText +
+    "- Bottom website: \"" + contact + "\"\n" +
     detailsText +
-    "\nKeep the exact same font styles, sizes, colors and positions. The result must look 99% identical to the original.";
+    "\nCRITICAL: Do NOT keep any DJ names or act names from the original. Show ONLY the DJ names listed above. If no DJs are listed, remove all DJ lines entirely.\n" +
+    "Font styles, sizes, colors and positions must match the original exactly.";
 }
 
 function callResponsesAPI(ev, cb) {
