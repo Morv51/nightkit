@@ -24,7 +24,7 @@ function buildPrompt(ev) {
   return `Edit this nightclub event flyer. Keep ALL visual elements exactly the same — the pumpkin scarecrow, the woman with green glowing eye, the dark silhouette, all red blood paint effects, the green graffiti logo, all textures, colors, backgrounds, and decorative elements.
 
 Only change the text to these new values:
-${prefix ? `- The small text above the title: "${prefix}"` : '- Remove the "3 Jahre" prefix text entirely'}
+${prefix ? `- Small handwritten text above the title: "${prefix}"` : '- IMPORTANT: Remove the handwritten "3 Jahre" text completely. There should be NO text above the main title.'}
 - Main title (large grunge white text): "${name}"
 - Edition banner (red dripping banner): "${genre}"
 - Day: "${day}"
