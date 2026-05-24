@@ -174,22 +174,28 @@ var server = http.createServer(function(req, res) {
     req.on("data", function(c){ chunks.push(c); });
     req.on("end", function(){
       var webmBuf = Buffer.concat(chunks);
+      console.log("convert request, size:", webmBuf.length);
+      if(webmBuf.length < 100){
+        res.writeHead(400); res.end("Empty or invalid input"); return;
+      }
       var tmpId = crypto.randomBytes(8).toString("hex");
       var inFile = os.tmpdir() + "/" + tmpId + ".webm";
       var outFile = os.tmpdir() + "/" + tmpId + ".mp4";
-      require("fs").writeFile(inFile, webmBuf, function(err){
-        if(err){ res.writeHead(500); res.end(JSON.stringify({error:"write failed"})); return; }
+      fs.writeFile(inFile, webmBuf, function(err){
+        if(err){ console.error("write error:", err); res.writeHead(500); res.end("write failed"); return; }
         execFile("ffmpeg",["-y","-i",inFile,"-c:v","libx264","-preset","ultrafast","-crf","23","-movflags","+faststart","-an",outFile],
+          {maxBuffer: 100*1024*1024},
           function(err2, stdout, stderr){
-            require("fs").unlink(inFile, function(){});
+            fs.unlink(inFile, function(){});
             if(err2){
-              require("fs").unlink(outFile, function(){});
-              console.error("ffmpeg error:", stderr);
-              res.writeHead(500); res.end(JSON.stringify({error:"ffmpeg failed", detail:stderr})); return;
+              fs.unlink(outFile, function(){});
+              console.error("ffmpeg error:", err2.message, stderr.slice(0,500));
+              res.writeHead(500); res.end("ffmpeg failed: " + err2.message + " | " + stderr.slice(0,300)); return;
             }
-            require("fs").readFile(outFile, function(err3, mp4Buf){
-              require("fs").unlink(outFile, function(){});
-              if(err3){ res.writeHead(500); res.end(JSON.stringify({error:"read failed"})); return; }
+            fs.readFile(outFile, function(err3, mp4Buf){
+              fs.unlink(outFile, function(){});
+              if(err3){ res.writeHead(500); res.end("read failed"); return; }
+              console.log("MP4 size:", mp4Buf.length);
               res.setHeader("Content-Type","video/mp4");
               res.setHeader("Content-Length", mp4Buf.length);
               res.writeHead(200); res.end(mp4Buf);

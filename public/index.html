@@ -699,28 +699,29 @@ function exportVideo(){
 function convertToMp4(webmBlob, cb){
   var status = document.getElementById("videoStatus");
   status.textContent = "Konvertiere zu MP4...";
-  var reader = new FileReader();
-  reader.onload = function(){
-    fetch("/api/convert", {
-      method: "POST",
-      headers: {"Content-Type": "video/webm"},
-      body: reader.result
-    })
-    .then(function(res){
-      if(!res.ok) return res.json().then(function(j){ throw new Error(j.error||res.status); });
-      return res.blob();
-    })
-    .then(function(mp4Blob){
-      status.textContent = "";
-      cb(mp4Blob, null);
-    })
-    .catch(function(err){
-      console.error("convert error:", err);
-      status.textContent = "MP4 fehlgeschlagen: " + err.message;
-      cb(null, err);
-    });
-  };
-  reader.readAsArrayBuffer(webmBlob);
+  fetch("/api/convert", {
+    method: "POST",
+    headers: {"Content-Type": "video/webm"},
+    body: webmBlob
+  })
+  .then(function(res){
+    if(!res.ok){
+      return res.text().then(function(t){
+        console.error("convert server error:", res.status, t);
+        throw new Error("Server " + res.status + ": " + t.slice(0,200));
+      });
+    }
+    return res.blob();
+  })
+  .then(function(mp4Blob){
+    status.textContent = "";
+    cb(mp4Blob, null);
+  })
+  .catch(function(err){
+    console.error("convert error:", err);
+    status.textContent = "MP4 fehlgeschlagen: " + err.message;
+    cb(null, err);
+  });
 }
 
 </script>
