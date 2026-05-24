@@ -77,7 +77,7 @@ var server = http.createServer(function(req, res) {
       res.setHeader("Content-Type","text/html");
       // Required for SharedArrayBuffer (ffmpeg.wasm needs crossOriginIsolated)
       res.setHeader("Cross-Origin-Opener-Policy","same-origin");
-      res.setHeader("Cross-Origin-Embedder-Policy","require-corp");
+      res.setHeader("Cross-Origin-Embedder-Policy","credentialless");
       res.writeHead(200); res.end(data);
     });
     return;
