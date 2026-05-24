@@ -696,91 +696,31 @@ function exportVideo(){
   })();
 }
 
-var ffmpegLoaded=false;
-var ffmpegLoading=false;
-var ffmpegCallbacks=[];
-var ffmpegInst=null;
-
-function loadFfmpeg(cb){
-  if(ffmpegLoaded){return cb(null,ffmpegInst);}
-  // crossOriginIsolated is required for SharedArrayBuffer (ffmpeg.wasm)
-  if(!window.crossOriginIsolated){
-    var msg="MP4-Export nicht verfügbar: COOP/COEP Header fehlen (window.crossOriginIsolated=false). Bitte server.js-Header prüfen.";
-    console.error("[ffmpeg]",msg);
-    document.getElementById("videoStatus").textContent=msg;
-    return cb(new Error(msg));
-  }
-  ffmpegCallbacks.push(cb);
-  if(ffmpegLoading)return;
-  ffmpegLoading=true;
-  document.getElementById("videoStatus").textContent="Lade ffmpeg.wasm (einmalig ~30MB)...";
-  function fail(e){
-    ffmpegLoading=false;
-    console.error("[ffmpeg] load failed:",e);
-    document.getElementById("videoStatus").textContent="ffmpeg Ladefehler: "+((e&&e.message)||String(e));
-    ffmpegCallbacks.forEach(function(c){c(e||new Error("load failed"));});
-    ffmpegCallbacks=[];
-  }
-  var s=document.createElement("script");
-  s.src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js";
-  s.crossOrigin="anonymous";
-  s.onload=function(){
-    var s2=document.createElement("script");
-    s2.src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js";
-    s2.crossOrigin="anonymous";
-    s2.onload=async function(){
-      try {
-        var ff=new FFmpeg.FFmpeg();
-        ff.on("log",function(e){console.log("[ffmpeg]",e.type,e.message);});
-        await ff.load({
-          coreURL:"https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js",
-          wasmURL:"https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm"
-        });
-        ffmpegInst=ff;
-        ffmpegLoaded=true;
-        ffmpegLoading=false;
-        document.getElementById("videoStatus").textContent="";
-        ffmpegCallbacks.forEach(function(c){c(null,ff);});
-        ffmpegCallbacks=[];
-      } catch(e){fail(e);}
-    };
-    s2.onerror=function(){fail(new Error("@ffmpeg/util script load failed"));};
-    document.head.appendChild(s2);
+function convertToMp4(webmBlob, cb){
+  var status = document.getElementById("videoStatus");
+  status.textContent = "Konvertiere zu MP4...";
+  var reader = new FileReader();
+  reader.onload = function(){
+    fetch("/api/convert", {
+      method: "POST",
+      headers: {"Content-Type": "video/webm"},
+      body: reader.result
+    })
+    .then(function(res){
+      if(!res.ok) return res.json().then(function(j){ throw new Error(j.error||res.status); });
+      return res.blob();
+    })
+    .then(function(mp4Blob){
+      status.textContent = "";
+      cb(mp4Blob, null);
+    })
+    .catch(function(err){
+      console.error("convert error:", err);
+      status.textContent = "MP4 fehlgeschlagen: " + err.message;
+      cb(null, err);
+    });
   };
-  s.onerror=function(){fail(new Error("@ffmpeg/ffmpeg script load failed"));};
-  document.head.appendChild(s);
-}
-
-async function convertToMp4(webmBlob, cb){
-  loadFfmpeg(async function(err, ff){
-    if(err){
-      console.error("ffmpeg load error:",err);
-      document.getElementById("videoStatus").textContent="ffmpeg Ladefehler: "+err.message;
-      return cb(null, null);
-    }
-    if(!ff){
-      document.getElementById("videoStatus").textContent="ffmpeg nicht verfügbar";
-      return cb(null, null);
-    }
-    try {
-      document.getElementById("videoStatus").textContent="Konvertiere...";
-      var arrBuf=await webmBlob.arrayBuffer();
-      var uint8=new Uint8Array(arrBuf);
-      console.log("Writing input.webm, size:", uint8.length);
-      await ff.writeFile("input.webm", uint8);
-      console.log("Running ffmpeg...");
-      var ret=await ff.exec(["-i","input.webm","-c:v","libx264","-preset","ultrafast","-crf","23","-movflags","+faststart","-an","output.mp4"]);
-      console.log("ffmpeg return code:", ret);
-      var data=await ff.readFile("output.mp4");
-      console.log("output.mp4 size:", data.length);
-      var mp4Blob=new Blob([data.buffer],{type:"video/mp4"});
-      cb(mp4Blob);
-    } catch(e){
-      console.error("ffmpeg exec error:",e);
-      document.getElementById("videoStatus").textContent="Konvertierung fehlgeschlagen: "+e.message;
-      cb(null, null);
-    }
-  });
+  reader.readAsArrayBuffer(webmBlob);
 }
 
 </script>

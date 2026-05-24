@@ -1,4 +1,7 @@
 const https = require("https");
+const { execFile } = require("child_process");
+const os = require("os");
+const crypto = require("crypto");
 const http  = require("http");
 const fs    = require("fs");
 const path  = require("path");
@@ -75,9 +78,6 @@ var server = http.createServer(function(req, res) {
     fs.readFile(path.join(__dirname,"public","index.html"), function(err, data) {
       if (err) { res.writeHead(404); res.end("Not found"); return; }
       res.setHeader("Content-Type","text/html");
-      // Required for SharedArrayBuffer (ffmpeg.wasm needs crossOriginIsolated)
-      res.setHeader("Cross-Origin-Opener-Policy","same-origin");
-      res.setHeader("Cross-Origin-Embedder-Policy","credentialless");
       res.writeHead(200); res.end(data);
     });
     return;
@@ -165,6 +165,38 @@ var server = http.createServer(function(req, res) {
       apiReq.on("error", function(e){ res.writeHead(500); res.end(JSON.stringify({error:e.message})); });
       apiReq.write(reqBody);
       apiReq.end();
+    });
+    return;
+  }
+
+  if (req.method === "POST" && p === "/api/convert") {
+    var chunks = [];
+    req.on("data", function(c){ chunks.push(c); });
+    req.on("end", function(){
+      var webmBuf = Buffer.concat(chunks);
+      var tmpId = crypto.randomBytes(8).toString("hex");
+      var inFile = os.tmpdir() + "/" + tmpId + ".webm";
+      var outFile = os.tmpdir() + "/" + tmpId + ".mp4";
+      require("fs").writeFile(inFile, webmBuf, function(err){
+        if(err){ res.writeHead(500); res.end(JSON.stringify({error:"write failed"})); return; }
+        execFile("ffmpeg",["-y","-i",inFile,"-c:v","libx264","-preset","ultrafast","-crf","23","-movflags","+faststart","-an",outFile],
+          function(err2, stdout, stderr){
+            require("fs").unlink(inFile, function(){});
+            if(err2){
+              require("fs").unlink(outFile, function(){});
+              console.error("ffmpeg error:", stderr);
+              res.writeHead(500); res.end(JSON.stringify({error:"ffmpeg failed", detail:stderr})); return;
+            }
+            require("fs").readFile(outFile, function(err3, mp4Buf){
+              require("fs").unlink(outFile, function(){});
+              if(err3){ res.writeHead(500); res.end(JSON.stringify({error:"read failed"})); return; }
+              res.setHeader("Content-Type","video/mp4");
+              res.setHeader("Content-Length", mp4Buf.length);
+              res.writeHead(200); res.end(mp4Buf);
+            });
+          }
+        );
+      });
     });
     return;
   }
