@@ -80,28 +80,27 @@ var server = http.createServer(function(req, res) {
       // image_request as JSON part
       var imageRequest = JSON.stringify({
         prompt: prompt,
-        aspect_ratio: "9:16",
+        aspect_ratio: "ASPECT_9_16",
         model: "V_3",
         style_type: "REALISTIC",
         image_weight: 70,
         magic_prompt_option: "OFF"
       });
 
-      var parts = [
+      // Build correct multipart body
+      var part1 = Buffer.from(
         "--"+boundary+CRLF+
-          "Content-Disposition: form-data; name=\"image_request\""+CRLF+
-          "Content-Type: application/json"+CRLF+CRLF+
-          imageRequest,
+        "Content-Disposition: form-data; name=\"image_request\""+CRLF+
+        "Content-Type: application/json"+CRLF+CRLF+
+        imageRequest+CRLF, "utf8"
+      );
+      var part2Header = Buffer.from(
         "--"+boundary+CRLF+
-          "Content-Disposition: form-data; name=\"image\"; filename=\"template.jpg\""+CRLF+
-          "Content-Type: image/jpeg"+CRLF+CRLF
-      ];
-
-      var reqBody = Buffer.concat([
-        Buffer.from(parts[0]+CRLF+parts[1], "utf8"),
-        imgBuffer,
-        Buffer.from(CRLF+"--"+boundary+"--"+CRLF, "utf8")
-      ]);
+        "Content-Disposition: form-data; name=\"image\"; filename=\"template.jpg\""+CRLF+
+        "Content-Type: image/jpeg"+CRLF+CRLF, "utf8"
+      );
+      var footer = Buffer.from(CRLF+"--"+boundary+"--"+CRLF, "utf8");
+      var reqBody = Buffer.concat([part1, part2Header, imgBuffer, footer]);
 
       console.log("Calling Ideogram v3 remix, body size:", reqBody.length);
 
