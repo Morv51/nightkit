@@ -657,34 +657,30 @@ function exportVideo(){
   var ctx=canvas.getContext("2d");
   var chunks=[];
 
-  // Record as WebM first
-  var mimeType=MediaRecorder.isTypeSupported("video/webm;codecs=vp9")?"video/webm;codecs=vp9":"video/webm";
+  // Prefer native MP4 recording (Chrome 130+), fall back to WebM
+  var mimeType = "";
+  if(MediaRecorder.isTypeSupported("video/mp4;codecs=avc1")) {
+    mimeType = "video/mp4;codecs=avc1";
+  } else if(MediaRecorder.isTypeSupported("video/mp4")) {
+    mimeType = "video/mp4";
+  } else if(MediaRecorder.isTypeSupported("video/webm;codecs=vp9")) {
+    mimeType = "video/webm;codecs=vp9";
+  } else {
+    mimeType = "video/webm";
+  }
+  var isMP4 = mimeType.indexOf("mp4") !== -1;
   var rec=new MediaRecorder(canvas.captureStream(30),{mimeType:mimeType,videoBitsPerSecond:8000000});
   rec.ondataavailable=function(e){if(e.data.size>0)chunks.push(e.data);};
   rec.onstop=function(){
-    var webmBlob=new Blob(chunks,{type:"video/webm"});
-    status.textContent="Konvertiere zu MP4...";
-
-    // Convert WebM to MP4 via ffmpeg.wasm
-    convertToMp4(webmBlob, function(mp4Blob, err){
-      if(err || !mp4Blob){
-        // Fallback: offer WebM
-        status.textContent="MP4 nicht möglich — lade WebM herunter";
-        var a=document.createElement("a");
-        a.href=URL.createObjectURL(webmBlob);
-        a.download=(v("fName")||"flyer").replace(/\s+/g,"-").toLowerCase()+"-"+currentVideoStyle+".webm";
-        a.click();
-      } else {
-        var a=document.createElement("a");
-        a.href=URL.createObjectURL(mp4Blob);
-        a.download=(v("fName")||"flyer").replace(/\s+/g,"-").toLowerCase()+"-"+currentVideoStyle+".mp4";
-        a.click();
-        status.textContent="✓ MP4 fertig";
-      }
-      exportBtn.disabled=false;
-      canvas.width=180;canvas.height=320;
-      previewVideo();
-    });
+    var blob=new Blob(chunks,{type:mimeType});
+    var a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download=(v("fName")||"flyer").replace(/\s+/g,"-").toLowerCase()+"-"+currentVideoStyle+(isMP4?".mp4":".mp4");
+    a.click();
+    status.textContent="✓ Video fertig";
+    exportBtn.disabled=false;
+    canvas.width=180;canvas.height=320;
+    previewVideo();
   };
 
   var startT=Date.now();
