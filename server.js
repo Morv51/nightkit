@@ -78,29 +78,35 @@ var server = http.createServer(function(req, res) {
       var CRLF = "\r\n";
 
       // image_request as JSON part
-      var imageRequest = JSON.stringify({
-        prompt: prompt,
-        aspect_ratio: "ASPECT_9_16",
-        model: "V_3",
-        style_type: "REALISTIC",
-        image_weight: 70,
-        magic_prompt_option: "OFF"
-      });
+      // Ideogram v3 remix: each field is a separate form part
+      function formField(name, value) {
+        return Buffer.from(
+          "--"+boundary+CRLF+
+          "Content-Disposition: form-data; name=\""+name+"\""+CRLF+CRLF+
+          value+CRLF, "utf8"
+        );
+      }
 
-      // Build correct multipart body
-      var part1 = Buffer.from(
-        "--"+boundary+CRLF+
-        "Content-Disposition: form-data; name=\"image_request\""+CRLF+
-        "Content-Type: application/json"+CRLF+CRLF+
-        imageRequest+CRLF, "utf8"
-      );
-      var part2Header = Buffer.from(
-        "--"+boundary+CRLF+
-        "Content-Disposition: form-data; name=\"image\"; filename=\"template.jpg\""+CRLF+
-        "Content-Type: image/jpeg"+CRLF+CRLF, "utf8"
-      );
-      var footer = Buffer.from(CRLF+"--"+boundary+"--"+CRLF, "utf8");
-      var reqBody = Buffer.concat([part1, part2Header, imgBuffer, footer]);
+      var imgPart = Buffer.concat([
+        Buffer.from(
+          "--"+boundary+CRLF+
+          "Content-Disposition: form-data; name=\"image\"; filename=\"template.jpg\""+CRLF+
+          "Content-Type: image/jpeg"+CRLF+CRLF, "utf8"
+        ),
+        imgBuffer,
+        Buffer.from(CRLF, "utf8")
+      ]);
+
+      var reqBody = Buffer.concat([
+        formField("prompt", prompt),
+        formField("aspect_ratio", "9:16"),
+        formField("rendering_speed", "QUALITY"),
+        formField("magic_prompt", "OFF"),
+        formField("style_type", "REALISTIC"),
+        formField("image_weight", "70"),
+        imgPart,
+        Buffer.from("--"+boundary+"--"+CRLF, "utf8")
+      ]);
 
       console.log("Calling Ideogram v3 remix, body size:", reqBody.length);
 
