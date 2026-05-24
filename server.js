@@ -26,7 +26,7 @@ function buildPrompt(ev) {
   p += "Replace each text element with these exact strings (use ALL CAPS exactly as written here):\n";
 
   if (prefix) {
-    p += "1. Small decorative text above main title: "" + prefix + ""\n";
+    p += "1. Small decorative text above main title: \"" + prefix + "\"\n";
   } else {
     p += "1. Small decorative text above main title: REMOVE IT COMPLETELY\n";
   }
