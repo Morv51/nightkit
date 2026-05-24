@@ -99,7 +99,7 @@ var server = http.createServer(function(req, res) {
 
       var reqBody = Buffer.concat([
         formField("prompt", prompt),
-        formField("aspect_ratio", "9:16"),
+        formField("aspect_ratio", "9x16"),
         formField("rendering_speed", "QUALITY"),
         formField("magic_prompt", "OFF"),
         formField("style_type", "REALISTIC"),
