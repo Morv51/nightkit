@@ -20,19 +20,47 @@ function buildPrompt(ev) {
   var entry   = (ev.entry   || "").trim();
   var djList  = dj.length ? dj.split(",").map(function(d){return d.trim();}).filter(Boolean) : [];
 
-  var p = "This is a nightclub event flyer. Keep ALL visual elements exactly the same — people, background, colors, effects, layout. Only change the text:\n";
-  if (prefix) p += "- Above title: \"" + prefix + "\"\n";
-  else        p += "- Remove any text above the main title\n";
-  if (name)   p += "- Main title: \"" + name + "\"\n";
-  if (genre)  p += "- Banner/edition text: \"" + genre + "\"\n";
-  if (day)    p += "- Day: \"" + day + "\"\n";
-  if (date)   p += "- Date: \"" + date + "\"\n";
-  if (djList.length) p += "- DJ/act names: " + djList.map(function(d){return "\""+d+"\"";}).join(", ") + "\n";
-  else               p += "- Remove all DJ and act names\n";
-  if (contact) p += "- Website: \"" + contact + "\"\n";
-  if (time)    p += "- \"Einlass: " + time + " Uhr\"\n";
-  if (entry)   p += "- \"Eintritt: " + entry + "\"\n";
-  p += "Remove any original text not listed above.";
+  var p = "Edit this nightclub event flyer. ";
+  p += "Keep ALL visual elements completely identical — people, background, colors, textures, effects, decorations, layout, composition. ";
+  p += "Only replace the text content. For each replaced text element, keep the exact same font style, color, size and position as the original.\n\n";
+  p += "Replace the flyer text with these new values:\n";
+
+  if (prefix) {
+    p += "- Small decorative text above the main title: "" + prefix + ""\n";
+  } else {
+    p += "- Small decorative text above the main title: remove it\n";
+  }
+
+  if (name) {
+    p += "- Main event title (the largest text element): "" + name.toUpperCase() + ""\n";
+  }
+
+  if (genre) {
+    p += "- Secondary banner/edition text: "" + genre.toUpperCase() + ""\n";
+  }
+
+  if (day || date) {
+    p += "- Date section: "" + [day.toUpperCase(), date].filter(Boolean).join(" ") + ""\n";
+  }
+
+  if (djList.length) {
+    p += "- Artist/DJ names section (one per line): " + djList.map(function(d){return """+d.toUpperCase()+""";}).join(", ") + "\n";
+  } else {
+    p += "- Artist/DJ names section: remove all names\n";
+  }
+
+  if (time || entry) {
+    var details = [];
+    if (time) details.push("Einlass: " + time + " Uhr");
+    if (entry) details.push("Eintritt: " + entry);
+    p += "- Event details line: "" + details.join(" | ") + ""\n";
+  }
+
+  if (contact) {
+    p += "- Website/contact at bottom: "" + contact.toUpperCase() + ""\n";
+  }
+
+  p += "\nImportant: Do not add any text not listed above. Remove any original text that has no replacement. Keep all visual design elements unchanged.";
   return p;
 }
 
