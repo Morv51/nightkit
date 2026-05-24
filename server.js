@@ -26,25 +26,25 @@ function buildPrompt(ev) {
   p += "Replace each text element with these exact strings (use ALL CAPS exactly as written here):\n";
 
   if (prefix) {
-    p += "1. Small decorative text above main title: "" + prefix + ""\n";
+    p += "1. Small decorative text above main title: \"" + prefix + "\"\n";
   } else {
     p += "1. Small decorative text above main title: REMOVE IT COMPLETELY\n";
   }
 
   if (name) {
-    p += "2. Main event title (largest text, ALL CAPS): "" + name + ""\n";
+    p += "2. Main event title (largest text, ALL CAPS): \"" + name + "\"\n";
   }
 
   if (genre) {
-    p += "3. Secondary banner text (ALL CAPS): "" + genre + ""\n";
+    p += "3. Secondary banner text (ALL CAPS): \"" + genre + "\"\n";
   }
 
   if (day || date) {
-    p += "4. Date section (ALL CAPS): "" + [day, date].filter(Boolean).join(" ") + ""\n";
+    p += "4. Date section (ALL CAPS): \"" + [day, date].filter(Boolean).join(" ") + "\"\n";
   }
 
   if (djList.length) {
-    p += "5. DJ/artist names (ALL CAPS, one per line): " + djList.map(function(d){return """+d+""";}).join(", ") + "\n";
+    p += "5. DJ/artist names (ALL CAPS, one per line): " + djList.map(function(d){return "\""+d+"\"";}).join(", ") + "\n";
   } else {
     p += "5. DJ/artist names section: REMOVE ALL NAMES\n";
   }
@@ -53,11 +53,11 @@ function buildPrompt(ev) {
     var details = [];
     if (time) details.push("EINLASS: " + time + " UHR");
     if (entry) details.push("EINTRITT: " + entry);
-    p += "6. Event details: "" + details.join(" | ") + ""\n";
+    p += "6. Event details: \"" + details.join(" | ") + "\"\n";
   }
 
   if (contact) {
-    p += "7. Website at bottom (ALL CAPS): "" + contact + ""\n";
+    p += "7. Website at bottom (ALL CAPS): \"" + contact + "\"\n";
   }
 
   p += "\nDo not add any text not listed above. Remove any original text that has no replacement in this list. ";
