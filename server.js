@@ -10,6 +10,8 @@ const url   = require("url");
 const PORT         = process.env.PORT || 3000;
 const IDEOGRAM_KEY = process.env.IDEOGRAM_API_KEY || "";
 
+var jobs = {};
+
 function buildPrompt(ev) {
   var name    = (ev.name    || "").trim().toUpperCase();
   var prefix  = (ev.prefix  || "").trim().toUpperCase();
@@ -67,6 +69,89 @@ function buildPrompt(ev) {
   return p;
 }
 
+function runIdeogramJob(jobId, ev) {
+  var prompt = buildPrompt(ev);
+  console.log("Job", jobId, "prompt:\n" + prompt);
+
+  var imgBuffer;
+  try {
+    imgBuffer = fs.readFileSync(path.join(__dirname, "templates", "default.png"));
+  } catch(e) {
+    jobs[jobId] = { status: "error", error: "Template not found" };
+    return;
+  }
+
+  var boundary = "----NKB" + Date.now().toString(36);
+  var CRLF = "\r\n";
+
+  function field(name, value) {
+    return Buffer.from(
+      "--"+boundary+CRLF+
+      "Content-Disposition: form-data; name=\""+name+"\""+CRLF+CRLF+
+      value+CRLF, "utf8"
+    );
+  }
+
+  var imgPart = Buffer.concat([
+    Buffer.from(
+      "--"+boundary+CRLF+
+      "Content-Disposition: form-data; name=\"images\"; filename=\"template.png\""+CRLF+
+      "Content-Type: image/png"+CRLF+CRLF, "utf8"
+    ),
+    imgBuffer,
+    Buffer.from(CRLF, "utf8")
+  ]);
+
+  var reqBody = Buffer.concat([
+    field("prompt", prompt),
+    field("aspect_ratio", "9x16"),
+    field("magic_prompt", "OFF"),
+    imgPart,
+    Buffer.from("--"+boundary+"--"+CRLF, "utf8")
+  ]);
+
+  console.log("Job", jobId, "calling Ideogram, size:", reqBody.length);
+
+  var apiReq = https.request({
+    hostname: "api.ideogram.ai",
+    path: "/v1/edit",
+    method: "POST",
+    headers: {
+      "Api-Key": IDEOGRAM_KEY,
+      "Content-Type": "multipart/form-data; boundary="+boundary,
+      "Content-Length": reqBody.length
+    }
+  }, function(apiRes) {
+    var data = "";
+    apiRes.on("data", function(c){ data += c; });
+    apiRes.on("end", function() {
+      console.log("Job", jobId, "Ideogram status:", apiRes.statusCode, data.substring(0,200));
+      try {
+        var j = JSON.parse(data);
+        if (apiRes.statusCode !== 200) {
+          jobs[jobId] = { status: "error", error: j.detail || j.message || data.substring(0,300) };
+          return;
+        }
+        var imgUrl = j.data && j.data[0] && j.data[0].url;
+        if (!imgUrl) {
+          jobs[jobId] = { status: "error", error: "No image URL in response" };
+          return;
+        }
+        jobs[jobId] = { status: "done", url: imgUrl };
+      } catch(e) {
+        jobs[jobId] = { status: "error", error: "Parse error: " + data.substring(0,200) };
+      }
+    });
+  });
+
+  apiReq.on("error", function(e) {
+    jobs[jobId] = { status: "error", error: e.message };
+  });
+
+  apiReq.write(reqBody);
+  apiReq.end();
+}
+
 var server = http.createServer(function(req, res) {
   var p = url.parse(req.url).pathname;
   res.setHeader("Access-Control-Allow-Origin","*");
@@ -82,6 +167,7 @@ var server = http.createServer(function(req, res) {
     return;
   }
 
+  // Start a generation job — returns jobId immediately
   if (req.method === "POST" && p === "/api/generate") {
     if (!IDEOGRAM_KEY) {
       res.writeHead(500);
@@ -95,76 +181,25 @@ var server = http.createServer(function(req, res) {
       try { ev = JSON.parse(body); } catch(e) {
         res.writeHead(400); res.end(JSON.stringify({error:"Invalid JSON"})); return;
       }
-
-      var prompt = buildPrompt(ev);
-      console.log("Prompt:\n" + prompt);
-
-      var imgBuffer = fs.readFileSync(path.join(__dirname, "templates", "default.png"));
-      var boundary = "----NKB" + Date.now().toString(36);
-      var CRLF = "\r\n";
-
-      function field(name, value) {
-        return Buffer.from(
-          "--"+boundary+CRLF+
-          "Content-Disposition: form-data; name=\""+name+"\""+CRLF+CRLF+
-          value+CRLF, "utf8"
-        );
-      }
-
-      var imgPart = Buffer.concat([
-        Buffer.from(
-          "--"+boundary+CRLF+
-          "Content-Disposition: form-data; name=\"images\"; filename=\"template.png\""+CRLF+
-          "Content-Type: image/png"+CRLF+CRLF, "utf8"
-        ),
-        imgBuffer,
-        Buffer.from(CRLF, "utf8")
-      ]);
-
-      var reqBody = Buffer.concat([
-        field("prompt", prompt),
-        field("aspect_ratio", "9x16"),
-        field("magic_prompt", "OFF"),
-        imgPart,
-        Buffer.from("--"+boundary+"--"+CRLF, "utf8")
-      ]);
-
-      console.log("Calling Ideogram Edit API, size:", reqBody.length);
-
-      var apiReq = https.request({
-        hostname: "api.ideogram.ai",
-        path: "/v1/edit",
-        method: "POST",
-        headers: {
-          "Api-Key": IDEOGRAM_KEY,
-          "Content-Type": "multipart/form-data; boundary="+boundary,
-          "Content-Length": reqBody.length
-        }
-      }, function(apiRes) {
-        var data = "";
-        apiRes.on("data", function(c){ data += c; });
-        apiRes.on("end", function() {
-          console.log("Ideogram Edit status:", apiRes.statusCode, data.substring(0,400));
-          try {
-            var j = JSON.parse(data);
-            if (apiRes.statusCode !== 200) {
-              return res.writeHead(apiRes.statusCode),
-                     res.end(JSON.stringify({error: j.detail || j.message || data.substring(0,300)}));
-            }
-            var imgUrl = j.data && j.data[0] && j.data[0].url;
-            if (!imgUrl) return res.writeHead(500), res.end(JSON.stringify({error:"No image URL: "+data.substring(0,200)}));
-            res.setHeader("Content-Type","application/json");
-            res.writeHead(200);
-            res.end(JSON.stringify({url: imgUrl}));
-          } catch(e) {
-            res.writeHead(500); res.end(JSON.stringify({error:"Parse error: "+data.substring(0,200)}));
-          }
-        });
-      });
-      apiReq.on("error", function(e){ res.writeHead(500); res.end(JSON.stringify({error:e.message})); });
-      apiReq.write(reqBody);
-      apiReq.end();
+      var jobId = crypto.randomBytes(8).toString("hex");
+      jobs[jobId] = { status: "pending" };
+      res.setHeader("Content-Type","application/json");
+      res.writeHead(202);
+      res.end(JSON.stringify({ jobId: jobId }));
+      runIdeogramJob(jobId, ev);
     });
+    return;
+  }
+
+  // Poll job status
+  if (req.method === "GET" && /^\/api\/status\/[a-f0-9]+$/.test(p)) {
+    var jobId = p.split("/").pop();
+    var job = jobs[jobId];
+    if (!job) { res.writeHead(404); res.end(JSON.stringify({error:"Job not found"})); return; }
+    res.setHeader("Content-Type","application/json");
+    res.writeHead(200);
+    res.end(JSON.stringify(job));
+    if (job.status !== "pending") delete jobs[jobId];
     return;
   }
 
@@ -210,4 +245,4 @@ var server = http.createServer(function(req, res) {
 });
 
 server.timeout = 120000;
-server.listen(PORT, function(){ console.log("NightKit Ideogram Edit on port "+PORT); });
+server.listen(PORT, function(){ console.log("NightKit on port "+PORT); });

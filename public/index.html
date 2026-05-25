@@ -352,23 +352,8 @@ function generate(){
   .then(function(r){
     if(!r.ok){var msg="Fehler "+r.s+": "+r.t.substring(0,200);try{var j=JSON.parse(r.t);if(j.error)msg=j.error;}catch(e){}throw new Error(msg);}
     var data=JSON.parse(r.t);
-    if(!data.url)throw new Error("Kein Bild: "+r.t.substring(0,100));
-    // Upscale result to 1080x1920 for Instagram
-    if(!data.url) throw new Error("Kein Bild: "+r.t.substring(0,100));
-    last=data.url;
-    lastImg=new Image();
-    lastImg.src=data.url;
-    document.getElementById("resultImg").src=data.url;
-    document.getElementById("resultSection").style.display="block";
-    document.getElementById("videoSection").style.display="block";
-    document.getElementById("hint").textContent="Flyer fertig";
-    document.getElementById("ov").classList.remove("on");
-    document.getElementById("genTxt").textContent="Generieren";
-    btn.disabled=false;
-    document.getElementById("resultSection").scrollIntoView({behavior:"smooth"});
-    document.getElementById("resultSection").scrollIntoView({behavior:"smooth"});
-    // Preload image for video
-
+    if(!data.jobId)throw new Error("Kein Job: "+r.t.substring(0,100));
+    pollJob(data.jobId,btn);
   })
   .catch(function(e){
     showErr(e.message||"Fehler.");
@@ -376,6 +361,42 @@ function generate(){
     document.getElementById("genTxt").textContent="Generieren";
     btn.disabled=false;
   });
+}
+
+function pollJob(jobId,btn){
+  var secs=0;
+  function check(){
+    fetch("/api/status/"+jobId)
+    .then(function(r){return r.json();})
+    .then(function(job){
+      if(job.status==="pending"){
+        secs+=2;
+        document.getElementById("genTxt").innerHTML='<span class="spinner"></span>';
+        document.getElementById("hint").textContent="KI arbeitet... ("+secs+"s)";
+        setTimeout(check,2000);
+        return;
+      }
+      if(job.status==="error")throw new Error(job.error||"Fehler.");
+      last=job.url;
+      lastImg=new Image();
+      lastImg.src=job.url;
+      document.getElementById("resultImg").src=job.url;
+      document.getElementById("resultSection").style.display="block";
+      document.getElementById("videoSection").style.display="block";
+      document.getElementById("hint").textContent="Flyer fertig";
+      document.getElementById("ov").classList.remove("on");
+      document.getElementById("genTxt").textContent="Generieren";
+      btn.disabled=false;
+      document.getElementById("resultSection").scrollIntoView({behavior:"smooth"});
+    })
+    .catch(function(e){
+      showErr(e.message||"Fehler.");
+      document.getElementById("ov").classList.remove("on");
+      document.getElementById("genTxt").textContent="Generieren";
+      btn.disabled=false;
+    });
+  }
+  setTimeout(check,2000);
 }
 
 function dl(fmt){
