@@ -159,10 +159,14 @@ var server = http.createServer(function(req, res) {
   res.setHeader("Access-Control-Allow-Headers","Content-Type");
   if (req.method === "OPTIONS") { res.writeHead(200); res.end(); return; }
 
-  if (req.method === "GET" && p === "/") {
-    fs.readFile(path.join(__dirname,"public","index.html"), function(err, data) {
+  if (req.method === "GET" && /^\/[a-zA-Z0-9._-]*$/.test(p)) {
+    var fileName = p === "/" ? "index.html" : p.slice(1);
+    var filePath = path.join(__dirname, "public", fileName);
+    var ext = path.extname(fileName);
+    var mime = {".html":"text/html",".js":"application/javascript",".css":"text/css",".png":"image/png",".jpg":"image/jpeg"}[ext] || "application/octet-stream";
+    fs.readFile(filePath, function(err, data) {
       if (err) { res.writeHead(404); res.end("Not found"); return; }
-      res.setHeader("Content-Type","text/html");
+      res.setHeader("Content-Type", mime);
       res.writeHead(200); res.end(data);
     });
     return;
