@@ -196,6 +196,18 @@ var server = http.createServer(function(req, res) {
     return;
   }
 
+  // Proxy external images to avoid canvas CORS tainting
+  if (req.method === "GET" && p === "/api/proxy") {
+    var imageUrl = url.parse(req.url, true).query.url;
+    if (!imageUrl) { res.writeHead(400); res.end("missing url"); return; }
+    https.get(imageUrl, function(imgRes) {
+      res.setHeader("Content-Type", imgRes.headers["content-type"] || "image/jpeg");
+      res.writeHead(200);
+      imgRes.pipe(res);
+    }).on("error", function(e) { res.writeHead(500); res.end(e.message); });
+    return;
+  }
+
   // Poll job status
   if (req.method === "GET" && /^\/api\/status\/[a-f0-9]+$/.test(p)) {
     var jobId = p.split("/").pop();

@@ -382,10 +382,11 @@ function pollJob(jobId,btn){
       }
       if(job.status==="error")throw new Error(job.error||"Fehler.");
       if(!job.url)throw new Error("Kein Bild erhalten.");
-      last=job.url;
+      var proxied="/api/proxy?url="+encodeURIComponent(job.url);
+      last=proxied;
       lastImg=new Image();
-      lastImg.src=job.url;
-      document.getElementById("resultImg").src=job.url;
+      lastImg.src=proxied;
+      document.getElementById("resultImg").src=proxied;
       document.getElementById("resultSection").style.display="block";
       document.getElementById("videoSection").style.display="block";
       document.getElementById("hint").textContent="Flyer fertig";
