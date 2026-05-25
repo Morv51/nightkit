@@ -705,19 +705,21 @@ function exportVideo(){
       canvas.width=180;canvas.height=320;
       previewVideo();
     }
-    if(isNativeMP4 && blob.size > 10000){
-      finish(blob,".mp4");
-    } else if(!isNativeMP4 && blob.size > 1000){
-      convertToMp4(blob,function(mp4Blob,err){
-        if(err){
-          status.textContent="\u26A0 MP4-Konvertierung fehlgeschlagen.";
-          exportBtn.disabled=false;
-        } else {
-          finish(mp4Blob,".mp4");
-        }
-      });
+    if(blob.size > 1000){
+      if(isNativeMP4){
+        finish(blob,".mp4");
+      } else {
+        convertToMp4(blob,function(mp4Blob,err){
+          if(err){
+            status.textContent="\u26A0 Konvertierung fehlgeschlagen: "+err.message;
+            exportBtn.disabled=false;
+          } else {
+            finish(mp4Blob,".mp4");
+          }
+        });
+      }
     } else {
-      status.textContent="\u26A0 Aufnahme fehlgeschlagen. Bitte Chrome oder Safari nutzen.";
+      status.textContent="\u26A0 Aufnahme leer ("+blob.size+" Bytes, "+chunks.length+" Chunks, "+mimeType+"). Bitte neu versuchen.";
       exportBtn.disabled=false;
     }
   };
