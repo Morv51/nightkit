@@ -65,6 +65,43 @@ body{font-family:'DM Sans',sans-serif;background:#08080f;color:#fff;min-height:1
 .ov-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700}
 .ov-sub{font-size:11px;color:rgba(255,255,255,0.35)}
 @media(max-width:600px){.main{grid-template-columns:1fr}.tpl-wrap{display:none}.result-grid{grid-template-columns:1fr}.style-grid{grid-template-columns:repeat(3,1fr)}}
+
+/* RESULT REDESIGN */
+.result-main{display:flex;flex-direction:column;align-items:center;gap:12px}
+.result-main-img{width:100%;max-width:400px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);display:block}
+.result-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.action-btn{padding:11px 20px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:rgba(255,255,255,0.8);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
+.action-btn:hover{background:rgba(255,255,255,0.11);color:#fff}
+.action-dl{background:linear-gradient(135deg,#FF2D55,#cc1a3d);border-color:transparent;color:#fff}
+.action-dl:hover{opacity:.88}
+.action-regen{border-color:rgba(255,45,85,0.35);color:#FF2D55;background:rgba(255,45,85,0.07)}
+.result-orig{display:flex;align-items:center;gap:8px;margin-top:4px;opacity:.45}
+.result-orig img{width:48px;border-radius:5px;border:1px solid rgba(255,255,255,0.1)}
+.result-orig-lbl{font-size:9px;color:rgba(255,255,255,0.4);letter-spacing:.5px;text-transform:uppercase}
+/* HISTORY */
+.history-section{width:100%;max-width:860px;margin-top:20px}
+.history-label{font-size:9px;color:rgba(255,255,255,0.3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px}
+.history-grid{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px}
+.history-item{flex-shrink:0;cursor:pointer;position:relative;transition:transform .15s}
+.history-item:hover{transform:translateY(-2px)}
+.history-item img{width:72px;height:auto;border-radius:8px;border:1px solid rgba(255,255,255,0.1);display:block}
+.history-item:hover img{border-color:rgba(255,45,85,0.5)}
+.history-item-num{position:absolute;top:4px;left:4px;background:rgba(0,0,0,0.65);border-radius:3px;padding:1px 5px;font-size:9px;color:rgba(255,255,255,0.7)}
+/* LOADING DOTS */
+@keyframes dotpulse{0%,80%,100%{transform:scale(0);opacity:.3}40%{transform:scale(1);opacity:1}}
+.ov-dots{display:flex;gap:6px;justify-content:center}
+.ov-dot{width:7px;height:7px;background:#FF2D55;border-radius:50%;animation:dotpulse 1.4s infinite ease-in-out both}
+.ov-dot:nth-child(1){animation-delay:-.32s}
+.ov-dot:nth-child(2){animation-delay:-.16s}
+.ov-dot:nth-child(3){animation-delay:0s}
+.ov-timer{font-size:11px;color:rgba(255,255,255,0.25);margin-top:4px}
+/* COPY FEEDBACK */
+.copy-ok{background:rgba(50,210,100,0.1);border-color:rgba(50,210,100,0.3);color:#32d264}
+@media(max-width:600px){
+  .result-actions{gap:6px}
+  .action-btn{padding:10px 14px;font-size:11px}
+  .history-item img{width:60px}
+}
 </style>
 <script src="/mp4-muxer.js"></script>
 </head>
@@ -72,6 +109,8 @@ body{font-family:'DM Sans',sans-serif;background:#08080f;color:#fff;min-height:1
 <div class="overlay" id="ov">
   <div class="ring"><div class="ring-n">N</div></div>
   <div class="ov-title">Flyer wird generiert...</div>
+  <div class="ov-dots"><div class="ov-dot"></div><div class="ov-dot"></div><div class="ov-dot"></div></div>
+  <div class="ov-timer" id="ovTimer"></div>
 </div>
 <div class="nav">
   <div class="logo-mark">N</div>
@@ -109,21 +148,25 @@ body{font-family:'DM Sans',sans-serif;background:#08080f;color:#fff;min-height:1
 
 <!-- Result -->
 <div class="result-section" id="resultSection">
-  <div class="result-grid">
-    <div>
-      <div class="result-label">Original</div>
-      <img class="result-img" id="origImg" alt="Original">
+  <div class="result-main">
+    <img class="result-main-img" id="resultImg" alt="Ergebnis">
+    <div class="result-actions">
+      <button class="action-btn action-dl" onclick="dl('png')">↓ PNG</button>
+      <button class="action-btn action-dl" onclick="dl('jpg')">↓ JPG</button>
+      <button class="action-btn" id="copyBtn" onclick="copyImg()">⎘ Kopieren</button>
+      <button class="action-btn action-regen" onclick="generate()">↺ Neu generieren</button>
     </div>
-    <div>
-      <div class="result-label">Generiert</div>
-      <img class="result-img" id="resultImg" alt="Ergebnis">
-      <div class="dl-row">
-        <button class="regen-btn" onclick="generate()">↺ Neu</button>
-        <button class="dl-btn" onclick="dl('png')">↓ PNG</button>
-        <button class="dl-btn" onclick="dl('jpg')">↓ JPG</button>
-      </div>
+    <div class="result-orig">
+      <img id="origImg" alt="Original">
+      <span class="result-orig-lbl">Original Template</span>
     </div>
   </div>
+</div>
+
+<!-- History -->
+<div class="history-section" id="historySection" style="display:none">
+  <div class="history-label">Letzte Generierungen</div>
+  <div class="history-grid" id="historyGrid"></div>
 </div>
 
 <!-- Video Export -->
@@ -363,8 +406,46 @@ function generate(){
   });
 }
 
+var historyUrls=[];
+function addToHistory(url){
+  historyUrls.unshift(url);
+  if(historyUrls.length>5)historyUrls.pop();
+  var grid=document.getElementById("historyGrid");
+  var sec=document.getElementById("historySection");
+  if(historyUrls.length<2){sec.style.display="none";return;}
+  sec.style.display="block";
+  grid.innerHTML="";
+  historyUrls.forEach(function(u,i){
+    var div=document.createElement("div");div.className="history-item";
+    var img=document.createElement("img");img.src=u;
+    var num=document.createElement("div");num.className="history-item-num";num.textContent="#"+(i+1);
+    div.appendChild(img);div.appendChild(num);
+    div.onclick=function(){
+      last=u;lastImg=new Image();lastImg.src=u;
+      document.getElementById("resultImg").src=u;
+      document.getElementById("resultSection").scrollIntoView({behavior:"smooth"});
+    };
+    grid.appendChild(div);
+  });
+}
+
+async function copyImg(){
+  if(!last)return;
+  var btn=document.getElementById("copyBtn");
+  try{
+    var res=await fetch(last);
+    var blob=await res.blob();
+    await navigator.clipboard.write([new ClipboardItem({"image/png":blob})]);
+    btn.textContent="✓ Kopiert";btn.classList.add("copy-ok");
+    setTimeout(function(){btn.textContent="⎘ Kopieren";btn.classList.remove("copy-ok");},2000);
+  }catch(e){
+    window.open(last,"_blank");
+  }
+}
+
 function pollJob(jobId,btn){
   var secs=0;
+  var timerEl=document.getElementById("ovTimer");
   function check(){
     fetch("/api/status/"+jobId)
     .then(function(r){
@@ -375,7 +456,7 @@ function pollJob(jobId,btn){
       if(job.status==="pending"){
         secs+=2;
         document.getElementById("genTxt").innerHTML='<span class="spinner"></span>';
-        document.getElementById("hint").textContent="KI arbeitet... ("+secs+"s)";
+        if(timerEl)timerEl.textContent=secs+"s";
         setTimeout(check,2000);
         return;
       }
@@ -388,16 +469,19 @@ function pollJob(jobId,btn){
       document.getElementById("resultImg").src=proxied;
       document.getElementById("resultSection").style.display="block";
       document.getElementById("videoSection").style.display="block";
-      document.getElementById("hint").textContent="Flyer fertig";
+      document.getElementById("hint").textContent="";
       document.getElementById("ov").classList.remove("on");
       document.getElementById("genTxt").textContent="Generieren";
+      if(timerEl)timerEl.textContent="";
       btn.disabled=false;
+      addToHistory(proxied);
       document.getElementById("resultSection").scrollIntoView({behavior:"smooth"});
     })
     .catch(function(e){
       showErr(e.message||"Fehler.");
       document.getElementById("ov").classList.remove("on");
       document.getElementById("genTxt").textContent="Generieren";
+      if(timerEl)timerEl.textContent="";
       btn.disabled=false;
     });
   }
