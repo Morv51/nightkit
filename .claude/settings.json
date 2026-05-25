@@ -1,16 +1,1 @@
-{
-  "hooks": {
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "if [ -n \"$(git status --porcelain)\" ]; then git add -A && git commit -m \"Auto-save: $(date '+%Y-%m-%d %H:%M:%S')\" && git push origin main 2>&1; fi",
-            "timeout": 30,
-            "statusMessage": "Pushing changes to GitHub..."
-          }
-        ]
-      }
-    ]
-  }
-}
+{}
