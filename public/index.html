@@ -682,10 +682,14 @@ function exportVideo(){
   var ctx=canvas.getContext("2d");
   var chunks=[];
 
-  // Prefer native MP4 recording (Chrome 130+), fall back to WebM
-  var mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
-    ? "video/webm;codecs=vp9" : "video/webm";
-  var isMP4 = false;
+  // Pick best available mimeType — prefer native MP4
+  var mimeType;
+  if(MediaRecorder.isTypeSupported("video/mp4;codecs=avc1"))      mimeType="video/mp4;codecs=avc1";
+  else if(MediaRecorder.isTypeSupported("video/mp4"))             mimeType="video/mp4";
+  else if(MediaRecorder.isTypeSupported("video/webm;codecs=vp9")) mimeType="video/webm;codecs=vp9";
+  else                                                            mimeType="video/webm";
+  var isNativeMP4 = mimeType.startsWith("video/mp4");
+
   var rec=new MediaRecorder(canvas.captureStream(30),{mimeType:mimeType,videoBitsPerSecond:8000000});
   rec.ondataavailable=function(e){if(e.data.size>0)chunks.push(e.data);};
   rec.onstop=function(){
@@ -696,17 +700,25 @@ function exportVideo(){
       a.href=URL.createObjectURL(dlBlob);
       a.download=fname+ext;
       a.click();
-      status.textContent="✓ Video fertig";
+      status.textContent="\u2713 Video fertig";
       exportBtn.disabled=false;
       canvas.width=180;canvas.height=320;
       previewVideo();
     }
-    if(isMP4){
+    if(isNativeMP4 && blob.size > 10000){
       finish(blob,".mp4");
-    } else {
+    } else if(!isNativeMP4 && blob.size > 1000){
       convertToMp4(blob,function(mp4Blob,err){
-        if(err){ finish(blob,".webm"); } else { finish(mp4Blob,".mp4"); }
+        if(err){
+          status.textContent="\u26A0 MP4-Konvertierung fehlgeschlagen.";
+          exportBtn.disabled=false;
+        } else {
+          finish(mp4Blob,".mp4");
+        }
       });
+    } else {
+      status.textContent="\u26A0 Aufnahme fehlgeschlagen. Bitte Chrome oder Safari nutzen.";
+      exportBtn.disabled=false;
     }
   };
 
