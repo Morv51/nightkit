@@ -679,7 +679,7 @@ async function exportVideo(){
   var exportBtn=document.getElementById("exportBtn");
   exportBtn.disabled=true;
 
-  var W=540,H=960,FPS=30,SECS=10;
+  var W=1080,H=1920,FPS=30,SECS=10;
   var canvas=document.getElementById("videoCanvas");
   canvas.width=W;canvas.height=H;
   document.getElementById("previewWrap").style.display="flex";
@@ -693,7 +693,7 @@ async function exportVideo(){
       output:function(chunk,meta){muxer.addVideoChunk(chunk,meta);},
       error:function(e){encErr=e;}
     });
-    encoder.configure({codec:"avc1.42001f",width:W,height:H,bitrate:2000000,framerate:FPS});
+    encoder.configure({codec:"avc1.42001f",width:W,height:H,bitrate:4000000,framerate:FPS});
 
     var totalFrames=FPS*SECS;
     for(var i=0;i<totalFrames;i++){
