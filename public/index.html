@@ -673,14 +673,24 @@ function exportVideo(){
   rec.ondataavailable=function(e){if(e.data.size>0)chunks.push(e.data);};
   rec.onstop=function(){
     var blob=new Blob(chunks,{type:mimeType});
-    var a=document.createElement("a");
-    a.href=URL.createObjectURL(blob);
-    a.download=(v("fName")||"flyer").replace(/\s+/g,"-").toLowerCase()+"-"+currentVideoStyle+(isMP4?".mp4":".mp4");
-    a.click();
-    status.textContent="✓ Video fertig";
-    exportBtn.disabled=false;
-    canvas.width=180;canvas.height=320;
-    previewVideo();
+    var fname=(v("fName")||"flyer").replace(/\s+/g,"-").toLowerCase()+"-"+currentVideoStyle;
+    function finish(dlBlob,ext){
+      var a=document.createElement("a");
+      a.href=URL.createObjectURL(dlBlob);
+      a.download=fname+ext;
+      a.click();
+      status.textContent="✓ Video fertig";
+      exportBtn.disabled=false;
+      canvas.width=180;canvas.height=320;
+      previewVideo();
+    }
+    if(isMP4){
+      finish(blob,".mp4");
+    } else {
+      convertToMp4(blob,function(mp4Blob,err){
+        if(err){ finish(blob,".webm"); } else { finish(mp4Blob,".mp4"); }
+      });
+    }
   };
 
   var startT=Date.now();
