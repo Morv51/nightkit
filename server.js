@@ -1,5 +1,6 @@
 const https = require("https");
 const { execFile } = require("child_process");
+const ffmpegPath = require("ffmpeg-static");
 const os = require("os");
 const crypto = require("crypto");
 const http  = require("http");
@@ -217,7 +218,7 @@ var server = http.createServer(function(req, res) {
       var outFile = os.tmpdir() + "/" + tmpId + ".mp4";
       fs.writeFile(inFile, webmBuf, function(err){
         if(err){ console.error("write error:", err); res.writeHead(500); res.end("write failed"); return; }
-        execFile("ffmpeg",["-y","-i",inFile,"-c:v","libx264","-preset","ultrafast","-crf","23","-movflags","+faststart","-an",outFile],
+        execFile(ffmpegPath,["-y","-i",inFile,"-c:v","libx264","-preset","ultrafast","-crf","23","-movflags","+faststart","-an",outFile],
           {maxBuffer: 100*1024*1024},
           function(err2, stdout, stderr){
             fs.unlink(inFile, function(){});
