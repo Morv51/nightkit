@@ -723,7 +723,7 @@ function exportVideo(){
   };
 
   var startT=Date.now();
-  rec.start();
+  rec.start(1000);
   (function recFrame(){
     var t=((Date.now()-startT)%10000)/10000;
     drawVideoFrame(ctx,1024,1536,t,lastImg,currentVideoStyle);
