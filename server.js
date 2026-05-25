@@ -160,7 +160,7 @@ var server = http.createServer(function(req, res) {
   if (req.method === "OPTIONS") { res.writeHead(200); res.end(); return; }
 
   if (req.method === "GET" && /^\/[a-zA-Z0-9._-]*$/.test(p)) {
-    var fileName = p === "/" ? "index.html" : p.slice(1);
+    var fileName = p === "/" ? "landing.html" : p === "/app" ? "app.html" : p.slice(1);
     var filePath = path.join(__dirname, "public", fileName);
     var ext = path.extname(fileName);
     var mime = {".html":"text/html",".js":"application/javascript",".css":"text/css",".png":"image/png",".jpg":"image/jpeg"}[ext] || "application/octet-stream";
