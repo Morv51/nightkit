@@ -159,11 +159,15 @@ var server = http.createServer(function(req, res) {
   res.setHeader("Access-Control-Allow-Headers","Content-Type");
   if (req.method === "OPTIONS") { res.writeHead(200); res.end(); return; }
 
-  if (req.method === "GET" && /^\/[a-zA-Z0-9._-]*$/.test(p)) {
+  if (req.method === "GET" && /^\/[a-zA-Z0-9._\-/]*$/.test(p)) {
     var fileName = p === "/" ? "landing.html" : p === "/app" ? "app.html" : p.slice(1);
     var filePath = path.join(__dirname, "public", fileName);
+    // Prevent directory traversal
+    if (filePath.indexOf(path.join(__dirname, "public")) !== 0) {
+      res.writeHead(403); res.end("Forbidden"); return;
+    }
     var ext = path.extname(fileName);
-    var mime = {".html":"text/html",".js":"application/javascript",".css":"text/css",".png":"image/png",".jpg":"image/jpeg"}[ext] || "application/octet-stream";
+    var mime = {".html":"text/html",".js":"application/javascript",".css":"text/css",".png":"image/png",".jpg":"image/jpeg",".jpeg":"image/jpeg",".svg":"image/svg+xml",".webp":"image/webp"}[ext] || "application/octet-stream";
     fs.readFile(filePath, function(err, data) {
       if (err) { res.writeHead(404); res.end("Not found"); return; }
       res.setHeader("Content-Type", mime);
