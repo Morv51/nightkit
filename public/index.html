@@ -677,20 +677,16 @@ function exportVideo(){
   status.textContent="Aufnahme läuft (10 Sek.)...";
 
   var canvas=document.getElementById("videoCanvas");
-  canvas.width=1024;canvas.height=1536;
+  canvas.width=540;canvas.height=960;
   document.getElementById("previewWrap").style.display="flex";
   var ctx=canvas.getContext("2d");
   var chunks=[];
 
-  // Pick best available mimeType — prefer native MP4
-  var mimeType;
-  if(MediaRecorder.isTypeSupported("video/mp4;codecs=avc1"))      mimeType="video/mp4;codecs=avc1";
-  else if(MediaRecorder.isTypeSupported("video/mp4"))             mimeType="video/mp4";
-  else if(MediaRecorder.isTypeSupported("video/webm;codecs=vp9")) mimeType="video/webm;codecs=vp9";
-  else                                                            mimeType="video/webm";
-  var isNativeMP4 = mimeType.startsWith("video/mp4");
+  // Always use WebM — native MP4 produces 0 bytes on Chrome/macOS
+  var mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+    ? "video/webm;codecs=vp9" : "video/webm";
 
-  var rec=new MediaRecorder(canvas.captureStream(30),{mimeType:mimeType,videoBitsPerSecond:8000000});
+  var rec=new MediaRecorder(canvas.captureStream(30),{mimeType:mimeType,videoBitsPerSecond:2000000});
   rec.ondataavailable=function(e){if(e.data.size>0)chunks.push(e.data);};
   rec.onstop=function(){
     var blob=new Blob(chunks,{type:mimeType});
@@ -706,20 +702,16 @@ function exportVideo(){
       previewVideo();
     }
     if(blob.size > 1000){
-      if(isNativeMP4){
-        finish(blob,".mp4");
-      } else {
-        convertToMp4(blob,function(mp4Blob,err){
-          if(err){
-            status.textContent="\u26A0 Konvertierung fehlgeschlagen: "+err.message;
-            exportBtn.disabled=false;
-          } else {
-            finish(mp4Blob,".mp4");
-          }
-        });
-      }
+      convertToMp4(blob,function(mp4Blob,err){
+        if(err){
+          status.textContent="\u26A0 Konvertierung fehlgeschlagen: "+err.message;
+          exportBtn.disabled=false;
+        } else {
+          finish(mp4Blob,".mp4");
+        }
+      });
     } else {
-      status.textContent="\u26A0 Aufnahme leer ("+blob.size+" Bytes, "+chunks.length+" Chunks, "+mimeType+"). Bitte neu versuchen.";
+      status.textContent="\u26A0 Aufnahme leer ("+blob.size+" Bytes). Bitte neu versuchen.";
       exportBtn.disabled=false;
     }
   };
@@ -728,7 +720,7 @@ function exportVideo(){
   rec.start(1000);
   (function recFrame(){
     var t=((Date.now()-startT)%10000)/10000;
-    drawVideoFrame(ctx,1024,1536,t,lastImg,currentVideoStyle);
+    drawVideoFrame(ctx,540,960,t,lastImg,currentVideoStyle);
     if(Date.now()-startT<10000)requestAnimationFrame(recFrame);else rec.stop();
   })();
 }
