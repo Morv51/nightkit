@@ -658,17 +658,9 @@ function exportVideo(){
   var chunks=[];
 
   // Prefer native MP4 recording (Chrome 130+), fall back to WebM
-  var mimeType = "";
-  if(MediaRecorder.isTypeSupported("video/mp4;codecs=avc1")) {
-    mimeType = "video/mp4;codecs=avc1";
-  } else if(MediaRecorder.isTypeSupported("video/mp4")) {
-    mimeType = "video/mp4";
-  } else if(MediaRecorder.isTypeSupported("video/webm;codecs=vp9")) {
-    mimeType = "video/webm;codecs=vp9";
-  } else {
-    mimeType = "video/webm";
-  }
-  var isMP4 = mimeType.indexOf("mp4") !== -1;
+  var mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+    ? "video/webm;codecs=vp9" : "video/webm";
+  var isMP4 = false;
   var rec=new MediaRecorder(canvas.captureStream(30),{mimeType:mimeType,videoBitsPerSecond:8000000});
   rec.ondataavailable=function(e){if(e.data.size>0)chunks.push(e.data);};
   rec.onstop=function(){
