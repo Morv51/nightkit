@@ -367,7 +367,10 @@ function pollJob(jobId,btn){
   var secs=0;
   function check(){
     fetch("/api/status/"+jobId)
-    .then(function(r){return r.json();})
+    .then(function(r){
+      if(!r.ok)throw new Error("Job nicht mehr vorhanden – bitte neu generieren.");
+      return r.json();
+    })
     .then(function(job){
       if(job.status==="pending"){
         secs+=2;
@@ -377,6 +380,7 @@ function pollJob(jobId,btn){
         return;
       }
       if(job.status==="error")throw new Error(job.error||"Fehler.");
+      if(!job.url)throw new Error("Kein Bild erhalten.");
       last=job.url;
       lastImg=new Image();
       lastImg.src=job.url;
