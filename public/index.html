@@ -66,6 +66,7 @@ body{font-family:'DM Sans',sans-serif;background:#08080f;color:#fff;min-height:1
 .ov-sub{font-size:11px;color:rgba(255,255,255,0.35)}
 @media(max-width:600px){.main{grid-template-columns:1fr}.tpl-wrap{display:none}.result-grid{grid-template-columns:1fr}.style-grid{grid-template-columns:repeat(3,1fr)}}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5/dist/mp4-muxer.js"></script>
 </head>
 <body>
 <div class="overlay" id="ov">
@@ -667,90 +668,63 @@ function previewVideo(){
   frame();
 }
 
-function exportVideo(){
+async function exportVideo(){
   if(!last){document.getElementById("videoStatus").textContent="Bitte zuerst Flyer generieren.";return;}
-  if(!window.MediaRecorder){document.getElementById("videoStatus").textContent="Bitte Chrome oder Edge nutzen.";return;}
+  if(!window.VideoEncoder||!window.VideoFrame||typeof Mp4Muxer==="undefined"){
+    document.getElementById("videoStatus").textContent="⚠ Bitte Chrome 94+ oder Safari 16+ verwenden.";return;
+  }
   if(animFrameId)cancelAnimationFrame(animFrameId);
   var status=document.getElementById("videoStatus");
   var exportBtn=document.getElementById("exportBtn");
   exportBtn.disabled=true;
-  status.textContent="Aufnahme läuft (10 Sek.)...";
 
+  var W=540,H=960,FPS=30,SECS=10;
   var canvas=document.getElementById("videoCanvas");
-  canvas.width=540;canvas.height=960;
+  canvas.width=W;canvas.height=H;
   document.getElementById("previewWrap").style.display="flex";
   var ctx=canvas.getContext("2d");
-  var chunks=[];
 
-  // Always use WebM — native MP4 produces 0 bytes on Chrome/macOS
-  var mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
-    ? "video/webm;codecs=vp9" : "video/webm";
+  try{
+    var target=new Mp4Muxer.ArrayBufferTarget();
+    var muxer=new Mp4Muxer.Muxer({target:target,video:{codec:"avc",width:W,height:H},fastStart:"in-memory"});
+    var encErr=null;
+    var encoder=new VideoEncoder({
+      output:function(chunk,meta){muxer.addVideoChunk(chunk,meta);},
+      error:function(e){encErr=e;}
+    });
+    encoder.configure({codec:"avc1.42001f",width:W,height:H,bitrate:2000000,framerate:FPS});
 
-  var rec=new MediaRecorder(canvas.captureStream(30),{mimeType:mimeType,videoBitsPerSecond:2000000});
-  rec.ondataavailable=function(e){if(e.data.size>0)chunks.push(e.data);};
-  rec.onstop=function(){
-    var blob=new Blob(chunks,{type:mimeType});
+    var totalFrames=FPS*SECS;
+    for(var i=0;i<totalFrames;i++){
+      if(encErr)throw encErr;
+      drawVideoFrame(ctx,W,H,i/totalFrames,lastImg,currentVideoStyle);
+      var frame=new VideoFrame(canvas,{timestamp:Math.round(i/FPS*1000000)});
+      encoder.encode(frame,{keyFrame:i%30===0});
+      frame.close();
+      if(i%15===0){
+        status.textContent="MP4 erstellen… "+Math.round(i/totalFrames*100)+"%";
+        await new Promise(function(r){setTimeout(r,0);});
+      }
+    }
+    await encoder.flush();
+    encoder.close();
+    if(encErr)throw encErr;
+    muxer.finalize();
+
     var fname=(v("fName")||"flyer").replace(/\s+/g,"-").toLowerCase()+"-"+currentVideoStyle;
-    function finish(dlBlob,ext){
-      var a=document.createElement("a");
-      a.href=URL.createObjectURL(dlBlob);
-      a.download=fname+ext;
-      a.click();
-      status.textContent="\u2713 Video fertig";
-      exportBtn.disabled=false;
-      canvas.width=180;canvas.height=320;
-      previewVideo();
-    }
-    if(blob.size > 1000){
-      convertToMp4(blob,function(mp4Blob,err){
-        if(err){
-          status.textContent="\u26A0 Konvertierung fehlgeschlagen: "+err.message;
-          exportBtn.disabled=false;
-        } else {
-          finish(mp4Blob,".mp4");
-        }
-      });
-    } else {
-      status.textContent="\u26A0 Aufnahme leer ("+blob.size+" Bytes). Bitte neu versuchen.";
-      exportBtn.disabled=false;
-    }
-  };
-
-  var startT=Date.now();
-  rec.start(1000);
-  (function recFrame(){
-    var t=((Date.now()-startT)%10000)/10000;
-    drawVideoFrame(ctx,540,960,t,lastImg,currentVideoStyle);
-    if(Date.now()-startT<10000)requestAnimationFrame(recFrame);else rec.stop();
-  })();
-}
-
-function convertToMp4(webmBlob, cb){
-  var status = document.getElementById("videoStatus");
-  status.textContent = "Konvertiere zu MP4...";
-  fetch("/api/convert", {
-    method: "POST",
-    headers: {"Content-Type": "video/webm"},
-    body: webmBlob
-  })
-  .then(function(res){
-    if(!res.ok){
-      return res.text().then(function(t){
-        console.error("convert server error:", res.status, t);
-        throw new Error("Server " + res.status + ": " + t.slice(0,200));
-      });
-    }
-    return res.blob();
-  })
-  .then(function(mp4Blob){
-    status.textContent = "";
-    cb(mp4Blob, null);
-  })
-  .catch(function(err){
-    console.error("convert error:", err);
-    status.textContent = "MP4 fehlgeschlagen: " + err.message;
-    cb(null, err);
-  });
+    var blob=new Blob([target.buffer],{type:"video/mp4"});
+    var a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download=fname+".mp4";
+    a.click();
+    status.textContent="✓ Video fertig";
+    exportBtn.disabled=false;
+    canvas.width=180;canvas.height=320;
+    previewVideo();
+  }catch(e){
+    status.textContent="⚠ Video-Fehler: "+(e.message||e);
+    exportBtn.disabled=false;
+  }
 }
 
 </script>
