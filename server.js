@@ -1,269 +1,140 @@
-const https = require("https");
-const { execFile } = require("child_process");
-const ffmpegPath = require("ffmpeg-static");
-const os = require("os");
-const crypto = require("crypto");
-const http  = require("http");
-const fs    = require("fs");
-const path  = require("path");
-const url   = require("url");
+"use strict";
+
+const http = require("http");
+const path = require("path");
+
+const { buildPrompt }       = require("./lib/prompt");
+const ideogram              = require("./lib/ideogram");
+const jobs                  = require("./lib/jobs");
+const templates             = require("./lib/templates");
+const { createServer: createStatic } = require("./lib/static");
+const { proxy }             = require("./lib/proxy");
+const { webmToMp4 }         = require("./lib/convert");
+const { createRouter }      = require("./lib/router");
+const { readJson, readBody, sendJson, sendError, applyCors } = require("./lib/http");
 
 const PORT         = process.env.PORT || 3000;
 const IDEOGRAM_KEY = process.env.IDEOGRAM_API_KEY || "";
 
-var jobs = {};
+const staticFiles = createStatic({
+  roots: [
+    { prefix: "/templates", dir: path.join(__dirname, "templates") },
+    { prefix: "/",          dir: path.join(__dirname, "public") },
+  ],
+  rewrites: {
+    "/":    "/landing.html",
+    "/app": "/app.html",
+  },
+});
 
-function buildPrompt(ev) {
-  var name    = (ev.name    || "").trim().toUpperCase();
-  var prefix  = (ev.prefix  || "").trim().toUpperCase();
-  var genre   = (ev.genre   || "").trim().toUpperCase();
-  var day     = (ev.day     || "").trim().toUpperCase();
-  var date    = (ev.date    || "").trim();
-  var dj      = (ev.dj      || "").trim();
-  var contact = (ev.contact || "").trim().toUpperCase();
-  var time    = (ev.time    || "").trim();
-  var entry   = (ev.entry   || "").trim();
-  var djList  = dj.length ? dj.split(",").map(function(d){return d.trim().toUpperCase();}).filter(Boolean) : [];
+const router = createRouter();
 
-  var p = "Edit this nightclub event flyer. ";
-  p += "Keep ALL visual elements completely identical — people, background, colors, textures, effects, decorations, layout, composition. ";
-  p += "Only replace the text content. CRITICAL: Every text element must use EXACTLY the same font, capitalization style, color and position as the original template — do not change the typography or letter case, only swap the words.\n\n";
-  p += "Replace each text element with these exact strings (use ALL CAPS exactly as written here):\n";
+router.post("/api/generate", async (req, res) => {
+  if (!IDEOGRAM_KEY) return sendError(res, 500, "IDEOGRAM_API_KEY not configured");
 
-  if (prefix) {
-    p += "1. Small decorative text above main title: \"" + prefix + "\"\n";
-  } else {
-    p += "1. Small decorative text above main title: REMOVE IT COMPLETELY\n";
-  }
-
-  if (name) {
-    p += "2. Main event title (largest text, ALL CAPS): \"" + name + "\"\n";
-  }
-
-  if (genre) {
-    p += "3. Secondary banner text (ALL CAPS): \"" + genre + "\"\n";
-  }
-
-  if (day || date) {
-    p += "4. Date section (ALL CAPS): \"" + [day, date].filter(Boolean).join(" ") + "\"\n";
-  }
-
-  if (djList.length) {
-    p += "5. DJ/artist names (ALL CAPS, one per line): " + djList.map(function(d){return "\""+d+"\"";}).join(", ") + "\n";
-  } else {
-    p += "5. DJ/artist names section: REMOVE ALL NAMES\n";
-  }
-
-  if (time || entry) {
-    var details = [];
-    if (time) details.push("EINLASS: " + time + " UHR");
-    if (entry) details.push("EINTRITT: " + entry);
-    p += "6. Event details: \"" + details.join(" | ") + "\"\n";
-  }
-
-  if (contact) {
-    p += "7. Website at bottom (ALL CAPS): \"" + contact + "\"\n";
-  }
-
-  p += "\nDo not add any text not listed above. Remove any original text that has no replacement in this list. ";
-  p += "The capitalization shown above is final — render every letter exactly as written.";
-  return p;
-}
-
-function runIdeogramJob(jobId, ev) {
-  var prompt = buildPrompt(ev);
-  console.log("Job", jobId, "prompt:\n" + prompt);
-
-  var imgBuffer;
+  let ev;
   try {
-    imgBuffer = fs.readFileSync(path.join(__dirname, "templates", "default.png"));
-  } catch(e) {
-    jobs[jobId] = { status: "error", error: "Template not found" };
-    return;
+    ev = await readJson(req);
+  } catch (e) {
+    return sendError(res, e.status || 400, e.message);
   }
 
-  var boundary = "----NKB" + Date.now().toString(36);
-  var CRLF = "\r\n";
+  const templateId = ev.templateId || "default";
+  const template = templates.get(templateId);
+  if (!template) return sendError(res, 400, `Unknown template: ${templateId}`);
 
-  function field(name, value) {
-    return Buffer.from(
-      "--"+boundary+CRLF+
-      "Content-Disposition: form-data; name=\""+name+"\""+CRLF+CRLF+
-      value+CRLF, "utf8"
-    );
+  if (!ev.name || !ev.date) {
+    return sendError(res, 400, "Event name and date are required");
   }
 
-  var imgPart = Buffer.concat([
-    Buffer.from(
-      "--"+boundary+CRLF+
-      "Content-Disposition: form-data; name=\"images\"; filename=\"template.png\""+CRLF+
-      "Content-Type: image/png"+CRLF+CRLF, "utf8"
-    ),
-    imgBuffer,
-    Buffer.from(CRLF, "utf8")
-  ]);
+  const jobId = jobs.create();
+  sendJson(res, 202, { jobId });
 
-  var reqBody = Buffer.concat([
-    field("prompt", prompt),
-    field("aspect_ratio", "9x16"),
-    field("magic_prompt", "OFF"),
-    imgPart,
-    Buffer.from("--"+boundary+"--"+CRLF, "utf8")
-  ]);
+  runIdeogramJob(jobId, ev, templateId).catch((e) => {
+    console.error(`Job ${jobId} failed:`, e.message);
+    jobs.set(jobId, { status: "error", error: e.message });
+  });
+});
 
-  console.log("Job", jobId, "calling Ideogram, size:", reqBody.length);
+router.get(/^\/api\/status\/([a-f0-9]+)$/, (req, res, params) => {
+  const [jobId] = params;
+  const job = jobs.get(jobId);
+  if (!job) return sendError(res, 404, "Job not found");
+  sendJson(res, 200, job);
+  if (job.status !== "pending") jobs.remove(jobId);
+});
 
-  var apiReq = https.request({
-    hostname: "api.ideogram.ai",
-    path: "/v1/edit",
-    method: "POST",
-    headers: {
-      "Api-Key": IDEOGRAM_KEY,
-      "Content-Type": "multipart/form-data; boundary="+boundary,
-      "Content-Length": reqBody.length
+router.get("/api/proxy", (req, res) => {
+  proxy(req, res, req.urlQuery.url);
+});
+
+router.get("/api/templates", (_req, res) => {
+  sendJson(res, 200, { templates: templates.list() });
+});
+
+router.post("/api/convert", async (req, res) => {
+  try {
+    const buf = await readBody(req, { limit: 100 * 1024 * 1024 });
+    const mp4 = await webmToMp4(buf);
+    res.setHeader("Content-Type", "video/mp4");
+    res.setHeader("Content-Length", mp4.length);
+    res.writeHead(200);
+    res.end(mp4);
+  } catch (e) {
+    console.error("convert error:", e.message, e.stderr || "");
+    if (!res.headersSent) {
+      res.writeHead(500);
+      res.end("convert failed: " + e.message);
     }
-  }, function(apiRes) {
-    var data = "";
-    apiRes.on("data", function(c){ data += c; });
-    apiRes.on("end", function() {
-      console.log("Job", jobId, "Ideogram status:", apiRes.statusCode, data.substring(0,200));
-      try {
-        var j = JSON.parse(data);
-        if (apiRes.statusCode !== 200) {
-          jobs[jobId] = { status: "error", error: j.detail || j.message || data.substring(0,300) };
-          return;
-        }
-        var imgUrl = j.data && j.data[0] && j.data[0].url;
-        if (!imgUrl) {
-          jobs[jobId] = { status: "error", error: "No image URL in response" };
-          return;
-        }
-        jobs[jobId] = { status: "done", url: imgUrl };
-      } catch(e) {
-        jobs[jobId] = { status: "error", error: "Parse error: " + data.substring(0,200) };
-      }
-    });
+  }
+});
+
+async function runIdeogramJob(jobId, ev, templateId) {
+  const prompt = buildPrompt(ev);
+  console.log(`Job ${jobId} template=${templateId} prompt:\n${prompt}`);
+
+  let imgBuffer;
+  try {
+    imgBuffer = templates.loadBuffer(templateId);
+  } catch (e) {
+    throw new Error("Template not found: " + e.message);
+  }
+
+  const { url } = await ideogram.edit({
+    apiKey: IDEOGRAM_KEY,
+    prompt,
+    imageBuffer: imgBuffer,
   });
 
-  apiReq.on("error", function(e) {
-    jobs[jobId] = { status: "error", error: e.message };
-  });
-
-  apiReq.write(reqBody);
-  apiReq.end();
+  jobs.set(jobId, { status: "done", url });
+  console.log(`Job ${jobId} done`);
 }
 
-var server = http.createServer(function(req, res) {
-  var p = url.parse(req.url).pathname;
-  res.setHeader("Access-Control-Allow-Origin","*");
-  res.setHeader("Access-Control-Allow-Headers","Content-Type");
-  if (req.method === "OPTIONS") { res.writeHead(200); res.end(); return; }
+const server = http.createServer(async (req, res) => {
+  applyCors(res);
+  if (req.method === "OPTIONS") { res.writeHead(204); res.end(); return; }
 
-  if (req.method === "GET" && /^\/[a-zA-Z0-9._\-/]*$/.test(p) && p.indexOf("/api") !== 0) {
-    var fileName = p === "/" ? "landing.html" : p === "/app" ? "app.html" : p.slice(1);
-    var filePath = path.join(__dirname, "public", fileName);
-    // Prevent directory traversal
-    if (filePath.indexOf(path.join(__dirname, "public")) !== 0) {
-      res.writeHead(403); res.end("Forbidden"); return;
-    }
-    var ext = path.extname(fileName);
-    var mime = {".html":"text/html",".js":"application/javascript",".css":"text/css",".png":"image/png",".jpg":"image/jpeg",".jpeg":"image/jpeg",".svg":"image/svg+xml",".webp":"image/webp"}[ext] || "application/octet-stream";
-    fs.readFile(filePath, function(err, data) {
-      if (err) { res.writeHead(404); res.end("Not found"); return; }
-      res.setHeader("Content-Type", mime);
-      res.writeHead(200); res.end(data);
-    });
-    return;
+  const handled = await router.handle(req, res);
+  if (handled) return;
+
+  if (req.method === "GET" && staticFiles.serve(req, res)) return;
+
+  if (!res.headersSent) {
+    res.writeHead(404);
+    res.end("Not found");
   }
-
-  // Start a generation job — returns jobId immediately
-  if (req.method === "POST" && p === "/api/generate") {
-    if (!IDEOGRAM_KEY) {
-      res.writeHead(500);
-      res.end(JSON.stringify({error:"IDEOGRAM_API_KEY not configured"}));
-      return;
-    }
-    var body = "";
-    req.on("data", function(c){ body += c; });
-    req.on("end", function() {
-      var ev;
-      try { ev = JSON.parse(body); } catch(e) {
-        res.writeHead(400); res.end(JSON.stringify({error:"Invalid JSON"})); return;
-      }
-      var jobId = crypto.randomBytes(8).toString("hex");
-      jobs[jobId] = { status: "pending" };
-      res.setHeader("Content-Type","application/json");
-      res.writeHead(202);
-      res.end(JSON.stringify({ jobId: jobId }));
-      runIdeogramJob(jobId, ev);
-    });
-    return;
-  }
-
-  // Proxy external images to avoid canvas CORS tainting
-  if (req.method === "GET" && p === "/api/proxy") {
-    var imageUrl = url.parse(req.url, true).query.url;
-    if (!imageUrl) { res.writeHead(400); res.end("missing url"); return; }
-    https.get(imageUrl, function(imgRes) {
-      res.setHeader("Content-Type", imgRes.headers["content-type"] || "image/jpeg");
-      res.writeHead(200);
-      imgRes.pipe(res);
-    }).on("error", function(e) { res.writeHead(500); res.end(e.message); });
-    return;
-  }
-
-  // Poll job status
-  if (req.method === "GET" && /^\/api\/status\/[a-f0-9]+$/.test(p)) {
-    var jobId = p.split("/").pop();
-    var job = jobs[jobId];
-    if (!job) { res.writeHead(404); res.end(JSON.stringify({error:"Job not found"})); return; }
-    res.setHeader("Content-Type","application/json");
-    res.writeHead(200);
-    res.end(JSON.stringify(job));
-    if (job.status !== "pending") delete jobs[jobId];
-    return;
-  }
-
-  if (req.method === "POST" && p === "/api/convert") {
-    var chunks = [];
-    req.on("data", function(c){ chunks.push(c); });
-    req.on("end", function(){
-      var webmBuf = Buffer.concat(chunks);
-      console.log("convert request, size:", webmBuf.length);
-      if(webmBuf.length < 100){
-        res.writeHead(400); res.end("Empty or invalid input"); return;
-      }
-      var tmpId = crypto.randomBytes(8).toString("hex");
-      var inFile = os.tmpdir() + "/" + tmpId + ".webm";
-      var outFile = os.tmpdir() + "/" + tmpId + ".mp4";
-      fs.writeFile(inFile, webmBuf, function(err){
-        if(err){ console.error("write error:", err); res.writeHead(500); res.end("write failed"); return; }
-        execFile(ffmpegPath,["-y","-i",inFile,"-c:v","libx264","-preset","ultrafast","-crf","23","-movflags","+faststart","-an",outFile],
-          {maxBuffer: 100*1024*1024},
-          function(err2, stdout, stderr){
-            fs.unlink(inFile, function(){});
-            if(err2){
-              fs.unlink(outFile, function(){});
-              console.error("ffmpeg error:", err2.message, stderr.slice(0,500));
-              res.writeHead(500); res.end("ffmpeg failed: " + err2.message + " | " + stderr.slice(0,300)); return;
-            }
-            fs.readFile(outFile, function(err3, mp4Buf){
-              fs.unlink(outFile, function(){});
-              if(err3){ res.writeHead(500); res.end("read failed"); return; }
-              console.log("MP4 size:", mp4Buf.length);
-              res.setHeader("Content-Type","video/mp4");
-              res.setHeader("Content-Length", mp4Buf.length);
-              res.writeHead(200); res.end(mp4Buf);
-            });
-          }
-        );
-      });
-    });
-    return;
-  }
-
-  res.writeHead(404); res.end("Not found");
 });
 
 server.timeout = 120000;
-server.listen(PORT, function(){ console.log("NightKit on port "+PORT); });
+server.listen(PORT, () => {
+  jobs.startSweeper();
+  console.log(`NightKit on port ${PORT}`);
+});
+
+function shutdown() {
+  console.log("Shutting down…");
+  jobs.stopSweeper();
+  server.close(() => process.exit(0));
+}
+process.on("SIGTERM", shutdown);
+process.on("SIGINT",  shutdown);
