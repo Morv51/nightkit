@@ -160,8 +160,9 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
   box-shadow:0 14px 44px rgba(0,0,0,.55);
 }
 .logo-overlay{
-  position:absolute;right:5%;bottom:4%;
-  width:26%;aspect-ratio:2 / 1;
+  position:absolute;left:49%;top:13.5%;
+  transform:translate(-50%,-50%);
+  width:34%;height:11%;
   display:flex;align-items:center;justify-content:center;
   border:1.5px dashed rgba(255,255,255,.6);
   border-radius:7px;

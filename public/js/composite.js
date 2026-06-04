@@ -3,9 +3,10 @@
 // (proxied result, CORS-clean) and the logo (same-origin object URL) can both
 // be drawn without tainting the canvas, so the output stays downloadable.
 //
-// Keep LOGO_BOX in sync with the .logo-overlay rule in css/app.css.
+// Keep LOGO_BOX in sync with the .logo-overlay rule in css/app.css. The box
+// is centred on the template's "CLUB LOGO" area (top centre).
 
-const LOGO_BOX = { widthPct: 0.26, rightPct: 0.05, bottomPct: 0.04, aspect: 2, fit: 0.9 };
+const LOGO_BOX = { cxPct: 0.49, cyPct: 0.135, widthPct: 0.34, heightPct: 0.11, fit: 0.92 };
 
 function loadImage(src) {
   return new Promise((resolve, reject) => {
@@ -29,17 +30,17 @@ export async function compositeLogo(baseSrc, logoSrc) {
   ctx.drawImage(base, 0, 0, W, H);
 
   const boxW = W * LOGO_BOX.widthPct;
-  const boxH = boxW / LOGO_BOX.aspect;
+  const boxH = H * LOGO_BOX.heightPct;
   const scale = Math.min(
     (boxW * LOGO_BOX.fit) / logo.naturalWidth,
     (boxH * LOGO_BOX.fit) / logo.naturalHeight
   );
   const w = logo.naturalWidth * scale;
   const h = logo.naturalHeight * scale;
-  const boxX = W - W * LOGO_BOX.rightPct - boxW;
-  const boxY = H - H * LOGO_BOX.bottomPct - boxH;
+  const cx = W * LOGO_BOX.cxPct;
+  const cy = H * LOGO_BOX.cyPct;
 
-  ctx.drawImage(logo, boxX + (boxW - w) / 2, boxY + (boxH - h) / 2, w, h);
+  ctx.drawImage(logo, cx - w / 2, cy - h / 2, w, h);
 
   return canvas.toDataURL("image/png");
 }
