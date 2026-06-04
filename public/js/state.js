@@ -10,7 +10,7 @@ export const state = {
   historyUrls: [],
   videoPanelOpen: true,
   logoUrl: null,
-  currentTemplateId: "default",
+  currentTemplateId: null,
   currentCategory: "alle",
   templates: [],
 };

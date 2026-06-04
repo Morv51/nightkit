@@ -1,5 +1,6 @@
 import { initDom, els, $$, on } from "./dom.js";
-import { loadTemplates, renderTemplateGrid, filterCategory } from "./templates.js";
+import { state } from "./state.js";
+import { loadTemplates, renderTemplateGrid, filterCategory, selectTemplateById } from "./templates.js";
 import { updateLivePreview } from "./preview.js";
 import { generate, resetToPreview } from "./generator.js";
 import { download, copyImage } from "./download.js";
@@ -36,7 +37,8 @@ async function init() {
     console.error("Templates konnten nicht geladen werden:", e);
   }
   renderTemplateGrid("alle");
-  updateLivePreview();
+  if (state.templates.length) selectTemplateById(state.templates[0].id);
+  else updateLivePreview();
 }
 
 if (document.readyState === "loading") {
