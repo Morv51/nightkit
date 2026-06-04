@@ -24,7 +24,6 @@ function setLoading(loading) {
 
 function readEventForm() {
   return {
-    templateId: state.currentTemplateId,
     prefix:  val("fPrefix"),
     name:    val("fName"),
     day:     val("fDay"),

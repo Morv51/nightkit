@@ -29,13 +29,6 @@ export async function getJobStatus(jobId) {
   return res.json();
 }
 
-export async function getTemplates() {
-  const res = await fetch("/api/templates");
-  if (!res.ok) throw new Error("Templates konnten nicht geladen werden.");
-  const data = await res.json();
-  return data.templates || [];
-}
-
 export function proxyUrl(externalUrl) {
   return "/api/proxy?url=" + encodeURIComponent(externalUrl);
 }

@@ -1,18 +1,10 @@
-import { initDom, els, $$, on } from "./dom.js";
-import { state } from "./state.js";
-import { loadTemplates, renderTemplateGrid, filterCategory, selectTemplateById } from "./templates.js";
+import { initDom, els, on } from "./dom.js";
 import { updateLivePreview } from "./preview.js";
 import { generate, resetToPreview } from "./generator.js";
 import { download, copyImage } from "./download.js";
 import { renderStyleButtons, toggleVideo, previewVideo, exportVideo } from "./video.js";
 import { initLogo } from "./logo.js";
 import { initDatePicker } from "./datepicker.js";
-
-function bindCategoryTabs() {
-  for (const tab of $$(".cat-tab")) {
-    on(tab, "click", () => filterCategory(tab.dataset.cat, tab));
-  }
-}
 
 function bindActions() {
   on(els.genBtn, "click", generate);
@@ -25,22 +17,13 @@ function bindActions() {
   on(els.exportBtn, "click", exportVideo);
 }
 
-async function init() {
+function init() {
   initDom();
-  bindCategoryTabs();
   bindActions();
   renderStyleButtons();
   initLogo();
   initDatePicker();
-
-  try {
-    await loadTemplates();
-  } catch (e) {
-    console.error("Templates konnten nicht geladen werden:", e);
-  }
-  renderTemplateGrid("alle");
-  if (state.templates.length) selectTemplateById(state.templates[0].id);
-  else updateLivePreview();
+  updateLivePreview();
 }
 
 if (document.readyState === "loading") {

@@ -26,7 +26,6 @@ export const els = {};
 const IDS = [
   "ov", "ovTimer",
   "fPrefix", "fName", "fDatePicker", "fDay", "fDate", "fDj", "fTime", "fContact", "fLogo",
-  "tplGrid", "emptyCat", "catTabs",
   "panelBody", "statePreview", "stateResult",
   "previewImg", "resultImg",
   "logoPreview", "logoOverlay", "logoOverlayImg",

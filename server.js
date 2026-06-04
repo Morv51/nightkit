@@ -2,11 +2,11 @@
 
 const http = require("http");
 const path = require("path");
+const fs   = require("fs");
 
 const { buildPrompt }       = require("./lib/prompt");
 const ideogram              = require("./lib/ideogram");
 const jobs                  = require("./lib/jobs");
-const templates             = require("./lib/templates");
 const { createServer: createStatic } = require("./lib/static");
 const { proxy }             = require("./lib/proxy");
 const { webmToMp4 }         = require("./lib/convert");
@@ -15,6 +15,14 @@ const { readJson, readBody, sendJson, sendError, applyCors } = require("./lib/ht
 
 const PORT         = process.env.PORT || 3000;
 const IDEOGRAM_KEY = process.env.IDEOGRAM_API_KEY || "";
+
+// Single flyer template, read once and cached. Replacing it means redeploying.
+const TEMPLATE_PATH = path.join(__dirname, "templates", "birthday-pink.jpg");
+let templateBuffer = null;
+function getTemplateBuffer() {
+  if (!templateBuffer) templateBuffer = fs.readFileSync(TEMPLATE_PATH);
+  return templateBuffer;
+}
 
 const staticFiles = createStatic({
   roots: [
@@ -39,10 +47,6 @@ router.post("/api/generate", async (req, res) => {
     return sendError(res, e.status || 400, e.message);
   }
 
-  const templateId = ev.templateId || "default";
-  const template = templates.get(templateId);
-  if (!template) return sendError(res, 400, `Unknown template: ${templateId}`);
-
   if (!ev.name || !ev.date) {
     return sendError(res, 400, "Event name and date are required");
   }
@@ -50,7 +54,7 @@ router.post("/api/generate", async (req, res) => {
   const jobId = jobs.create();
   sendJson(res, 202, { jobId });
 
-  runIdeogramJob(jobId, ev, templateId).catch((e) => {
+  runIdeogramJob(jobId, ev).catch((e) => {
     console.error(`Job ${jobId} failed:`, e.message);
     jobs.set(jobId, { status: "error", error: e.message });
   });
@@ -66,10 +70,6 @@ router.get(/^\/api\/status\/([a-f0-9]+)$/, (req, res, params) => {
 
 router.get("/api/proxy", (req, res) => {
   proxy(req, res, req.urlQuery.url);
-});
-
-router.get("/api/templates", (_req, res) => {
-  sendJson(res, 200, { templates: templates.list() });
 });
 
 router.post("/api/convert", async (req, res) => {
@@ -89,13 +89,13 @@ router.post("/api/convert", async (req, res) => {
   }
 });
 
-async function runIdeogramJob(jobId, ev, templateId) {
+async function runIdeogramJob(jobId, ev) {
   const prompt = buildPrompt(ev);
-  console.log(`Job ${jobId} template=${templateId} prompt:\n${prompt}`);
+  console.log(`Job ${jobId} prompt:\n${prompt}`);
 
   let imgBuffer;
   try {
-    imgBuffer = templates.loadBuffer(templateId);
+    imgBuffer = getTemplateBuffer();
   } catch (e) {
     throw new Error("Template not found: " + e.message);
   }

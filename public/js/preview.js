@@ -1,14 +1,11 @@
 import { els } from "./dom.js";
-import { getCurrentTemplate } from "./templates.js";
 
-// Shows the selected template at its native resolution. The browser scales
-// the 1080×1920 source down via CSS object-fit:contain, so the preview stays
-// sharp and keeps its true 9:16 proportions — no canvas, no upscaling, no
-// stretched text overlay.
+// Single fixed template — the preview image just points at it. Kept as a
+// function so generator.js can restore the preview after viewing a result.
+const TEMPLATE_SRC = "/templates/birthday-pink.jpg";
+
 export function updateLivePreview() {
-  const t = getCurrentTemplate();
-  if (!t || !t.src || !els.previewImg) return;
-  if (els.previewImg.getAttribute("src") !== t.src) {
-    els.previewImg.src = t.src;
+  if (els.previewImg && els.previewImg.getAttribute("src") !== TEMPLATE_SRC) {
+    els.previewImg.src = TEMPLATE_SRC;
   }
 }
