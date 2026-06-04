@@ -6,6 +6,7 @@ import { generate, resetToPreview } from "./generator.js";
 import { download, copyImage } from "./download.js";
 import { renderStyleButtons, toggleVideo, previewVideo, exportVideo } from "./video.js";
 import { initLogo } from "./logo.js";
+import { initDatePicker } from "./datepicker.js";
 
 function bindCategoryTabs() {
   for (const tab of $$(".cat-tab")) {
@@ -30,6 +31,7 @@ async function init() {
   bindActions();
   renderStyleButtons();
   initLogo();
+  initDatePicker();
 
   try {
     await loadTemplates();

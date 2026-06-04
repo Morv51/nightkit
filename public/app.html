@@ -39,9 +39,10 @@
       <div class="field"><label>Subline</label><input id="fPrefix" placeholder="z. B. 5 Jahre"></div>
       <div class="field"><label>Headline</label><input id="fName" value="Black Friday"></div>
       <div class="row">
-        <div class="field"><label>Wochentag</label><input id="fDay" value="Samstag"></div>
-        <div class="field"><label>Datum</label><input id="fDate" value="30.06.2026"></div>
+        <div class="field"><label>Datum</label><input type="date" id="fDatePicker" value="2026-06-30"></div>
+        <div class="field"><label>Wochentag</label><input id="fDay" readonly placeholder="automatisch"></div>
       </div>
+      <input type="hidden" id="fDate">
       <div class="field">
         <label>DJs / Acts</label>
         <input id="fDj" value="Crazy Cutz, Marveles" placeholder="kommagetrennt">

@@ -68,6 +68,9 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 }
 .field input:focus{border-color:rgba(232,255,71,.4)}
 .field input::placeholder{color:rgba(245,245,240,.2)}
+.field input[type="date"]{color-scheme:dark}
+.field input[readonly]{background:rgba(255,255,255,.03);color:rgba(245,245,240,.6);cursor:default}
+.field input[readonly]:focus{border-color:rgba(255,255,255,.1)}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .row .field{margin-bottom:0}
 
