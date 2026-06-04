@@ -1,15 +1,9 @@
 import { initDom, els, $$, on } from "./dom.js";
 import { loadTemplates, renderTemplateGrid, filterCategory } from "./templates.js";
-import { updateLivePreview, scheduleLiveUpdate } from "./preview.js";
+import { updateLivePreview } from "./preview.js";
 import { generate, resetToPreview } from "./generator.js";
 import { download, copyImage } from "./download.js";
 import { renderStyleButtons, toggleVideo, previewVideo, exportVideo } from "./video.js";
-
-const LIVE_FIELDS = ["fName", "fGenre", "fDay", "fDate", "fDj"];
-
-function bindInputs() {
-  for (const id of LIVE_FIELDS) on(document.getElementById(id), "input", scheduleLiveUpdate);
-}
 
 function bindCategoryTabs() {
   for (const tab of $$(".cat-tab")) {
@@ -30,7 +24,6 @@ function bindActions() {
 
 async function init() {
   initDom();
-  bindInputs();
   bindCategoryTabs();
   bindActions();
   renderStyleButtons();

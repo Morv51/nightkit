@@ -44,7 +44,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .topbar-back:hover{color:var(--text)}
 
 /* ── 3-COL APP ── */
-.app{display:grid;grid-template-columns:260px 1fr 300px;height:calc(100vh - var(--topbar));overflow:hidden}
+.app{display:grid;grid-template-columns:260px 1fr minmax(340px,440px);height:calc(100vh - var(--topbar));overflow:hidden}
 
 /* ── SIDEBAR ── */
 .sidebar{background:var(--surface);border-right:var(--border-s);display:flex;flex-direction:column;overflow:hidden}
@@ -121,17 +121,19 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .panel-body::-webkit-scrollbar{width:3px}
 .panel-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.06);border-radius:2px}
 
-/* Preview state */
+/* Preview state — native, sharp 9:16 flyer filling the column height */
+#statePreview{flex:1;display:flex;min-height:0}
 .preview-wrap{
-  flex:1;background:var(--bg);border-radius:8px;
-  border:0.5px solid var(--border);
-  display:flex;flex-direction:column;align-items:center;
-  justify-content:center;padding:16px;gap:10px;
-  min-height:200px;
+  flex:1;position:relative;min-height:0;
 }
-.preview-canvas-wrap{position:relative;width:100%;max-width:200px}
-.preview-canvas-wrap canvas{width:100%;height:auto;border-radius:6px;display:block}
-.preview-lbl{font-size:11px;color:rgba(245,245,240,.25);letter-spacing:.05em}
+.preview-img{
+  position:absolute;inset:0;margin:auto;
+  width:auto;height:auto;
+  max-width:calc(100% - 16px);max-height:calc(100% - 16px);
+  object-fit:contain;
+  border-radius:10px;
+  box-shadow:0 14px 44px rgba(0,0,0,.55);
+}
 
 /* Result state */
 .result-img-wrap{width:100%;max-width:220px;margin:0 auto;border-radius:8px;overflow:hidden;border:0.5px solid var(--border)}
@@ -197,4 +199,9 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
   .sidebar{border-right:none;border-bottom:var(--border-s)}
   .center{min-height:300px}
   .panel{border-left:none;border-top:var(--border-s)}
+  /* Stacked layout has no fixed height — switch the preview back to normal
+     flow so the absolutely-positioned flyer doesn't collapse to zero. */
+  #statePreview{display:block}
+  .preview-wrap{position:static}
+  .preview-img{position:static;margin:12px auto;max-height:80vh}
 }

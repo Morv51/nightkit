@@ -28,7 +28,7 @@ const IDS = [
   "fPrefix", "fName", "fGenre", "fDay", "fDate", "fDj", "fTime", "fEntry", "fContact",
   "tplGrid", "emptyCat", "catTabs",
   "panelBody", "statePreview", "stateResult",
-  "previewCanvas", "resultImg",
+  "previewImg", "resultImg",
   "copyBtn", "histWrap", "histRow",
   "videoChevron", "videoBody", "videoCanvas", "videoStatus", "previewWrap", "exportBtn",
   "genBtn", "genTxt", "errBox",

@@ -8,7 +8,6 @@ export const state = {
   currentVideoStyle: "horror",
   animFrameId: null,
   historyUrls: [],
-  liveUpdateTimer: null,
   videoPanelOpen: true,
   currentTemplateId: "default",
   currentCategory: "alle",
