@@ -3,6 +3,7 @@ import { els, val } from "./dom.js";
 import { postGenerate, getJobStatus, proxyUrl } from "./api.js";
 import { showErr, clearErr } from "./errors.js";
 import { addToHistory } from "./history.js";
+import { compositeLogo } from "./composite.js";
 
 const POLL_INTERVAL_MS = 2000;
 const MAX_POLL_MS = 180 * 1000;
@@ -31,19 +32,33 @@ function readEventForm() {
     dj:      val("fDj"),
     contact: val("fContact"),
     time:    val("fTime"),
+    hasLogo: !!state.logoUrl,
   };
 }
 
-function showResult(proxiedUrl) {
-  state.last = proxiedUrl;
+async function showResult(proxiedUrl) {
+  // Burn the uploaded logo into the result so it shows in the flyer and in
+  // every export (download, copy, video). Falls back to the plain image if
+  // compositing fails for any reason.
+  let displayUrl = proxiedUrl;
+  if (state.logoUrl) {
+    try {
+      displayUrl = await compositeLogo(proxiedUrl, state.logoUrl);
+    } catch (e) {
+      console.error("Logo konnte nicht einkomponiert werden:", e);
+      displayUrl = proxiedUrl;
+    }
+  }
+
+  state.last = displayUrl;
   state.lastImg = new Image();
   state.lastImg.crossOrigin = "anonymous";
-  state.lastImg.src = proxiedUrl;
+  state.lastImg.src = displayUrl;
 
-  els.resultImg.src = proxiedUrl;
+  els.resultImg.src = displayUrl;
   els.statePreview.style.display = "none";
   els.stateResult.style.display = "block";
-  addToHistory(proxiedUrl);
+  addToHistory(displayUrl);
 }
 
 async function pollUntilDone(jobId) {
@@ -75,7 +90,7 @@ export async function generate() {
   try {
     const jobId = await postGenerate(readEventForm());
     const proxied = await pollUntilDone(jobId);
-    showResult(proxied);
+    await showResult(proxied);
   } catch (e) {
     showErr(e.message || "Fehler.");
   } finally {
