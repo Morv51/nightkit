@@ -4,6 +4,7 @@ import { updateLivePreview } from "./preview.js";
 import { generate, resetToPreview } from "./generator.js";
 import { download, copyImage } from "./download.js";
 import { renderStyleButtons, toggleVideo, previewVideo, exportVideo } from "./video.js";
+import { initLogo } from "./logo.js";
 
 function bindCategoryTabs() {
   for (const tab of $$(".cat-tab")) {
@@ -27,6 +28,7 @@ async function init() {
   bindCategoryTabs();
   bindActions();
   renderStyleButtons();
+  initLogo();
 
   try {
     await loadTemplates();

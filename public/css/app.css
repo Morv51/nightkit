@@ -70,6 +70,24 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .row{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .row .field{margin-bottom:0}
 
+/* File input (Logo) */
+.field input.file-input{
+  height:auto;padding:7px 8px;font-size:12px;line-height:1.2;
+  color:rgba(245,245,240,.6);cursor:pointer;
+}
+.field input.file-input::file-selector-button{
+  margin-right:9px;padding:4px 10px;
+  background:rgba(232,255,71,.12);
+  border:0.5px solid rgba(232,255,71,.4);
+  border-radius:5px;color:var(--accent);
+  font-family:inherit;font-size:11px;font-weight:500;cursor:pointer;
+}
+.field input.file-input::file-selector-button:hover{background:rgba(232,255,71,.2)}
+.logo-preview{
+  display:none;margin-top:8px;max-height:80px;width:auto;
+  border-radius:6px;border:0.5px solid rgba(255,255,255,.1);
+}
+
 /* ── CENTER ── */
 .center{background:var(--bg);display:flex;flex-direction:column;overflow:hidden}
 .center-head{padding:14px 16px 0;flex-shrink:0}
@@ -121,19 +139,43 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .panel-body::-webkit-scrollbar{width:3px}
 .panel-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.06);border-radius:2px}
 
-/* Preview state — native, sharp 9:16 flyer filling the column height */
+/* Preview state — sharp 9:16 flyer with logo overlay, centered in the column.
+   The stage shrink-wraps the image so the overlay can anchor to the flyer's
+   real corner; the image is height-bounded in viewport units (reliable inside
+   the flex column, unlike a percentage max-height). */
 #statePreview{flex:1;display:flex;min-height:0}
 .preview-wrap{
-  flex:1;position:relative;min-height:0;
+  flex:1;display:flex;align-items:center;justify-content:center;min-height:0;
+}
+.preview-stage{
+  position:relative;display:inline-block;line-height:0;
+  max-width:100%;
 }
 .preview-img{
-  position:absolute;inset:0;margin:auto;
-  width:auto;height:auto;
-  max-width:calc(100% - 16px);max-height:calc(100% - 16px);
+  display:block;width:auto;height:auto;
+  max-width:100%;max-height:calc(100vh - 156px);
   object-fit:contain;
   border-radius:10px;
   box-shadow:0 14px 44px rgba(0,0,0,.55);
 }
+.logo-overlay{
+  position:absolute;right:5%;bottom:4%;
+  width:26%;aspect-ratio:2 / 1;
+  display:flex;align-items:center;justify-content:center;
+  border:1.5px dashed rgba(255,255,255,.6);
+  border-radius:7px;
+  background:rgba(0,0,0,.32);
+  backdrop-filter:blur(1px);
+  overflow:hidden;pointer-events:none;
+}
+.logo-overlay-text{
+  font-size:10px;letter-spacing:.18em;font-weight:500;line-height:1;
+  color:rgba(255,255,255,.75);
+}
+.logo-overlay-img{display:none;max-width:90%;max-height:90%;object-fit:contain}
+.logo-overlay.has-logo{border-color:transparent;background:transparent;backdrop-filter:none}
+.logo-overlay.has-logo .logo-overlay-text{display:none}
+.logo-overlay.has-logo .logo-overlay-img{display:block}
 
 /* Result state */
 .result-img-wrap{width:100%;max-width:220px;margin:0 auto;border-radius:8px;overflow:hidden;border:0.5px solid var(--border)}
@@ -202,6 +244,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
   /* Stacked layout has no fixed height — switch the preview back to normal
      flow so the absolutely-positioned flyer doesn't collapse to zero. */
   #statePreview{display:block}
-  .preview-wrap{position:static}
-  .preview-img{position:static;margin:12px auto;max-height:80vh}
+  .preview-wrap{display:block;text-align:center}
+  .preview-stage{margin:12px 0}
+  .preview-img{max-height:80vh}
 }

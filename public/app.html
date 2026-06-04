@@ -36,9 +36,8 @@
     <div class="sidebar-scroll">
 
       <div class="sec-label">Event</div>
-      <div class="field"><label>Prefix</label><input id="fPrefix" placeholder="z. B. 5 Jahre"></div>
-      <div class="field"><label>Event-Name</label><input id="fName" value="Black Friday"></div>
-      <div class="field"><label>Edition / Banner</label><input id="fGenre" value="Halloween Edition"></div>
+      <div class="field"><label>Subline</label><input id="fPrefix" placeholder="z. B. 5 Jahre"></div>
+      <div class="field"><label>Headline</label><input id="fName" value="Black Friday"></div>
       <div class="row">
         <div class="field"><label>Wochentag</label><input id="fDay" value="Samstag"></div>
         <div class="field"><label>Datum</label><input id="fDate" value="30.06.2026"></div>
@@ -47,11 +46,13 @@
 
       <div class="sec-divider"></div>
       <div class="sec-label">Details</div>
-      <div class="row">
-        <div class="field"><label>Uhrzeit</label><input id="fTime" value="23:00"></div>
-        <div class="field"><label>Eintritt</label><input id="fEntry" value="15€"></div>
-      </div>
+      <div class="field"><label>Uhrzeit</label><input id="fTime" value="23:00"></div>
       <div class="field"><label>Website</label><input id="fContact" value="www.crazy-cutz.de"></div>
+      <div class="field">
+        <label>Logo</label>
+        <input type="file" id="fLogo" class="file-input" accept="image/*">
+        <img id="logoPreview" class="logo-preview" alt="Logo-Vorschau">
+      </div>
 
     </div>
   </aside>
@@ -83,7 +84,13 @@
       <!-- STATE: Preview (default) -->
       <div id="statePreview">
         <div class="preview-wrap">
-          <img id="previewImg" class="preview-img" alt="Template-Vorschau">
+          <div class="preview-stage">
+            <img id="previewImg" class="preview-img" alt="Template-Vorschau">
+            <div class="logo-overlay" id="logoOverlay">
+              <span class="logo-overlay-text">LOGO</span>
+              <img id="logoOverlayImg" class="logo-overlay-img" alt="Logo">
+            </div>
+          </div>
         </div>
       </div>
 

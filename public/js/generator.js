@@ -26,13 +26,11 @@ function readEventForm() {
     templateId: state.currentTemplateId,
     prefix:  val("fPrefix"),
     name:    val("fName"),
-    genre:   val("fGenre"),
     day:     val("fDay"),
     date:    val("fDate"),
     dj:      val("fDj"),
     contact: val("fContact"),
     time:    val("fTime"),
-    entry:   val("fEntry"),
   };
 }
 

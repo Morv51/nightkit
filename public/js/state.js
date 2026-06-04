@@ -9,6 +9,7 @@ export const state = {
   animFrameId: null,
   historyUrls: [],
   videoPanelOpen: true,
+  logoUrl: null,
   currentTemplateId: "default",
   currentCategory: "alle",
   templates: [],
