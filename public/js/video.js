@@ -2,9 +2,29 @@ import { state } from "./state.js";
 import { els, val } from "./dom.js";
 import { STYLES, getStyle } from "./videoStyles.js";
 
-const PREVIEW_W = 180, PREVIEW_H = 320;
-const EXPORT_W = 1080, EXPORT_H = 1920;
 const EXPORT_FPS = 30, EXPORT_SECS = 10;
+const MAX_W = 1080, MAX_H = 1920; // H.264 level cap
+
+// Exact flyer pixel size, capped to the encoder limit and rounded to even
+// (H.264 requires even dimensions). Falls back to 1080x1920 if not loaded yet.
+function flyerSize() {
+  const img = state.lastImg;
+  let W = (img && img.naturalWidth) || MAX_W;
+  let H = (img && img.naturalHeight) || MAX_H;
+  if (W > MAX_W || H > MAX_H) {
+    const r = Math.min(MAX_W / W, MAX_H / H);
+    W = Math.round(W * r);
+    H = Math.round(H * r);
+  }
+  return { W: W - (W % 2), H: H - (H % 2) };
+}
+
+// Small live-preview size with the same aspect ratio as the flyer.
+function previewSize() {
+  const { W, H } = flyerSize();
+  const ph = Math.min(320, H);
+  return { W: Math.round((ph * W) / H), H: ph };
+}
 
 export function renderStyleButtons() {
   const row = document.querySelector(".style-row");
@@ -40,9 +60,10 @@ export function toggleVideo() {
 export function previewVideo() {
   if (state.animFrameId) cancelAnimationFrame(state.animFrameId);
   els.previewWrap.style.display = "flex";
+  const { W, H } = previewSize();
   const canvas = els.videoCanvas;
-  canvas.width = PREVIEW_W;
-  canvas.height = PREVIEW_H;
+  canvas.width = W;
+  canvas.height = H;
   const ctx = canvas.getContext("2d");
   const dur = 10000;
   const startT = Date.now();
@@ -50,7 +71,7 @@ export function previewVideo() {
   function frame() {
     const t = ((Date.now() - startT) % dur) / dur;
     const style = getStyle(state.currentVideoStyle);
-    style.draw(ctx, PREVIEW_W, PREVIEW_H, t, state.lastImg);
+    style.draw(ctx, W, H, t, state.lastImg);
     state.animFrameId = requestAnimationFrame(frame);
   }
   frame();
@@ -77,9 +98,10 @@ export async function exportVideo() {
   const btn = els.exportBtn;
   btn.disabled = true;
 
+  const { W, H } = flyerSize();
   const canvas = els.videoCanvas;
-  canvas.width = EXPORT_W;
-  canvas.height = EXPORT_H;
+  canvas.width = W;
+  canvas.height = H;
   els.previewWrap.style.display = "flex";
   const ctx = canvas.getContext("2d");
 
@@ -87,7 +109,7 @@ export async function exportVideo() {
     const target = new Mp4Muxer.ArrayBufferTarget();
     const muxer = new Mp4Muxer.Muxer({
       target,
-      video: { codec: "avc", width: EXPORT_W, height: EXPORT_H },
+      video: { codec: "avc", width: W, height: H },
       fastStart: "in-memory",
     });
 
@@ -98,7 +120,7 @@ export async function exportVideo() {
     });
     encoder.configure({
       codec: "avc1.640029",
-      width: EXPORT_W, height: EXPORT_H,
+      width: W, height: H,
       bitrate: 4000000, framerate: EXPORT_FPS,
     });
 
@@ -107,7 +129,7 @@ export async function exportVideo() {
 
     for (let i = 0; i < totalFrames; i++) {
       if (encErr) throw encErr;
-      style.draw(ctx, EXPORT_W, EXPORT_H, i / totalFrames, state.lastImg);
+      style.draw(ctx, W, H, i / totalFrames, state.lastImg);
       const frame = new VideoFrame(canvas, { timestamp: Math.round(i / EXPORT_FPS * 1000000) });
       encoder.encode(frame, { keyFrame: i % EXPORT_FPS === 0 });
       frame.close();

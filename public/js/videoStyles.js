@@ -1,202 +1,223 @@
-// Video effect registry. Adding a style: append an entry. The button
-// row, the preview, and the export all read from this list — no other
-// file needs to change.
+// Video effect registry. Every effect is a `draw(ctx, W, H, t, img)` function
+// where t goes 0→1 over exactly 10s / 300 frames. Effects are template-agnostic
+// and resolution-independent: pixel sizes are scaled by `s = H / 1280` so they
+// look the same whether rendered into the small preview or the full-size export.
+// The base image is always drawn at the exact canvas size (0,0,W,H) so the
+// flyer fills the frame with no padding or visible background.
+//
+// Adding a style: append to STYLES. The button row, preview and export all read
+// from it — no other file changes.
 
-function easeInOut(t) { return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; }
+// ── shared helpers ───────────────────────────────────────────────
+const lerp = (a, b, x) => a + (b - a) * x;
+const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
 
-function drawHorror(ctx, W, H, t, img) {
-  const breathe = 1 + 0.008 * Math.sin(t * Math.PI * 2);
-  ctx.save();
-  ctx.translate(W / 2, H / 2); ctx.scale(breathe, breathe); ctx.translate(-W / 2, -H / 2);
-  if (img && img.complete) ctx.drawImage(img, 0, 0, W, H);
-  else { ctx.fillStyle = "#1a0000"; ctx.fillRect(0, 0, W, H); }
-  ctx.restore();
-
-  for (let i = 0; i < H; i += 4) {
-    ctx.fillStyle = "rgba(0,0,0,0.18)";
-    ctx.fillRect(0, i, W, 1);
-  }
-
-  const aberr = 3 + 8 * Math.pow(Math.sin(t * Math.PI * 3), 8);
-  if (img && img.complete) {
-    ctx.globalCompositeOperation = "screen";
-    ctx.globalAlpha = 0.12;
-    ctx.drawImage(img, -aberr, 0, W, H);
-    ctx.globalAlpha = 0.08;
-    ctx.drawImage(img, aberr, 0, W, H);
-    ctx.globalCompositeOperation = "source-over";
-    ctx.globalAlpha = 1;
-  }
-
-  const glitchPhases = [0.15, 0.42, 0.68, 0.87];
-  for (const phase of glitchPhases) {
-    const dt = ((t - phase + 1) % 1);
-    if (dt < 0.06) {
-      const intensity = 1 - dt / 0.06;
-      const numStripes = Math.floor(intensity * 12) + 3;
-      for (let g = 0; g < numStripes; g++) {
-        const gy = (Math.random() * H) | 0;
-        const gh = (Math.random() * 20 + 2) | 0;
-        const gx = (Math.random() * 40 - 20) | 0;
-        if (img && img.complete) ctx.drawImage(img, gx, gy, W, gh, 0, gy, W, gh);
-        ctx.fillStyle = "rgba(" + (Math.random() > 0.5 ? "200,0,0" : "0,0,200") + ",0.3)";
-        ctx.fillRect(0, gy, W, gh);
-      }
-      if (dt < 0.015) {
-        ctx.fillStyle = "rgba(180,0,0," + (0.7 * (1 - dt / 0.015)) + ")";
-        ctx.fillRect(0, 0, W, H);
-      }
-    }
-  }
-
-  const numDrips = 5;
-  for (let d = 0; d < numDrips; d++) {
-    const dPhase = (d / numDrips);
-    const dT = ((t + dPhase) % 1);
-    const dX = W * (0.1 + d * 0.18 + Math.sin(d * 3) * 0.05);
-    const dLen = H * 0.3 * easeInOut(Math.min(1, dT * 3));
-    const dY = H * (0.02 + (d % 3) * 0.05);
-    const grad = ctx.createLinearGradient(dX, dY, dX, dY + dLen);
-    grad.addColorStop(0,   "rgba(160,0,0,0.9)");
-    grad.addColorStop(0.7, "rgba(120,0,0,0.6)");
-    grad.addColorStop(1,   "rgba(80,0,0,0)");
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.ellipse(dX, dY + dLen * 0.5, 3, dLen * 0.5, 0, 0, Math.PI * 2);
-    ctx.fill();
-    if (dLen > 10) {
-      ctx.beginPath();
-      ctx.arc(dX, dY + dLen, 5, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(140,0,0,0.85)";
-      ctx.fill();
-    }
-  }
-
-  const vig = ctx.createRadialGradient(W / 2, H / 2, H * 0.2, W / 2, H / 2, H * 0.8);
-  vig.addColorStop(0, "rgba(0,0,0,0)");
-  vig.addColorStop(1, "rgba(0,0,0,0.55)");
-  ctx.fillStyle = vig;
+function fillBlack(ctx, W, H) {
+  ctx.fillStyle = "#000";
   ctx.fillRect(0, 0, W, H);
 }
 
-function drawPulse(ctx, W, H, t, img) {
-  const zoom = 1 + 0.03 * Math.sin(t * Math.PI * 2);
+// White-ish pixel noise (VHS / film grain). `density` is the fraction of pixels
+// touched; scales with area so the preview stays cheap.
+function drawNoise(ctx, W, H, maxAlpha, density = 0.0012) {
+  const count = Math.floor(W * H * density);
   ctx.save();
-  ctx.translate(W / 2, H / 2); ctx.scale(zoom, zoom); ctx.translate(-W / 2, -H / 2);
-  if (img && img.complete) ctx.drawImage(img, 0, 0, W, H);
-  else { ctx.fillStyle = "#08080f"; ctx.fillRect(0, 0, W, H); }
-  ctx.restore();
-
-  const beamT = (t * 2) % 1;
-  const beamX = W * (beamT - 0.1);
-  const beamGrad = ctx.createLinearGradient(beamX - W * 0.08, 0, beamX + W * 0.08, 0);
-  beamGrad.addColorStop(0,   "rgba(200,160,255,0)");
-  beamGrad.addColorStop(0.5, "rgba(200,160,255,0.18)");
-  beamGrad.addColorStop(1,   "rgba(200,160,255,0)");
-  ctx.fillStyle = beamGrad;
-  ctx.fillRect(0, 0, W, H);
-
-  const streakY = H * 0.35 + H * 0.1 * Math.sin(t * Math.PI * 4);
-  const streakGrad = ctx.createLinearGradient(0, streakY - 2, 0, streakY + 2);
-  streakGrad.addColorStop(0,   "rgba(180,120,255,0)");
-  streakGrad.addColorStop(0.5, "rgba(180,120,255,0.35)");
-  streakGrad.addColorStop(1,   "rgba(180,120,255,0)");
-  ctx.fillStyle = streakGrad;
-  ctx.fillRect(0, streakY - 2, W, 4);
-
-  const numP = 30;
-  for (let p = 0; p < numP; p++) {
-    const pPhase = p / numP;
-    const pT = ((t + pPhase) % 1);
-    const px = W * (0.1 + Math.sin(pPhase * 17) * 0.8);
-    const py = H * (1 - pT);
-    const pAlpha = Math.sin(pT * Math.PI) * 0.7;
-    const pSize = 1.5 + Math.sin(pPhase * 7) * 1.5;
-    ctx.beginPath();
-    ctx.arc(px, py, pSize, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(180,120,255," + pAlpha + ")";
-    ctx.fill();
+  ctx.fillStyle = "#fff";
+  for (let i = 0; i < count; i++) {
+    ctx.globalAlpha = Math.random() * maxAlpha;
+    ctx.fillRect((Math.random() * W) | 0, (Math.random() * H) | 0, 1, 1);
   }
-
-  const pulseAlpha = 0.08 + 0.07 * Math.sin(t * Math.PI * 6);
-  ctx.fillStyle = "rgba(100,50,220," + pulseAlpha + ")";
-  ctx.fillRect(0, 0, W, H);
-
-  const vigAlpha = 0.3 + 0.15 * Math.sin(t * Math.PI * 2);
-  const vig2 = ctx.createRadialGradient(W / 2, H / 2, H * 0.15, W / 2, H / 2, H * 0.75);
-  vig2.addColorStop(0, "rgba(0,0,0,0)");
-  vig2.addColorStop(1, "rgba(0,0,20," + vigAlpha + ")");
-  ctx.fillStyle = vig2;
-  ctx.fillRect(0, 0, W, H);
-
-  const edgeGlow = 0.15 + 0.12 * Math.sin(t * Math.PI * 4);
-  ctx.strokeStyle = "rgba(150,80,255," + edgeGlow + ")";
-  ctx.lineWidth = 8;
-  ctx.strokeRect(0, 0, W, H);
+  ctx.restore();
 }
 
+// Per-image RGB channel canvases for the glitch split, cached so the export
+// builds them once and reuses them across all 300 frames.
+const channelCache = new WeakMap();
+function getChannels(img, W, H) {
+  const cached = channelCache.get(img);
+  if (cached && cached.W === W && cached.H === H) return cached;
+  const make = (color) => {
+    const c = document.createElement("canvas");
+    c.width = W;
+    c.height = H;
+    const x = c.getContext("2d");
+    x.drawImage(img, 0, 0, W, H);
+    x.globalCompositeOperation = "multiply"; // keep only this colour channel
+    x.fillStyle = color;
+    x.fillRect(0, 0, W, H);
+    return c;
+  };
+  const entry = { W, H, r: make("#ff0000"), g: make("#00ff00"), b: make("#0000ff") };
+  channelCache.set(img, entry);
+  return entry;
+}
+
+// ── GLITCH (template-agnostic, hard club look) ───────────────────
+function drawGlitch(ctx, W, H, t, img) {
+  const s = H / 1280;
+  const frame = Math.round(t * 300);
+  ctx.clearRect(0, 0, W, H);
+  if (!img || !img.complete) { fillBlack(ctx, W, H); return; }
+
+  // intensity curve: 0–2s build up, 2–8s full, 8–10s ease out
+  const intensity = clamp01(t < 0.2 ? t / 0.2 : t > 0.8 ? (1 - t) / 0.2 : 1);
+
+  // brief screen shake (2–3 frames at a time)
+  let shx = 0, shy = 0;
+  if (intensity > 0.3 && frame % 24 < 3) {
+    shx = (Math.random() - 0.5) * 10 * s * intensity;
+    shy = (Math.random() - 0.5) * 10 * s * intensity;
+  }
+
+  // RGB split — three channel copies, slight horizontal offset, opacity ~0.85.
+  // Overscan by M so neither the split nor the shake ever reveals a background.
+  const off = (2 + 6 * intensity) * s;
+  const M = 14 * s;
+  const ch = getChannels(img, W, H);
+  const dw = W + 2 * M, dh = H + 2 * M, bx = -M + shx, by = -M + shy;
+
+  fillBlack(ctx, W, H);
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  ctx.globalAlpha = 0.85;
+  ctx.drawImage(ch.r, bx - off, by, dw, dh);
+  ctx.drawImage(ch.g, bx,        by, dw, dh);
+  ctx.drawImage(ch.b, bx + off,  by, dw, dh);
+  ctx.restore();
+
+  // scanlines: 2px line every 4px
+  const step = Math.max(2, Math.round(4 * s));
+  const lh = Math.max(1, Math.round(2 * s));
+  ctx.fillStyle = "rgba(0,0,0,0.15)";
+  for (let y = 0; y < H; y += step) ctx.fillRect(0, y, W, lh);
+
+  // random glitch slices ~every 4 frames: displace a horizontal strip
+  if (intensity > 0.2 && frame % 4 === 0) {
+    const slices = 1 + Math.floor(Math.random() * 2);
+    for (let k = 0; k < slices; k++) {
+      const sh = (10 + Math.random() * 30) * s;
+      const sy = Math.random() * (H - sh);
+      const dir = Math.random() < 0.5 ? -1 : 1;
+      const dx = dir * (10 + Math.random() * 20) * s * intensity;
+      ctx.drawImage(ctx.canvas, 0, sy, W, sh, dx, sy, W, sh);
+    }
+  }
+
+  // VHS noise
+  drawNoise(ctx, W, H, 0.05 + 0.1 * intensity);
+}
+
+// ── NEON PULSE (club atmosphere, always fullscreen) ──────────────
+function drawNeon(ctx, W, H, t, img) {
+  const s = H / 1280;
+  const frame = Math.round(t * 300);
+  ctx.clearRect(0, 0, W, H);
+  if (!img || !img.complete) { ctx.fillStyle = "#08080f"; ctx.fillRect(0, 0, W, H); return; }
+
+  // Ken Burns — scale stays in [1.05, 1.1], NEVER below 1.0, so no edge shows.
+  const scale = 1.05 + 0.05 * Math.sin(t * Math.PI); // 1.05 → 1.1 → 1.05
+  const dw = W * scale, dh = H * scale;
+  const maxPanX = (dw - W) / 2, maxPanY = (dh - H) / 2;
+  const panX = Math.sin(t * Math.PI * 2 * 0.35) * maxPanX * 0.8;
+  const panY = Math.cos(t * Math.PI * 2 * 0.25) * maxPanY * 0.8;
+  const dx = (W - dw) / 2 + panX, dy = (H - dh) / 2 + panY;
+  ctx.drawImage(img, dx, dy, dw, dh);
+
+  // soft bloom
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  ctx.globalAlpha = 0.22;
+  ctx.filter = `blur(${10 * s}px)`;
+  ctx.drawImage(img, dx, dy, dw, dh);
+  ctx.restore();
+
+  // neon colour wash, pulsing pink ↔ cyan
+  const mix = 0.5 + 0.5 * Math.sin(t * Math.PI * 2 * 3);
+  const r = Math.round(lerp(255, 0, mix));
+  const g = Math.round(lerp(0, 255, mix));
+  const b = Math.round(lerp(170, 255, mix));
+  ctx.save();
+  ctx.globalCompositeOperation = "overlay";
+  ctx.globalAlpha = 0.2;
+  ctx.fillStyle = `rgb(${r},${g},${b})`;
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+
+  // strobe beat: a quick flash every 0.5s (15 frames), 3-frame envelope
+  const ph = frame % 15;
+  if (ph < 3) {
+    const a = [0.12, 0.3, 0.12][ph];
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.fillStyle = `rgba(255,255,255,${a})`;
+    ctx.fillRect(0, 0, W, H);
+    ctx.restore();
+  }
+
+  // vignette
+  const vg = ctx.createRadialGradient(W / 2, H / 2, H * 0.2, W / 2, H / 2, H * 0.62);
+  vg.addColorStop(0, "rgba(0,0,0,0)");
+  vg.addColorStop(1, "rgba(0,0,0,0.55)");
+  ctx.fillStyle = vg;
+  ctx.fillRect(0, 0, W, H);
+}
+
+// ── SMOOTH REVEAL (cinematic, dramatic) ──────────────────────────
 function drawReveal(ctx, W, H, t, img) {
-  const kbScale = 1.04 + 0.04 * Math.sin(t * Math.PI);
-  const kbX = W * 0.02 * Math.sin(t * Math.PI * 0.7);
-  const kbY = H * 0.02 * Math.sin(t * Math.PI * 0.5);
-  ctx.save();
-  ctx.translate(W / 2 + kbX, H / 2 + kbY); ctx.scale(kbScale, kbScale); ctx.translate(-W / 2, -H / 2);
-  if (img && img.complete) ctx.drawImage(img, 0, 0, W, H);
-  else { ctx.fillStyle = "#08080f"; ctx.fillRect(0, 0, W, H); }
-  ctx.restore();
+  const s = H / 1280;
+  ctx.clearRect(0, 0, W, H);
+  if (!img || !img.complete) { fillBlack(ctx, W, H); return; }
 
-  const llT = ((t * 0.7) % 1);
-  const llAlpha = Math.sin(llT * Math.PI) * 0.25;
-  const ll = ctx.createRadialGradient(0, 0, 0, W * 0.3, H * 0.2, W * 0.7);
-  ll.addColorStop(0,   "rgba(255,220,150," + llAlpha + ")");
-  ll.addColorStop(0.4, "rgba(255,180,80,"  + (llAlpha * 0.4) + ")");
-  ll.addColorStop(1,   "rgba(255,100,0,0)");
-  ctx.fillStyle = ll;
-  ctx.fillRect(0, 0, W, H);
-
-  const ll2T = ((t * 0.7 + 0.5) % 1);
-  const ll2Alpha = Math.sin(ll2T * Math.PI) * 0.2;
-  const ll2 = ctx.createRadialGradient(W, H, 0, W * 0.7, H * 0.8, W * 0.7);
-  ll2.addColorStop(0, "rgba(200,100,255," + ll2Alpha + ")");
-  ll2.addColorStop(1, "rgba(200,100,255,0)");
-  ctx.fillStyle = ll2;
-  ctx.fillRect(0, 0, W, H);
-
-  const flareT = ((t + 0.3) % 1);
-  const flareY = H * (0.3 + 0.1 * Math.sin(t * Math.PI));
-  const flareAlpha = Math.sin(flareT * Math.PI) * 0.12;
-  const flareGrad = ctx.createLinearGradient(0, flareY, W, flareY);
-  flareGrad.addColorStop(0,   "rgba(255,220,150,0)");
-  flareGrad.addColorStop(0.5, "rgba(255,220,150," + flareAlpha + ")");
-  flareGrad.addColorStop(1,   "rgba(255,220,150,0)");
-  ctx.fillStyle = flareGrad;
-  ctx.fillRect(0, flareY - 1, W, 2);
-
-  for (let gr = 0; gr < 800; gr++) {
-    const gx = (Math.random() * W) | 0;
-    const gy = (Math.random() * H) | 0;
-    ctx.fillStyle = "rgba(255,255,255," + (Math.random() * 0.04) + ")";
-    ctx.fillRect(gx, gy, 1, 1);
+  if (t < 0.2) {
+    // Phase 1 (0–2s): light streak wipes top→bottom, revealing the image behind.
+    const p = t / 0.2;
+    const lineY = p * H;
+    ctx.drawImage(img, 0, 0, W, H);
+    fillBlack2(ctx, 0, lineY, W, H - lineY); // not-yet-revealed area stays black
+    const glowH = 80 * s;
+    const grad = ctx.createLinearGradient(0, lineY - glowH, 0, lineY);
+    grad.addColorStop(0, "rgba(255,255,255,0)");
+    grad.addColorStop(1, "rgba(255,255,255,0.25)");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, lineY - glowH, W, glowH);
+    const streak = 20 * s;
+    ctx.fillStyle = "rgba(255,255,255,0.9)";
+    ctx.fillRect(0, lineY - streak / 2, W, streak);
+    return;
   }
 
-  const barH = H * 0.04;
-  ctx.fillStyle = "rgba(0,0,0,0.85)";
-  ctx.fillRect(0, 0, W, barH);
-  ctx.fillRect(0, H - barH, W, barH);
+  // Phase 2 (2–8s): slow zoom 1.0 → 1.03 + film grain. Phase 3 freezes at 1.03.
+  const scale = t < 0.8 ? 1.0 + 0.03 * ((t - 0.2) / 0.6) : 1.03;
+  const dw = W * scale, dh = H * scale;
+  ctx.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh);
+  drawNoise(ctx, W, H, 0.06);
 
-  const vig3 = ctx.createRadialGradient(W / 2, H / 2, H * 0.25, W / 2, H / 2, H * 0.75);
-  vig3.addColorStop(0, "rgba(0,0,0,0)");
-  vig3.addColorStop(1, "rgba(0,0,0,0.45)");
-  ctx.fillStyle = vig3;
-  ctx.fillRect(0, 0, W, H);
+  // Phase 3 (8–10s): three quick blinks, then hold.
+  if (t >= 0.8) {
+    const tp = (t - 0.8) / 0.2;
+    let blink = 0;
+    for (const c of [0.12, 0.28, 0.44]) {
+      const d = Math.abs(tp - c);
+      if (d < 0.035) blink = Math.max(blink, 1 - d / 0.035);
+    }
+    if (blink > 0) {
+      ctx.fillStyle = `rgba(0,0,0,${blink * 0.8})`;
+      ctx.fillRect(0, 0, W, H);
+    }
+  }
+}
+
+function fillBlack2(ctx, x, y, w, h) {
+  ctx.fillStyle = "#000";
+  ctx.fillRect(x, y, w, h);
 }
 
 export const STYLES = [
-  { id: "horror", name: "Glitch", icon: "⚡", draw: drawHorror },
-  { id: "pulse",  name: "Neon",   icon: "🔮", draw: drawPulse  },
+  { id: "horror", name: "Glitch", icon: "⚡", draw: drawGlitch },
+  { id: "pulse",  name: "Neon",   icon: "🔮", draw: drawNeon   },
   { id: "reveal", name: "Reveal", icon: "✨", draw: drawReveal },
 ];
 
 export function getStyle(id) {
-  return STYLES.find((s) => s.id === id) || STYLES[0];
+  return STYLES.find((st) => st.id === id) || STYLES[0];
 }
