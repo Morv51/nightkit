@@ -341,9 +341,8 @@ footer{
 .demo-logo span{font-size:12px;font-weight:700;letter-spacing:1.5px;color:#fff}
 .demo-genbtn{
   margin-top:6px;height:44px;border:none;border-radius:8px;background:#CCFF00;color:#0c0c0c;
-  font-weight:600;font-size:13px;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:7px;cursor:default;
+  font-weight:600;font-size:13px;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;
 }
-.demo-genbtn.pulse{animation:demoPulse 1s ease-in-out infinite}
 @keyframes demoPulse{0%,100%{box-shadow:0 0 0 0 rgba(204,255,0,.55)}50%{box-shadow:0 0 0 11px rgba(204,255,0,0)}}
 
 .demo-preview{padding:24px 22px;display:flex;flex-direction:column;align-items:center;gap:14px;background:#0f0f0f}
@@ -351,14 +350,25 @@ footer{
 .demo-stage img,.demo-stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
 .demo-template{transition:filter .5s,opacity .5s}
 .demo-stage.generating .demo-template{filter:blur(4px) brightness(.6)}
-.demo-result{opacity:0;transition:opacity .4s}
+.demo-result{opacity:0;clip-path:inset(0 0 0 var(--ba,0%));transition:opacity .4s,clip-path .45s ease}
 .demo-result.show{opacity:1}
 .demo-result.pop{animation:demoPop .6s ease}
 @keyframes demoPop{0%{transform:scale(1)}40%{transform:scale(1.03)}100%{transform:scale(1)}}
-.demo-video{opacity:0;transition:opacity .5s;z-index:3}
+.demo-video{opacity:0;transition:opacity .5s;z-index:4;cursor:pointer}
 .demo-video.show{opacity:1}
+
+/* before/after slider */
+.demo-stage{--ba:0%}
+.ba-divider{position:absolute;top:0;bottom:0;left:0;width:2px;background:#fff;z-index:5;transform:translateX(-50%);display:none;cursor:ew-resize;touch-action:none}
+.demo-stage.compare .ba-divider{display:block}
+.ba-divider span{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:30px;height:30px;border-radius:50%;background:#fff;color:#0c0c0c;display:flex;align-items:center;justify-content:center;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.45)}
+.ba-label{position:absolute;bottom:8px;z-index:5;font-size:8px;font-weight:700;letter-spacing:.12em;padding:3px 7px;border-radius:4px;background:rgba(0,0,0,.6);color:#fff;display:none}
+.demo-stage.compare .ba-label{display:block}
+.ba-label.before{left:8px}
+.ba-label.after{right:8px}
+
 .demo-loading{
-  position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+  position:absolute;inset:0;z-index:6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
   background:rgba(8,8,12,.45);opacity:0;pointer-events:none;transition:opacity .3s;
 }
 .demo-loading.show{opacity:1}
@@ -366,26 +376,50 @@ footer{
 .demo-spinner{width:38px;height:38px;border-radius:50%;border:3px solid rgba(255,255,255,.2);border-top-color:#CCFF00;animation:demoSpin .8s linear infinite}
 @keyframes demoSpin{to{transform:rotate(360deg)}}
 .demo-badge{
-  position:absolute;top:10px;right:10px;z-index:5;background:#1db954;color:#fff;font-size:11px;font-weight:600;
+  position:absolute;top:10px;right:10px;z-index:7;background:#1db954;color:#fff;font-size:11px;font-weight:600;
   padding:5px 10px;border-radius:100px;opacity:0;transform:translateY(-6px) scale(.9);transition:opacity .3s,transform .3s;
 }
 .demo-badge.show{opacity:1;transform:none}
-.demo-play{
-  position:absolute;left:50%;top:50%;z-index:5;width:46px;height:46px;border-radius:50%;
-  background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;
-  opacity:0;transition:opacity .4s;transform:translate(-50%,-50%);
+
+/* start button on the template (idle only) */
+.demo-start{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:7;display:none;align-items:center;gap:8px;
+  padding:13px 22px;border:none;border-radius:100px;background:#CCFF00;color:#0c0c0c;font-weight:700;font-size:14px;font-family:inherit;
+  white-space:nowrap;cursor:pointer;box-shadow:0 8px 30px rgba(204,255,0,.4);animation:demoBob 2s ease-in-out infinite;
 }
-.demo-play.show{opacity:1;animation:demoPlayPulse 1.4s ease-in-out infinite}
-@keyframes demoPlayPulse{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.14)}}
-.demo-video-section{width:100%;max-width:288px;text-align:center;opacity:0;transform:translateY(8px);transition:opacity .5s,transform .5s}
-.demo-video-section.show{opacity:1;transform:none}
-.demo-video-label{font-size:11px;color:rgba(245,245,240,.5);letter-spacing:.05em;margin-bottom:8px}
+.demo-modal[data-state="idle"] .demo-start{display:inline-flex}
+.demo-start-ico{font-size:11px}
+@keyframes demoBob{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-52%) scale(1.04)}}
+
+/* video close (while a video plays) */
+.demo-vclose{
+  position:absolute;top:10px;left:10px;z-index:7;width:28px;height:28px;border-radius:50%;
+  background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:12px;cursor:pointer;
+  display:none;align-items:center;justify-content:center;
+}
+.demo-stage.playing .demo-vclose{display:flex}
+
+.demo-hint{font-size:10px;color:rgba(245,245,240,.4);text-align:center;max-width:288px;line-height:1.4}
+.demo-modal[data-state="generating"] .demo-hint,.demo-modal[data-state="result"] .demo-hint{display:none}
+
+.demo-video-section{width:100%;max-width:288px;text-align:center;opacity:0;transform:translateY(8px);transition:opacity .5s,transform .5s;pointer-events:none}
+.demo-video-section.show{opacity:1;transform:none;pointer-events:auto}
+.demo-video-label{font-size:11px;color:rgba(245,245,240,.5);letter-spacing:.04em;margin-bottom:8px}
 .demo-styles{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .demo-style{
-  padding:8px 4px;border-radius:7px;font-size:10px;font-weight:500;
-  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:rgba(245,245,240,.7);transition:all .25s;
+  padding:9px 4px;border-radius:7px;font-size:10px;font-weight:500;font-family:inherit;cursor:pointer;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:rgba(245,245,240,.7);transition:all .2s;
 }
-.demo-style.glow{border-color:#CCFF00;color:#CCFF00;background:rgba(204,255,0,.12);box-shadow:0 0 14px rgba(204,255,0,.3)}
+.demo-style:hover{border-color:rgba(204,255,0,.4);color:#fff}
+.demo-style.selected{border-color:#CCFF00;color:#CCFF00;background:rgba(204,255,0,.14);box-shadow:0 0 14px rgba(204,255,0,.3)}
+
+/* generate button: dimmed until data is filled, becomes restart in result */
+.demo-modal[data-state="idle"] .demo-genbtn,
+.demo-modal[data-state="filling"] .demo-genbtn{opacity:.4;pointer-events:none}
+.demo-modal[data-state="generating"] .demo-genbtn{opacity:.55;pointer-events:none}
+.demo-genbtn.ready{animation:demoPulse 1s ease-in-out infinite}
+.demo-genbtn.restart{background:rgba(255,255,255,.1);color:#fff}
+.demo-genbtn.restart svg path{fill:#fff}
 
 @media(max-width:760px){
   .demo-grid{grid-template-columns:1fr}
@@ -611,7 +645,7 @@ footer{
         </div>
         <button class="demo-genbtn" id="dGenBtn">
           <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 1L8.5 5.5L13 7L8.5 8.5L7 13L5.5 8.5L1 7L5.5 5.5L7 1Z" fill="#0c0c0c"/></svg>
-          Flyer generieren
+          <span id="dGenBtnLabel">Flyer generieren</span>
         </button>
       </div>
       <!-- right: preview -->
@@ -620,16 +654,21 @@ footer{
           <img class="demo-template" id="dTemplate" data-src="/templates/basshall-tropical.jpg" alt="Template">
           <img class="demo-result" id="dResult" data-src="/demo/tropical-night.png" alt="Ergebnis">
           <video class="demo-video" id="dVideo" data-src="/demo/tropical-night-horror.mp4" muted loop playsinline></video>
+          <div class="ba-divider" id="dDivider"><span>⟷</span></div>
+          <div class="ba-label before">Vorher</div>
+          <div class="ba-label after">Nachher</div>
           <div class="demo-loading" id="dLoading"><div class="demo-spinner"></div><span>KI generiert deinen Flyer…</span></div>
           <div class="demo-badge" id="dBadge">✓ Fertig</div>
-          <div class="demo-play" id="dPlay">▶</div>
+          <button class="demo-vclose" id="dVideoClose" aria-label="Video schließen">✕</button>
+          <button class="demo-start" id="dStart"><span class="demo-start-ico">▶</span> Demo starten</button>
         </div>
+        <div class="demo-hint" id="dHint">Klick „Demo starten" — der Flyer entsteht Schritt für Schritt</div>
         <div class="demo-video-section" id="dVideoSection">
-          <div class="demo-video-label">Jetzt als Video exportieren</div>
+          <div class="demo-video-label">Jetzt als Video exportieren — Effekt anklicken</div>
           <div class="demo-styles">
-            <div class="demo-style" id="dStyleGlitch">⚡ Glitch</div>
-            <div class="demo-style" id="dStyleNeon">🔮 Neon Pulse</div>
-            <div class="demo-style" id="dStyleReveal">✨ Smooth Reveal</div>
+            <button class="demo-style" id="dStyleGlitch">⚡ Glitch</button>
+            <button class="demo-style" id="dStyleNeon">🔮 Neon Pulse</button>
+            <button class="demo-style" id="dStyleReveal">✨ Smooth Reveal</button>
           </div>
         </div>
       </div>
@@ -652,7 +691,7 @@ document.querySelectorAll('.fade-up').forEach(function(el) {
   io.observe(el);
 });
 
-// ── DEMO MODAL (pure CSS + vanilla JS, looping 8s simulation) ──
+// ── INTERACTIVE DEMO (manual triggers, before/after, video) ──
 (function(){
   var modal = document.getElementById('demoModal');
   if (!modal) return;
@@ -670,108 +709,119 @@ document.querySelectorAll('.fade-up').forEach(function(el) {
   ];
   var STYLES = ['dStyleGlitch', 'dStyleNeon', 'dStyleReveal'];
 
-  var timers = [];
-  var running = false;
-  var mediaLoaded = false;
-
+  var timers = [], mediaLoaded = false, state = 'idle';
   function after(ms, fn){ timers.push(setTimeout(fn, ms)); }
   function clearTimers(){ timers.forEach(clearTimeout); timers = []; }
 
   function loadMedia(){
     if (mediaLoaded) return; mediaLoaded = true;
     ['dTemplate','dResult'].forEach(function(id){ var el=$(id); if(el.dataset.src) el.src=el.dataset.src; });
-    var v = $('dVideo'); if (v.dataset.src){ v.src = v.dataset.src; v.load(); }
+    var v=$('dVideo'); if(v.dataset.src){ v.src=v.dataset.src; v.load(); }
   }
-
   function typewrite(el, text, start, dur){
-    for (var i = 0; i <= text.length; i++){
-      (function(n){ after(start + (n/text.length)*dur, function(){ el.textContent = text.slice(0, n); }); })(i);
-    }
+    for (var i=0;i<=text.length;i++){ (function(n){ after(start+(n/text.length)*dur, function(){ el.textContent=text.slice(0,n); }); })(i); }
   }
+  function setState(s){ state=s; modal.dataset.state=s; }
+  function setBA(pct){ $('dStage').style.setProperty('--ba', pct+'%'); $('dDivider').style.left=pct+'%'; }
 
-  function resetDemo(){
-    FIELDS.forEach(function(f){ var el=$(f[0]); el.textContent=''; el.classList.remove('active'); });
+  function reset(){
+    clearTimers();
+    FIELDS.forEach(function(f){ $(f[0]).textContent=''; $(f[0]).classList.remove('active'); });
     $('dLogo').classList.remove('show');
-    $('dGenBtn').classList.remove('pulse');
+    $('dStage').classList.remove('generating','compare','playing');
     $('dLoading').classList.remove('show');
-    $('dStage').classList.remove('generating');
     $('dResult').classList.remove('show','pop');
     $('dBadge').classList.remove('show');
-    $('dPlay').classList.remove('show');
     $('dVideo').classList.remove('show');
     $('dVideoSection').classList.remove('show');
-    STYLES.forEach(function(id){ $(id).classList.remove('glow'); });
+    STYLES.forEach(function(id){ $(id).classList.remove('selected'); });
     try { var v=$('dVideo'); v.pause(); v.currentTime=0; } catch(e){}
+    setBA(0);
+    var b=$('dGenBtn'); b.classList.remove('ready','restart');
+    $('dGenBtnLabel').textContent='Flyer generieren';
+    setState('idle');
   }
 
-  function runCycle(){
-    if (!running) return;
-    clearTimers();
-    resetDemo();
-
-    // Phase 1 — fields fill via typewriter (0–3.5s)
-    var start = 150, gap = 470, dur = 360;
-    FIELDS.forEach(function(f, i){
-      var t = start + i*gap, el = $(f[0]);
+  // Step 1 — user triggers data entry
+  function startEntry(){
+    if (state!=='idle') return;
+    setState('filling');
+    var start=150, gap=470, dur=360;
+    FIELDS.forEach(function(f,i){
+      var t=start+i*gap, el=$(f[0]);
       after(t, function(){ el.classList.add('active'); });
       typewrite(el, f[1], t, dur);
-      after(t + dur + 110, function(){ el.classList.remove('active'); });
+      after(t+dur+110, function(){ el.classList.remove('active'); });
     });
     after(3350, function(){ $('dLogo').classList.add('show'); });
+    after(3650, function(){ setState('filled'); $('dGenBtn').classList.add('ready'); });
+  }
 
-    // Phase 2 — generation (3.5–5s)
-    after(3650, function(){
-      $('dGenBtn').classList.add('pulse');
-      $('dStage').classList.add('generating');
-      $('dLoading').classList.add('show');
-    });
-
-    // Phase 3 — result (5–6.5s)
-    after(5000, function(){
-      $('dGenBtn').classList.remove('pulse');
+  // Step 2 — user clicks generate
+  function generate(){
+    if (state!=='filled') return;
+    setState('generating');
+    $('dGenBtn').classList.remove('ready');
+    $('dGenBtnLabel').textContent='Generiert…';
+    $('dStage').classList.add('generating');
+    $('dLoading').classList.add('show');
+    after(2000, function(){
       $('dLoading').classList.remove('show');
       $('dStage').classList.remove('generating');
       $('dResult').classList.add('show','pop');
       $('dBadge').classList.add('show');
+      after(620, function(){ $('dResult').classList.remove('pop'); });
+      after(750, function(){ setBA(50); $('dStage').classList.add('compare'); });
+      after(950, function(){ $('dVideoSection').classList.add('show'); });
+      setState('result');
+      $('dGenBtnLabel').textContent='Neu starten';
+      $('dGenBtn').classList.add('restart');
     });
-    after(5650, function(){ $('dResult').classList.remove('pop'); });
-
-    // Phase 4 — video teaser (6.5–8s)
-    after(6500, function(){ $('dVideoSection').classList.add('show'); });
-    STYLES.forEach(function(id, i){
-      after(6650 + i*330, function(){ $(id).classList.add('glow'); });
-      after(6650 + i*330 + 320, function(){ $(id).classList.remove('glow'); });
-    });
-    after(6900, function(){
-      var v = $('dVideo'); v.classList.add('show'); $('dPlay').classList.add('show');
-      var p = v.play(); if (p && p.catch) p.catch(function(){});
-    });
-
-    // loop
-    after(8000, runCycle);
   }
 
-  function openDemo(){
-    loadMedia();
-    modal.classList.add('open');
-    document.body.style.overflow = 'hidden';
-    running = true;
-    runCycle();
+  // Step 3 — user clicks a video effect
+  function playStyle(id){
+    if (state!=='result') return;
+    STYLES.forEach(function(s){ $(s).classList.toggle('selected', s===id); });
+    $('dStage').classList.remove('compare');
+    $('dStage').classList.add('playing');
+    var v=$('dVideo'); v.classList.add('show');
+    var p=v.play(); if(p&&p.catch)p.catch(function(){});
   }
-  function closeDemo(){
-    running = false;
-    clearTimers();
-    modal.classList.remove('open');
-    document.body.style.overflow = '';
-    resetDemo();
+  function stopVideo(){
+    var v=$('dVideo'); v.pause(); v.classList.remove('show');
+    $('dStage').classList.remove('playing');
+    STYLES.forEach(function(s){ $(s).classList.remove('selected'); });
+    if (state==='result') $('dStage').classList.add('compare');
   }
+
+  // before/after drag
+  (function(){
+    var div=$('dDivider'), stage=$('dStage');
+    function moveTo(x){ var r=stage.getBoundingClientRect(); setBA(Math.max(2, Math.min(98, ((x-r.left)/r.width)*100))); }
+    div.addEventListener('pointerdown', function(e){
+      if (state!=='result') return;
+      e.preventDefault();
+      try{ div.setPointerCapture(e.pointerId); }catch(_){}
+      var mv=function(ev){ moveTo(ev.clientX); };
+      var up=function(){ div.removeEventListener('pointermove',mv); div.removeEventListener('pointerup',up); };
+      div.addEventListener('pointermove',mv); div.addEventListener('pointerup',up);
+    });
+  })();
+
+  function genClick(){ if (state==='filled') generate(); else if (state==='result') reset(); }
+  function openDemo(){ loadMedia(); modal.classList.add('open'); document.body.style.overflow='hidden'; reset(); }
+  function closeDemo(){ clearTimers(); modal.classList.remove('open'); document.body.style.overflow=''; reset(); }
 
   if (openBtn) openBtn.addEventListener('click', openDemo);
   $('demoClose').addEventListener('click', closeDemo);
   $('demoBackdrop').addEventListener('click', closeDemo);
-  document.addEventListener('keydown', function(e){
-    if (e.key === 'Escape' && modal.classList.contains('open')) closeDemo();
-  });
+  $('dStart').addEventListener('click', startEntry);
+  $('dGenBtn').addEventListener('click', genClick);
+  $('dVideoClose').addEventListener('click', stopVideo);
+  $('dVideo').addEventListener('click', stopVideo);
+  STYLES.forEach(function(id){ $(id).addEventListener('click', function(){ playStyle(id); }); });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape'&&modal.classList.contains('open')) closeDemo(); });
 })();
 </script>
 </body>
