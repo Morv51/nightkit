@@ -1,6 +1,5 @@
 // Central mutable app state. Imported by modules that need to read/write
-// shared values. Keep flat & boring — anything stored here is implicitly
-// part of the public surface.
+// shared values. Keep flat & boring.
 
 export const state = {
   last: null,
@@ -9,5 +8,12 @@ export const state = {
   animFrameId: null,
   historyUrls: [],
   videoPanelOpen: true,
+
+  // templates
+  templates: [],
+  currentTemplateFile: null,
+
+  // logo
   logoUrl: null,
+  logoBox: { cx: 0.5, cy: 0.15, w: 0.3 }, // centre + width as fractions of the flyer
 };

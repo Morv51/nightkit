@@ -62,21 +62,33 @@
     </div>
   </aside>
 
-  <!-- ── COL 2: PREVIEW + BUTTON ── -->
+  <!-- ── COL 2: TEMPLATE PICKER ── -->
+  <main class="center">
+    <div class="center-head">
+      <div class="center-title">Template</div>
+    </div>
+    <div class="center-body">
+      <div class="tpl-grid" id="tplGrid"></div>
+    </div>
+  </main>
+
+  <!-- ── COL 3: PREVIEW + BUTTON ── -->
   <div class="panel">
     <div class="panel-body" id="panelBody">
 
       <!-- STATE: Preview (default) -->
       <div id="statePreview">
         <div class="preview-wrap">
-          <div class="preview-stage">
-            <img id="previewImg" class="preview-img" src="/templates/birthday-pink.jpg" alt="Vorschau">
+          <div class="preview-stage" id="previewStage">
+            <img id="previewImg" class="preview-img" alt="Vorschau">
             <div class="logo-overlay" id="logoOverlay">
-              <span class="logo-overlay-text">LOGO</span>
+              <span class="logo-overlay-text">LOGO ziehen</span>
               <img id="logoOverlayImg" class="logo-overlay-img" alt="Logo">
+              <div class="logo-resize" id="logoResize"></div>
             </div>
           </div>
         </div>
+        <div class="preview-hint" id="previewHint">Logo ziehen &amp; Ecke zum Skalieren</div>
       </div>
 
       <!-- STATE: Result (after generation) -->

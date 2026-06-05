@@ -1,4 +1,6 @@
 import { initDom, els, on } from "./dom.js";
+import { state } from "./state.js";
+import { loadTemplates, renderTemplateGrid, selectTemplate } from "./templates.js";
 import { updateLivePreview } from "./preview.js";
 import { generate, resetToPreview } from "./generator.js";
 import { download, copyImage } from "./download.js";
@@ -17,13 +19,21 @@ function bindActions() {
   on(els.exportBtn, "click", exportVideo);
 }
 
-function init() {
+async function init() {
   initDom();
   bindActions();
   renderStyleButtons();
   initLogo();
   initDatePicker();
-  updateLivePreview();
+
+  try {
+    await loadTemplates();
+  } catch (e) {
+    console.error("Templates konnten nicht geladen werden:", e);
+  }
+  renderTemplateGrid();
+  if (state.currentTemplateFile) selectTemplate(state.currentTemplateFile);
+  else updateLivePreview();
 }
 
 if (document.readyState === "loading") {

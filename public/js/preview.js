@@ -1,11 +1,13 @@
+import { state } from "./state.js";
 import { els } from "./dom.js";
 
-// Single fixed template — the preview image just points at it. Kept as a
-// function so generator.js can restore the preview after viewing a result.
-const TEMPLATE_SRC = "/templates/birthday-pink.jpg";
-
+// Points the preview image at the currently selected template. Reads state
+// directly (no import of templates.js) to avoid an import cycle.
 export function updateLivePreview() {
-  if (els.previewImg && els.previewImg.getAttribute("src") !== TEMPLATE_SRC) {
-    els.previewImg.src = TEMPLATE_SRC;
+  const t =
+    state.templates.find((x) => x.file === state.currentTemplateFile) ||
+    state.templates[0];
+  if (t && els.previewImg && els.previewImg.getAttribute("src") !== t.src) {
+    els.previewImg.src = t.src;
   }
 }

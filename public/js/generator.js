@@ -24,6 +24,7 @@ function setLoading(loading) {
 
 function readEventForm() {
   return {
+    template: state.currentTemplateFile,
     prefix:  val("fPrefix"),
     name:    val("fName"),
     day:     val("fDay"),
@@ -31,7 +32,6 @@ function readEventForm() {
     dj:      val("fDj"),
     contact: val("fContact"),
     time:    val("fTime"),
-    hasLogo: !!state.logoUrl,
   };
 }
 
