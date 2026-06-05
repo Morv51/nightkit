@@ -350,22 +350,23 @@ footer{
 .demo-stage img,.demo-stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
 .demo-template{transition:filter .5s,opacity .5s}
 .demo-stage.generating .demo-template{filter:blur(4px) brightness(.6)}
-.demo-result{opacity:0;clip-path:inset(0 0 0 var(--ba,0%));transition:opacity .4s,clip-path .45s ease}
+.demo-result{opacity:0;transition:opacity .35s}
 .demo-result.show{opacity:1}
 .demo-result.pop{animation:demoPop .6s ease}
 @keyframes demoPop{0%{transform:scale(1)}40%{transform:scale(1.03)}100%{transform:scale(1)}}
 .demo-video{opacity:0;transition:opacity .5s;z-index:4;cursor:pointer}
 .demo-video.show{opacity:1}
 
-/* before/after slider */
-.demo-stage{--ba:0%}
-.ba-divider{position:absolute;top:0;bottom:0;left:0;width:2px;background:#fff;z-index:5;transform:translateX(-50%);display:none;cursor:ew-resize;touch-action:none}
-.demo-stage.compare .ba-divider{display:block}
-.ba-divider span{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:30px;height:30px;border-radius:50%;background:#fff;color:#0c0c0c;display:flex;align-items:center;justify-content:center;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.45)}
-.ba-label{position:absolute;bottom:8px;z-index:5;font-size:8px;font-weight:700;letter-spacing:.12em;padding:3px 7px;border-radius:4px;background:rgba(0,0,0,.6);color:#fff;display:none}
-.demo-stage.compare .ba-label{display:block}
-.ba-label.before{left:8px}
-.ba-label.after{right:8px}
+/* before/after toggle button */
+.demo-toggle{
+  display:none;align-items:center;gap:6px;padding:7px 16px;border-radius:100px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);color:#fff;
+  font-size:11px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .2s;
+}
+.demo-toggle:hover{border-color:rgba(204,255,0,.5)}
+.demo-toggle.active{background:rgba(204,255,0,.14);border-color:#CCFF00;color:#CCFF00}
+.demo-modal[data-state="result"] .demo-toggle{display:inline-flex}
+.demo-toggle.hidden{display:none}
 
 .demo-loading{
   position:absolute;inset:0;z-index:6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
@@ -654,14 +655,12 @@ footer{
           <img class="demo-template" id="dTemplate" data-src="/templates/basshall-tropical.jpg" alt="Template">
           <img class="demo-result" id="dResult" data-src="/demo/tropical-night.png" alt="Ergebnis">
           <video class="demo-video" id="dVideo" data-src="/demo/tropical-night-horror.mp4" muted loop playsinline></video>
-          <div class="ba-divider" id="dDivider"><span>⟷</span></div>
-          <div class="ba-label before">Vorher</div>
-          <div class="ba-label after">Nachher</div>
           <div class="demo-loading" id="dLoading"><div class="demo-spinner"></div><span>KI generiert deinen Flyer…</span></div>
           <div class="demo-badge" id="dBadge">✓ Fertig</div>
           <button class="demo-vclose" id="dVideoClose" aria-label="Video schließen">✕</button>
           <button class="demo-start" id="dStart"><span class="demo-start-ico">▶</span> Demo starten</button>
         </div>
+        <button class="demo-toggle" id="dToggle">👁 <span id="dToggleLabel">Vorher ansehen</span></button>
         <div class="demo-hint" id="dHint">Klick „Demo starten" — der Flyer entsteht Schritt für Schritt</div>
         <div class="demo-video-section" id="dVideoSection">
           <div class="demo-video-label">Jetzt als Video exportieren — Effekt anklicken</div>
@@ -722,13 +721,19 @@ document.querySelectorAll('.fade-up').forEach(function(el) {
     for (var i=0;i<=text.length;i++){ (function(n){ after(start+(n/text.length)*dur, function(){ el.textContent=text.slice(0,n); }); })(i); }
   }
   function setState(s){ state=s; modal.dataset.state=s; }
-  function setBA(pct){ $('dStage').style.setProperty('--ba', pct+'%'); $('dDivider').style.left=pct+'%'; }
+  function toggleCompare(){
+    if (state!=='result') return;
+    var showingAfter = $('dResult').classList.toggle('show'); // true if result now visible
+    $('dBadge').classList.toggle('show', showingAfter);
+    $('dToggle').classList.toggle('active', !showingAfter);
+    $('dToggleLabel').textContent = showingAfter ? 'Vorher ansehen' : 'Nachher ansehen';
+  }
 
   function reset(){
     clearTimers();
     FIELDS.forEach(function(f){ $(f[0]).textContent=''; $(f[0]).classList.remove('active'); });
     $('dLogo').classList.remove('show');
-    $('dStage').classList.remove('generating','compare','playing');
+    $('dStage').classList.remove('generating','playing');
     $('dLoading').classList.remove('show');
     $('dResult').classList.remove('show','pop');
     $('dBadge').classList.remove('show');
@@ -736,7 +741,8 @@ document.querySelectorAll('.fade-up').forEach(function(el) {
     $('dVideoSection').classList.remove('show');
     STYLES.forEach(function(id){ $(id).classList.remove('selected'); });
     try { var v=$('dVideo'); v.pause(); v.currentTime=0; } catch(e){}
-    setBA(0);
+    $('dToggle').classList.remove('active','hidden');
+    $('dToggleLabel').textContent='Vorher ansehen';
     var b=$('dGenBtn'); b.classList.remove('ready','restart');
     $('dGenBtnLabel').textContent='Flyer generieren';
     setState('idle');
@@ -771,7 +777,6 @@ document.querySelectorAll('.fade-up').forEach(function(el) {
       $('dResult').classList.add('show','pop');
       $('dBadge').classList.add('show');
       after(620, function(){ $('dResult').classList.remove('pop'); });
-      after(750, function(){ setBA(50); $('dStage').classList.add('compare'); });
       after(950, function(){ $('dVideoSection').classList.add('show'); });
       setState('result');
       $('dGenBtnLabel').textContent='Neu starten';
@@ -783,8 +788,9 @@ document.querySelectorAll('.fade-up').forEach(function(el) {
   function playStyle(id){
     if (state!=='result') return;
     STYLES.forEach(function(s){ $(s).classList.toggle('selected', s===id); });
-    $('dStage').classList.remove('compare');
+    if (!$('dResult').classList.contains('show')) toggleCompare(); // ensure we're on the result
     $('dStage').classList.add('playing');
+    $('dToggle').classList.add('hidden');
     var v=$('dVideo'); v.classList.add('show');
     var p=v.play(); if(p&&p.catch)p.catch(function(){});
   }
@@ -792,22 +798,8 @@ document.querySelectorAll('.fade-up').forEach(function(el) {
     var v=$('dVideo'); v.pause(); v.classList.remove('show');
     $('dStage').classList.remove('playing');
     STYLES.forEach(function(s){ $(s).classList.remove('selected'); });
-    if (state==='result') $('dStage').classList.add('compare');
+    if (state==='result') $('dToggle').classList.remove('hidden');
   }
-
-  // before/after drag
-  (function(){
-    var div=$('dDivider'), stage=$('dStage');
-    function moveTo(x){ var r=stage.getBoundingClientRect(); setBA(Math.max(2, Math.min(98, ((x-r.left)/r.width)*100))); }
-    div.addEventListener('pointerdown', function(e){
-      if (state!=='result') return;
-      e.preventDefault();
-      try{ div.setPointerCapture(e.pointerId); }catch(_){}
-      var mv=function(ev){ moveTo(ev.clientX); };
-      var up=function(){ div.removeEventListener('pointermove',mv); div.removeEventListener('pointerup',up); };
-      div.addEventListener('pointermove',mv); div.addEventListener('pointerup',up);
-    });
-  })();
 
   function genClick(){ if (state==='filled') generate(); else if (state==='result') reset(); }
   function openDemo(){ loadMedia(); modal.classList.add('open'); document.body.style.overflow='hidden'; reset(); }
@@ -818,6 +810,7 @@ document.querySelectorAll('.fade-up').forEach(function(el) {
   $('demoBackdrop').addEventListener('click', closeDemo);
   $('dStart').addEventListener('click', startEntry);
   $('dGenBtn').addEventListener('click', genClick);
+  $('dToggle').addEventListener('click', toggleCompare);
   $('dVideoClose').addEventListener('click', stopVideo);
   $('dVideo').addEventListener('click', stopVideo);
   STYLES.forEach(function(id){ $(id).addEventListener('click', function(){ playStyle(id); }); });
