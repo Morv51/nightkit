@@ -134,6 +134,18 @@
   var SUPABASE_URL  = 'https://jnkujsfsmmieodthpelm.supabase.co';
   var SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impua3Vqc2ZzbW1pZW9kdGhwZWxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3NDc1NzMsImV4cCI6MjA5NjMyMzU3M30.0Uc6KNZDFaQd94P0kqFyhvPFvwbgH-BHwLmHqzEUITQ';
   var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  window.sb = supabase;
+
+  // Email-confirmation links may redirect here. supabase-js auto-detects
+  // #access_token / ?code (the getSession check below then forwards to /app);
+  // ?token_hash (OTP) must be redeemed explicitly.
+  (function(){
+    var cb = new URLSearchParams(location.search);
+    if (cb.get('token_hash')) {
+      supabase.auth.verifyOtp({ token_hash: cb.get('token_hash'), type: cb.get('type') || 'email' })
+        .then(function(r){ if (r && r.data && r.data.session) location.replace('/app'); });
+    }
+  })();
 
   var $ = function(id){ return document.getElementById(id); };
   var mode = 'login';

@@ -255,6 +255,49 @@ img{display:block;max-width:100%}
   .demo-form{border-right:none;border-bottom:1px solid var(--border)}
 }
 </style>
+
+<!-- Supabase auth callback (email confirmation / magic link) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // A confirmation link lands here with auth params in the URL:
+  //   #access_token=… (implicit flow)  or  ?token_hash=…&type=… (OTP flow).
+  // Catch it, establish the session, then forward into the app. Everything is
+  // gated on those params being present so normal (and logged-in) visitors are
+  // never bounced off the landing page.
+  (function(){
+    if (!window.supabase) return;
+    var search = location.search, hash = location.hash;
+    var hasCallback = hash.indexOf('access_token=') > -1 || /[?&](token_hash|code)=/.test(search);
+    if (!hasCallback) return;
+
+    var sb = window.supabase.createClient(
+      'https://jnkujsfsmmieodthpelm.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impua3Vqc2ZzbW1pZW9kdGhwZWxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3NDc1NzMsImV4cCI6MjA5NjMyMzU3M30.0Uc6KNZDFaQd94P0kqFyhvPFvwbgH-BHwLmHqzEUITQ'
+    );
+    window.sb = sb;
+    function toApp(){ location.replace('/app'); }
+
+    // Covers the implicit (#access_token) and PKCE (?code) flows that
+    // supabase-js auto-detects from the URL.
+    sb.auth.onAuthStateChange(function(event, session){
+      if (session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) toApp();
+    });
+
+    // OTP confirmation (?token_hash=…) is NOT auto-processed — do it explicitly.
+    var q = new URLSearchParams(search);
+    if (q.get('token_hash')) {
+      sb.auth.verifyOtp({ token_hash: q.get('token_hash'), type: q.get('type') || 'email' })
+        .then(function(r){ if (r && r.data && r.data.session) toApp(); });
+    }
+
+    // Fallback for implicit-flow tokens if auto-detection didn't consume them.
+    var h = new URLSearchParams(hash.substring(1));
+    if (h.get('access_token')) {
+      sb.auth.setSession({ access_token: h.get('access_token'), refresh_token: h.get('refresh_token') || '' })
+        .then(function(r){ if (r && r.data && r.data.session) toApp(); });
+    }
+  })();
+</script>
 </head>
 <body>
 

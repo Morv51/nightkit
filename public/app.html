@@ -17,11 +17,20 @@
     window.sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
     // Guard: only authenticated users may use the generator. Runs before the
     // app module so unauthenticated visitors are bounced to /login.html.
-    window.__nkSession = window.sb.auth.getSession().then(function(r){
-      var session = r && r.data && r.data.session;
-      if (!session){ location.replace('/login.html'); return null; }
-      return session;
-    }).catch(function(){ return null; });
+    // If a confirmation link lands here with ?token_hash=… (OTP), redeem it
+    // first — supabase-js auto-detects #access_token / ?code but not token_hash.
+    window.__nkSession = (async function(){
+      try {
+        var q = new URLSearchParams(location.search);
+        if (q.get('token_hash')) {
+          await window.sb.auth.verifyOtp({ token_hash: q.get('token_hash'), type: q.get('type') || 'email' });
+        }
+        var r = await window.sb.auth.getSession();
+        var session = r && r.data && r.data.session;
+        if (!session){ location.replace('/login.html'); return null; }
+        return session;
+      } catch (e) { return null; }
+    })();
   })();
 </script>
 <style>
