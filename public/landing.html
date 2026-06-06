@@ -60,36 +60,74 @@ img{display:block;max-width:100%}
 .proof-text{font-size:12px;color:var(--muted);line-height:1.4}
 .stars{color:var(--accent);letter-spacing:2px;font-size:12px}
 
-/* feature bar */
-.feature-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 16px;padding:18px 40px;border-top:1px solid var(--border);background:rgba(0,0,0,.35)}
-.fb-item{font-size:12.5px;color:rgba(255,255,255,.58)}
-.fb-item b{color:var(--accent);font-weight:700;margin-right:4px}
-.fb-sep{color:rgba(255,255,255,.2)}
+/* stats bar */
+.stats{background:#0d0d0d;border-top:1px solid #222;border-bottom:1px solid #222;padding:50px 40px}
+.stats-inner{max-width:1080px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
+.stat{text-align:center;padding:6px 12px;position:relative}
+.stat:not(:last-child)::after{content:'';position:absolute;right:0;top:50%;transform:translateY(-50%);width:1px;height:66px;background:#333}
+.stat-num{font-size:64px;font-weight:800;line-height:1;letter-spacing:-.02em;color:var(--accent);white-space:nowrap}
+.stat-desc{font-size:13px;color:#888;line-height:1.45;margin-top:12px}
 
-/* benefits section */
-.benefits{position:relative;background:#111;padding:84px 40px 92px;border-top:1px solid var(--border)}
-.benefits-inner{max-width:1080px;margin:0 auto}
-.benefits h2{font-size:clamp(34px,5vw,52px);font-weight:800;letter-spacing:-.02em;text-align:center;margin-bottom:46px}
-.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-.card{background:#1a1a1a;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:26px 24px;transition:border-color .2s,box-shadow .2s,transform .2s}
-.card:hover{border-color:rgba(204,255,0,.55);box-shadow:0 0 26px rgba(204,255,0,.13);transform:translateY(-2px)}
-.card-ic{width:48px;height:48px;border-radius:11px;background:rgba(204,255,0,.12);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:16px}
-.card h3{font-size:17px;font-weight:700;margin-bottom:8px}
-.card p{font-size:14px;color:var(--muted);line-height:1.55}
-.benefits-cta{text-align:center;margin-top:46px}
+/* feature rows */
+.rows{background:#0a0a0a;padding:96px 40px;display:flex;flex-direction:column;align-items:center;gap:104px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;width:100%;max-width:1080px}
+.vis-right .row-visual{order:2}
+.row-label{font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:14px}
+.row-title{font-size:clamp(26px,3.3vw,38px);font-weight:800;letter-spacing:-.02em;line-height:1.12;margin-bottom:16px}
+.row-desc{font-size:16px;color:var(--muted);line-height:1.6;margin-bottom:22px;max-width:460px}
+.row-list{list-style:none;display:flex;flex-direction:column;gap:11px}
+.row-list li{position:relative;padding-left:28px;font-size:14.5px;color:#ddd;line-height:1.45}
+.row-list li::before{content:'\2713';position:absolute;left:0;top:-1px;color:var(--accent);font-weight:800}
+.row-visual{display:flex;flex-direction:column;align-items:center}
+/* row1: stacked templates */
+.stack{position:relative;width:300px;height:392px}
+.stk{position:absolute;top:24px;left:50px;width:200px;aspect-ratio:9/16;object-fit:cover;border-radius:11px;border:1px solid rgba(255,255,255,.12);box-shadow:0 18px 50px rgba(0,0,0,.55);transition:box-shadow .3s,border-color .3s}
+.stk.s3{transform:rotate(6deg) translate(26px,10px);z-index:1}
+.stk.s2{transform:rotate(0deg);z-index:2}
+.stk.s1{transform:rotate(-6deg) translate(-26px,-8px);z-index:3}
+.stack:hover .stk.s1{border-color:var(--accent);box-shadow:0 0 34px rgba(204,255,0,.55);transform:rotate(-6deg) translate(-26px,-8px) scale(1.04)}
+/* row2: flyer + badge */
+.flyer-frame{position:relative;width:248px;border-radius:14px;box-shadow:0 0 0 1px rgba(204,255,0,.45),0 18px 60px rgba(0,0,0,.55),0 0 46px rgba(204,255,0,.18)}
+.flyer-frame img{width:100%;border-radius:14px;display:block}
+.done-badge{position:absolute;top:14px;right:14px;background:var(--accent);color:#0a0a0a;font-weight:700;font-size:12.5px;padding:7px 14px;border-radius:100px;transform:scale(0);box-shadow:0 6px 18px rgba(204,255,0,.4)}
+.row.visible .done-badge{animation:badgePop .5s .55s cubic-bezier(.2,1.5,.45,1) forwards}
+@keyframes badgePop{from{transform:scale(0)}to{transform:scale(1)}}
+/* row3: video + style pills */
+.row-video{width:248px;aspect-ratio:768/1376;object-fit:cover;border-radius:14px;box-shadow:0 18px 60px rgba(0,0,0,.55);background:#000;display:block}
+.style-tags{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:18px}
+.stag{background:#1a1a1a;color:var(--accent);border:1px solid var(--accent);border-radius:100px;padding:6px 15px;font-size:12px;font-weight:600}
+
+/* scroll reveal */
+.reveal{opacity:0;transform:translateY(30px);transition:opacity .7s ease,transform .7s ease}
+.reveal.visible{opacity:1;transform:none}
+
+/* demo section */
+.ds-sec{background:#111;border-top:1px solid #222;text-align:center;padding:88px 24px}
+.ds-h2{font-size:clamp(30px,4.4vw,46px);font-weight:800;letter-spacing:-.02em;margin-bottom:14px}
+.ds-sub{font-size:16px;color:var(--muted);margin-bottom:34px}
+.ds-btn{display:inline-flex;align-items:center;gap:10px;background:var(--accent);color:#0a0a0a;font-weight:700;font-size:17px;font-family:inherit;padding:18px 48px;border-radius:100px;border:none;cursor:pointer;transition:transform .15s,box-shadow .15s}
+.ds-btn:hover{transform:translateY(-2px);box-shadow:0 16px 44px rgba(204,255,0,.34)}
+.ds-fine{font-size:13px;color:rgba(255,255,255,.45);margin-top:22px}
 
 /* footer */
-.site-foot{background:#0a0a0a;padding:26px 20px;text-align:center;font-size:12px;color:rgba(255,255,255,.4);border-top:1px solid var(--border)}
+.site-foot{background:#0a0a0a;padding:28px 20px;text-align:center;font-size:12px;color:rgba(255,255,255,.4);border-top:1px solid #222}
 
 @media(max-width:980px){
   .hero-wrap{padding:84px 22px 26px}
   .hdr{padding:18px 22px}
   .h1{font-size:clamp(42px,11vw,60px)}
-  .feature-bar{padding:14px 18px;gap:6px 12px}
-  .fb-item{font-size:11px}
   .bg-ov{background:linear-gradient(180deg,rgba(10,10,10,.8),rgba(10,10,10,.92))}
-  .benefits{padding:56px 22px 66px}
-  .cards{grid-template-columns:1fr;gap:12px}
+  .stats{padding:38px 18px}
+  .stats-inner{grid-template-columns:1fr 1fr;gap:34px 0}
+  .stat-num{font-size:46px}
+  .stat:nth-child(even)::after{display:none}
+  .stat::after{height:54px}
+  .rows{padding:62px 22px;gap:66px}
+  .row{grid-template-columns:1fr;gap:30px}
+  .row-visual{order:-1}
+  .vis-right .row-visual{order:-1}
+  .ds-sec{padding:64px 22px}
+  .ds-btn{padding:16px 36px;font-size:16px}
 }
 
 /* ── DEMO MODAL ── */
@@ -237,9 +275,9 @@ img{display:block;max-width:100%}
     <h1 class="h1"><span class="h1-line">CLUB FLYER</span><span class="h1-line ac">IN SEKUNDEN.</span></h1>
     <p class="sub">Das neue Tool für Clubs, Bars und Events, powered by AI.<br>Professionelle Flyer in Sekunden, ganz ohne Designkenntnisse.</p>
     <div class="feat-row">
-      <span class="feat"><span class="fi">⚡</span> In 30 Sekunden erstellt</span>
-      <span class="feat"><span class="fi">✦</span> Keine Designkenntnisse nötig</span>
-      <span class="feat"><span class="fi">📱</span> Direkt für Instagram &amp; Social Media optimiert</span>
+      <span class="feat"><span class="fi">✓</span> In 30 Sekunden erstellt</span>
+      <span class="feat"><span class="fi">✓</span> Keine Designkenntnisse nötig</span>
+      <span class="feat"><span class="fi">✓</span> Direkt für Instagram &amp; Social Media optimiert</span>
     </div>
     <div class="cta">
       <a class="btn-primary" href="/app">Jetzt Flyer erstellen →</a>
@@ -258,33 +296,90 @@ img{display:block;max-width:100%}
   </div>
 </main>
 
-<div class="feature-bar">
-  <span class="fb-item"><b>✓</b>Für jede Eventart</span>
-  <span class="fb-sep">·</span>
-  <span class="fb-item"><b>✓</b>Über 100+ Templates</span>
-  <span class="fb-sep">·</span>
-  <span class="fb-item"><b>✓</b>Optimiert für Print &amp; Social Media</span>
-  <span class="fb-sep">·</span>
-  <span class="fb-item"><b>✓</b>Keine Designkenntnisse nötig</span>
-</div>
 </section>
 
-<!-- ── BENEFITS ── -->
-<section class="benefits">
-  <div class="benefits-inner">
-    <h2>Alles was du brauchst.</h2>
-    <div class="cards">
-      <div class="card"><div class="card-ic">🎨</div><h3>Professionelle Templates</h3><p>Wähle aus einer wachsenden Bibliothek an Designs für jeden Anlass.</p></div>
-      <div class="card"><div class="card-ic">⚡</div><h3>Fertig in 30 Sekunden</h3><p>Event-Daten eingeben, Template wählen — AI generiert deinen Flyer.</p></div>
-      <div class="card"><div class="card-ic">📱</div><h3>Instagram-ready</h3><p>Alle Flyer im 9:16 Format, direkt optimiert für Stories und Reels.</p></div>
-      <div class="card"><div class="card-ic">🎬</div><h3>Video-Export inklusive</h3><p>Exportiere deinen Flyer als animiertes Video mit Glitch, Neon oder Reveal-Effekt.</p></div>
-      <div class="card"><div class="card-ic">🖼️</div><h3>Dein Logo, dein Look</h3><p>Lade dein Club-Logo hoch — es wird automatisch in den Flyer integriert.</p></div>
-      <div class="card"><div class="card-ic">🔄</div><h3>Unbegrenzte Varianten</h3><p>Generiere so viele Versionen wie du willst bis es perfekt passt.</p></div>
+<!-- ── STATS ── -->
+<section class="stats reveal">
+  <div class="stats-inner">
+    <div class="stat"><div class="stat-num">30 Sek.</div><div class="stat-desc">bis dein Flyer<br>fertig ist</div></div>
+    <div class="stat"><div class="stat-num">100+</div><div class="stat-desc">professionelle<br>Templates verfügbar</div></div>
+    <div class="stat"><div class="stat-num">9:16</div><div class="stat-desc">Instagram &amp;<br>Story-Format nativ</div></div>
+    <div class="stat"><div class="stat-num">3</div><div class="stat-desc">cineastische<br>Video-Effekte inklusive</div></div>
+  </div>
+</section>
+
+<!-- ── FEATURE ROWS ── -->
+<section class="rows">
+  <!-- Row 1: text left, templates right -->
+  <div class="row reveal vis-right">
+    <div class="row-text">
+      <div class="row-label">Templates</div>
+      <h3 class="row-title">Für jeden Anlass das passende Design.</h3>
+      <p class="row-desc">Wähle aus einer wachsenden Bibliothek professioneller Templates — von Techno bis Hip-Hop, von Ladies Night bis Festival.</p>
+      <ul class="row-list">
+        <li>Neue Templates jede Woche</li>
+        <li>Jedes Design mit generischen Platzhaltern für AI-Erkennung</li>
+        <li>Für Print, Instagram und Social Media optimiert</li>
+      </ul>
     </div>
-    <div class="benefits-cta">
-      <a class="btn-primary" href="/app">Jetzt Flyer erstellen →</a>
+    <div class="row-visual">
+      <div class="stack">
+        <img class="stk s3" src="/templates/basshall-tropical.jpg" alt="">
+        <img class="stk s2" src="/templates/birthday-pink.jpg" alt="">
+        <img class="stk s1" src="/demo/tropical-night.png" alt="">
+      </div>
     </div>
   </div>
+
+  <!-- Row 2: flyer left, text right -->
+  <div class="row reveal">
+    <div class="row-visual">
+      <div class="flyer-frame">
+        <img src="/demo/tropical-night.png" alt="Fertiger Flyer">
+        <div class="done-badge">&#10003; Fertig</div>
+      </div>
+    </div>
+    <div class="row-text">
+      <div class="row-label">AI Generation</div>
+      <h3 class="row-title">Daten eingeben. Fertig.</h3>
+      <p class="row-desc">Gib deine Event-Infos ein — das Tool übernimmt den Rest. Powered by AI, der versteht wo welcher Text hingehört.</p>
+      <ul class="row-list">
+        <li>Headline, Datum, DJs, Logo — alles automatisch platziert</li>
+        <li>Kein Photoshop, keine Designkenntnisse nötig</li>
+        <li>Fertig in unter 30 Sekunden</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Row 3: text left, video right -->
+  <div class="row reveal vis-right">
+    <div class="row-text">
+      <div class="row-label">Video Export</div>
+      <h3 class="row-title">Aus dem Flyer wird ein Video.</h3>
+      <p class="row-desc">Exportiere deinen fertigen Flyer als 10-sekündiges Video — mit professionellen Animationseffekten die auf Social Media performen.</p>
+      <ul class="row-list">
+        <li>Glitch — harter Club-Look mit RGB-Split</li>
+        <li>Neon Pulse — pulsierender Glow-Effekt</li>
+        <li>Smooth Reveal — cineastisches Enthüllen</li>
+      </ul>
+    </div>
+    <div class="row-visual">
+      <video class="row-video" id="rowVideo" src="/demo/tropical-night-horror.mp4" muted loop playsinline preload="none"></video>
+      <div class="style-tags">
+        <span class="stag">Glitch</span>
+        <span class="stag">Neon Pulse</span>
+        <span class="stag">Smooth Reveal</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── DEMO SECTION ── -->
+<section class="ds-sec reveal">
+  <h2 class="ds-h2">Sieh es in Aktion.</h2>
+  <p class="ds-sub">In 8 Sekunden zeigen wir dir den kompletten Workflow.</p>
+  <button class="ds-btn" type="button" id="demoOpen2">&#9655; Demo starten</button>
+  <p class="ds-fine">Keine Registrierung nötig · Kostenlos testen</p>
 </section>
 
 <footer class="site-foot">© 2026 NightKit — Made for Clubs &amp; Bars</footer>
@@ -331,14 +426,14 @@ img{display:block;max-width:100%}
           <button class="demo-vclose" id="dVideoClose" aria-label="Video schließen">✕</button>
           <button class="demo-start" id="dStart"><span class="demo-start-ico">▶</span> Demo starten</button>
         </div>
-        <button class="demo-toggle" id="dToggle">👁 <span id="dToggleLabel">Vorher ansehen</span></button>
+        <button class="demo-toggle" id="dToggle"><span id="dToggleLabel">Vorher ansehen</span></button>
         <div class="demo-hint" id="dHint">Klick „Demo starten" — der Flyer entsteht Schritt für Schritt</div>
         <div class="demo-video-section" id="dVideoSection">
           <div class="demo-video-label">Jetzt als Video exportieren — Effekt anklicken</div>
           <div class="demo-styles">
-            <button class="demo-style" id="dStyleGlitch">⚡ Glitch</button>
-            <button class="demo-style" id="dStyleNeon">🔮 Neon Pulse</button>
-            <button class="demo-style" id="dStyleReveal">✨ Smooth Reveal</button>
+            <button class="demo-style" id="dStyleGlitch">Glitch</button>
+            <button class="demo-style" id="dStyleNeon">Neon Pulse</button>
+            <button class="demo-style" id="dStyleReveal">Smooth Reveal</button>
           </div>
         </div>
       </div>
@@ -471,6 +566,34 @@ img{display:block;max-width:100%}
   $('dVideo').addEventListener('click', stopVideo);
   STYLES.forEach(function(id){ $(id).addEventListener('click', function(){ playStyle(id); }); });
   document.addEventListener('keydown', function(e){ if(e.key==='Escape'&&modal.classList.contains('open')) closeDemo(); });
+})();
+
+// ── scroll reveal + lazy row-video (IntersectionObserver, no autoplay on load) ──
+(function(){
+  var targets = document.querySelectorAll('.reveal');
+  if (!('IntersectionObserver' in window)) {
+    targets.forEach(function(el){ el.classList.add('visible'); });
+  } else {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        var vid = en.target.querySelector('video.row-video');
+        if (en.isIntersecting) {
+          en.target.classList.add('visible');
+          if (vid && vid.paused) vid.play().catch(function(){});
+        } else if (vid && !vid.paused) {
+          vid.pause();
+        }
+      });
+    }, { threshold: 0.2 });
+    targets.forEach(function(el){ io.observe(el); });
+  }
+
+  // demo-section button reuses the hero button's handler (demo logic untouched)
+  var d2 = document.getElementById('demoOpen2');
+  if (d2) d2.addEventListener('click', function(){
+    var b = document.getElementById('demoOpen');
+    if (b) b.click();
+  });
 })();
 </script>
 </body>
