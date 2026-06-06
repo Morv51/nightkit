@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NightKit — Anmelden</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --accent:#CCFF00; --bg:#0a0a0a; --card:#111111; --border:#222;
+    --input:#1a1a1a; --input-border:#333; --muted:#888; --err:#ff5a5a; --ok:#7CE38B;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:#fff;min-height:100vh;position:relative;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+  .bg{position:fixed;inset:0;z-index:-2;background:#0a0a0a url('/assets/landing-bg.png') center/cover no-repeat}
+  .bg-ov{position:fixed;inset:0;z-index:-1;background:rgba(0,0,0,.85)}
+
+  /* brand top-left */
+  .brand{position:absolute;top:26px;left:30px;display:flex;align-items:center;gap:11px;text-decoration:none;z-index:3}
+  .brand .star{width:34px;height:34px;border-radius:9px;background:var(--accent);display:flex;align-items:center;justify-content:center}
+  .brand .star svg{width:17px;height:17px}
+  .brand .name{font-size:19px;font-weight:800;color:#fff;letter-spacing:-.02em}
+
+  /* card */
+  .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:96px 20px 44px}
+  .card{width:100%;max-width:420px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:40px;box-shadow:0 30px 80px rgba(0,0,0,.55)}
+  .card-star{width:54px;height:54px;border-radius:14px;background:rgba(204,255,0,.12);display:flex;align-items:center;justify-content:center;margin:0 auto 24px}
+  .card-star svg{width:28px;height:28px}
+
+  /* tabs */
+  .tabs{display:flex;margin-bottom:26px;border-bottom:1px solid var(--border)}
+  .tab{flex:1;background:none;border:none;font-family:inherit;font-size:15px;font-weight:600;color:var(--muted);padding:12px 0;cursor:pointer;position:relative;transition:color .15s}
+  .tab.active{color:#fff}
+  .tab.active::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--accent);border-radius:2px}
+
+  /* fields */
+  .field{margin-bottom:16px}
+  .label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:7px;font-weight:500}
+  .input-wrap{position:relative}
+  .in{width:100%;background:var(--input);border:1px solid var(--input-border);border-radius:8px;color:#fff;font-family:inherit;font-size:15px;padding:13px 14px;transition:border-color .15s;outline:none}
+  .in:focus{border-color:var(--accent)}
+  .in::placeholder{color:#555}
+  #password{padding-right:44px}
+  .eye{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:7px;display:flex;align-items:center;border-radius:6px}
+  .eye:hover{color:#fff}
+  .eye svg{width:19px;height:19px}
+  .field-err{font-size:12px;color:var(--err);margin-top:6px;display:none}
+  .field-err.show{display:block}
+
+  .forgot-row{display:flex;justify-content:flex-end;margin:-2px 0 18px}
+  .forgot{font-size:12.5px;color:var(--muted);text-decoration:none}
+  .forgot:hover{color:var(--accent)}
+
+  .submit{width:100%;background:var(--accent);color:#0a0a0a;font-family:inherit;font-weight:700;font-size:15px;border:none;border-radius:8px;padding:14px;cursor:pointer;transition:background .15s,transform .08s}
+  .submit:hover{background:#bdec00}
+  .submit:active{transform:translateY(1px)}
+  .submit:disabled{opacity:.6;cursor:default}
+
+  .msg{font-size:13px;margin-top:15px;line-height:1.5;display:none}
+  .msg.err{color:var(--err);display:block}
+  .msg.ok{color:var(--ok);display:block}
+
+  .switch{text-align:center;font-size:13.5px;color:var(--muted);margin-top:22px}
+  .switch a{color:var(--accent);text-decoration:none;font-weight:600;margin-left:4px}
+  .switch a:hover{text-decoration:underline}
+
+  @media(max-width:480px){ .card{padding:32px 22px} .brand{top:18px;left:18px} .wrap{padding:84px 16px 32px} }
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="bg-ov"></div>
+
+<a class="brand" href="/" aria-label="NightKit Startseite">
+  <span class="star"><svg viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12M4 2.5L10 11.5M10 2.5L4 11.5" stroke="#0a0a0a" stroke-width="1.8" stroke-linecap="round"/></svg></span>
+  <span class="name">NightKit</span>
+</a>
+
+<div class="wrap">
+  <div class="card">
+    <div class="card-star">
+      <svg viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12M4 2.5L10 11.5M10 2.5L4 11.5" stroke="#CCFF00" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" id="tabLogin" type="button">Anmelden</button>
+      <button class="tab" id="tabSignup" type="button">Registrieren</button>
+    </div>
+
+    <form id="authForm" novalidate>
+      <div class="field">
+        <label class="label" for="email">Email</label>
+        <div class="input-wrap">
+          <input class="in" type="email" id="email" autocomplete="email" placeholder="du@club.de">
+        </div>
+        <div class="field-err" id="emailErr"></div>
+      </div>
+
+      <div class="field">
+        <label class="label" for="password">Passwort</label>
+        <div class="input-wrap">
+          <input class="in" type="password" id="password" autocomplete="current-password" placeholder="••••••••">
+          <button class="eye" id="eyeBtn" type="button" aria-label="Passwort anzeigen">
+            <svg id="eyeOpen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg id="eyeOff" style="display:none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 4.24A9.1 9.1 0 0 1 12 4c6.5 0 10 7 10 7a13.3 13.3 0 0 1-1.67 2.45M6.6 6.6A13.4 13.4 0 0 0 2 11s3.5 7 10 7a9 9 0 0 0 3.4-.65M3 3l18 18"/></svg>
+          </button>
+        </div>
+        <div class="field-err" id="passwordErr"></div>
+      </div>
+
+      <div class="forgot-row" id="forgotRow">
+        <a class="forgot" href="#" id="forgotLink">Passwort vergessen?</a>
+      </div>
+
+      <input type="hidden" id="refField" name="ref">
+
+      <button class="submit" id="submitBtn" type="submit">Anmelden</button>
+      <div class="msg" id="msg" role="status" aria-live="polite"></div>
+    </form>
+
+    <div class="switch">
+      <span id="switchText">Noch kein Account?</span>
+      <a href="#" id="switchLink">Registrieren →</a>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // Public anon credentials (safe for the browser).
+  var SUPABASE_URL  = 'https://jnkujsfsmmieodthpelm.supabase.co';
+  var SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impua3Vqc2ZzbW1pZW9kdGhwZWxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3NDc1NzMsImV4cCI6MjA5NjMyMzU3M30.0Uc6KNZDFaQd94P0kqFyhvPFvwbgH-BHwLmHqzEUITQ';
+  var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+  var $ = function(id){ return document.getElementById(id); };
+  var mode = 'login';
+
+  // ?ref= → hidden field (affiliate tracking). ?mode=signup opens that tab.
+  var params  = new URLSearchParams(location.search);
+  var refCode = params.get('ref') || '';
+  $('refField').value = refCode;
+
+  function setMode(m){
+    mode = m;
+    var login = (m === 'login');
+    $('tabLogin').classList.toggle('active', login);
+    $('tabSignup').classList.toggle('active', !login);
+    $('submitBtn').textContent = login ? 'Anmelden' : 'Registrieren';
+    $('forgotRow').style.display = login ? 'flex' : 'none';
+    $('password').setAttribute('autocomplete', login ? 'current-password' : 'new-password');
+    $('switchText').textContent = login ? 'Noch kein Account?' : 'Bereits registriert?';
+    $('switchLink').textContent = login ? 'Registrieren →' : 'Anmelden →';
+    clearMsgs();
+  }
+
+  function clearMsgs(){
+    $('msg').className = 'msg'; $('msg').textContent = '';
+    $('emailErr').className = 'field-err'; $('emailErr').textContent = '';
+    $('passwordErr').className = 'field-err'; $('passwordErr').textContent = '';
+  }
+  function fieldErr(id, text){ var e=$(id); e.textContent=text; e.className='field-err show'; }
+  function showMsg(text, ok){ var m=$('msg'); m.textContent=text; m.className='msg ' + (ok?'ok':'err'); }
+
+  function mapError(error){
+    var m = ((error && error.message) || '').toLowerCase();
+    if (m.indexOf('invalid login') > -1) return 'Email oder Passwort ist falsch.';
+    if (m.indexOf('already registered') > -1 || m.indexOf('already been registered') > -1) return 'Diese Email ist bereits registriert.';
+    if (m.indexOf('email not confirmed') > -1) return 'Bitte bestätige zuerst deine Email-Adresse.';
+    if (m.indexOf('rate limit') > -1) return 'Zu viele Versuche. Bitte kurz warten.';
+    return (error && error.message) || 'Etwas ist schiefgelaufen.';
+  }
+
+  // tab + switch wiring
+  $('tabLogin').addEventListener('click', function(){ setMode('login'); });
+  $('tabSignup').addEventListener('click', function(){ setMode('signup'); });
+  $('switchLink').addEventListener('click', function(e){ e.preventDefault(); setMode(mode === 'login' ? 'signup' : 'login'); });
+
+  // password visibility toggle
+  $('eyeBtn').addEventListener('click', function(){
+    var p = $('password'); var reveal = (p.type === 'password');
+    p.type = reveal ? 'text' : 'password';
+    $('eyeOpen').style.display = reveal ? 'none' : '';
+    $('eyeOff').style.display  = reveal ? '' : 'none';
+    $('eyeBtn').setAttribute('aria-label', reveal ? 'Passwort verbergen' : 'Passwort anzeigen');
+  });
+
+  // forgot password → send reset email
+  $('forgotLink').addEventListener('click', async function(e){
+    e.preventDefault();
+    clearMsgs();
+    var email = $('email').value.trim();
+    if (!email){ fieldErr('emailErr', 'Bitte zuerst deine Email eingeben.'); return; }
+    var res = await supabase.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/login.html' });
+    if (res.error) showMsg(mapError(res.error), false);
+    else showMsg('Falls die Adresse existiert, haben wir dir einen Link zum Zurücksetzen geschickt.', true);
+  });
+
+  // submit (login or signup)
+  $('authForm').addEventListener('submit', async function(e){
+    e.preventDefault();
+    clearMsgs();
+    var email = $('email').value.trim();
+    var password = $('password').value;
+    var bad = false;
+    if (!email){ fieldErr('emailErr', 'Bitte Email eingeben.'); bad = true; }
+    if (!password){ fieldErr('passwordErr', 'Bitte Passwort eingeben.'); bad = true; }
+    if (mode === 'signup' && password && password.length < 6){ fieldErr('passwordErr', 'Mindestens 6 Zeichen.'); bad = true; }
+    if (bad) return;
+
+    var btn = $('submitBtn');
+    var label = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = (mode === 'login') ? 'Anmelden…' : 'Konto wird erstellt…';
+
+    try {
+      if (mode === 'login'){
+        var login = await supabase.auth.signInWithPassword({ email: email, password: password });
+        if (login.error){ showMsg(mapError(login.error), false); }
+        else { location.replace('/app'); return; }
+      } else {
+        var signup = await supabase.auth.signUp({
+          email: email,
+          password: password,
+          options: {
+            data: { referred_by: refCode || null },
+            emailRedirectTo: location.origin + '/login.html'
+          }
+        });
+        if (signup.error){ showMsg(mapError(signup.error), false); }
+        else {
+          showMsg('Bitte bestätige deine Email-Adresse.', true);
+          $('authForm').reset();
+          $('refField').value = refCode;
+        }
+      }
+    } catch (err){
+      showMsg('Etwas ist schiefgelaufen. Bitte erneut versuchen.', false);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = label;
+    }
+  });
+
+  if (params.get('mode') === 'signup') setMode('signup');
+
+  // Already signed in? Skip straight to the app.
+  supabase.auth.getSession().then(function(r){
+    if (r && r.data && r.data.session) location.replace('/app');
+  });
+})();
+</script>
+</body>
+</html>

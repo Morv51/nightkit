@@ -11,6 +11,7 @@ const { createServer: createStatic } = require("./lib/static");
 const { proxy }             = require("./lib/proxy");
 const { webmToMp4 }         = require("./lib/convert");
 const { createRouter }      = require("./lib/router");
+const auth                  = require("./lib/auth");
 const { readJson, readBody, sendJson, sendError, applyCors } = require("./lib/http");
 
 const PORT         = process.env.PORT || 3000;
@@ -32,6 +33,15 @@ const router = createRouter();
 router.post("/api/generate", async (req, res) => {
   if (!IDEOGRAM_KEY) return sendError(res, 500, "IDEOGRAM_API_KEY not configured");
 
+  // Require a valid Supabase session when auth is configured. (In dev mode,
+  // without service-role creds, auth.isConfigured() is false and this is
+  // skipped — see lib/auth.js.)
+  let user = null;
+  if (auth.isConfigured()) {
+    user = await auth.verifyToken(auth.bearer(req));
+    if (!user) return sendError(res, 401, "Authentifizierung erforderlich");
+  }
+
   let ev;
   try {
     ev = await readJson(req);
@@ -51,10 +61,22 @@ router.post("/api/generate", async (req, res) => {
   const jobId = jobs.create();
   sendJson(res, 202, { jobId });
 
+  // Count this generation against the user's profile (best-effort).
+  if (user) auth.incrementGenerations(user.id);
+
   runIdeogramJob(jobId, ev, file).catch((e) => {
     console.error(`Job ${jobId} failed:`, e.message);
     jobs.set(jobId, { status: "error", error: e.message });
   });
+});
+
+// Verify a Supabase JWT (Authorization: Bearer <token>) and echo the user.
+router.post("/api/verify-token", async (req, res) => {
+  const token = auth.bearer(req);
+  if (!token) return sendError(res, 401, "Missing token");
+  const user = await auth.verifyToken(token);
+  if (!user) return sendError(res, 401, "Invalid token");
+  sendJson(res, 200, { user: { id: user.id, email: user.email } });
 });
 
 router.get(/^\/api\/status\/([a-f0-9]+)$/, (req, res, params) => {

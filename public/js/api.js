@@ -11,12 +11,27 @@ async function parseError(res) {
   return `Fehler ${res.status}: ${text.slice(0, 200)}`;
 }
 
+// Attach the Supabase JWT (set up in app.html as window.sb) so the server can
+// verify the user. No-op if auth isn't loaded.
+async function authHeaders() {
+  try {
+    const sb = window.sb;
+    if (sb && sb.auth) {
+      const { data } = await sb.auth.getSession();
+      const token = data && data.session && data.session.access_token;
+      if (token) return { Authorization: "Bearer " + token };
+    }
+  } catch {}
+  return {};
+}
+
 export async function postGenerate(event) {
   const res = await fetch("/api/generate", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
     body: JSON.stringify(event),
   });
+  if (res.status === 401) throw new Error("Sitzung abgelaufen. Bitte neu anmelden.");
   if (!res.ok) throw new Error(await parseError(res));
   const data = await res.json();
   if (!data.jobId) throw new Error("Kein Job zurück.");

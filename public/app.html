@@ -7,6 +7,32 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/app.css">
 <script src="/mp4-muxer.js"></script>
+
+<!-- Supabase auth: client + session guard -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  (function(){
+    var SUPABASE_URL  = 'https://jnkujsfsmmieodthpelm.supabase.co';
+    var SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impua3Vqc2ZzbW1pZW9kdGhwZWxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3NDc1NzMsImV4cCI6MjA5NjMyMzU3M30.0Uc6KNZDFaQd94P0kqFyhvPFvwbgH-BHwLmHqzEUITQ';
+    window.sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+    // Guard: only authenticated users may use the generator. Runs before the
+    // app module so unauthenticated visitors are bounced to /login.html.
+    window.__nkSession = window.sb.auth.getSession().then(function(r){
+      var session = r && r.data && r.data.session;
+      if (!session){ location.replace('/login.html'); return null; }
+      return session;
+    }).catch(function(){ return null; });
+  })();
+</script>
+<style>
+  .user-chip{position:relative;margin-left:14px}
+  .user-av{width:36px;height:36px;border-radius:50%;background:#CCFF00;color:#0a0a0a;font-weight:700;font-size:15px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit}
+  .user-menu{position:absolute;top:46px;right:0;min-width:210px;background:#111;border:1px solid #222;border-radius:12px;padding:8px;opacity:0;visibility:hidden;transform:translateY(-6px);transition:opacity .15s,transform .15s,visibility .15s;z-index:60;box-shadow:0 16px 40px rgba(0,0,0,.5)}
+  .user-chip:hover .user-menu,.user-menu.open{opacity:1;visibility:visible;transform:none}
+  .user-email{font-size:12px;color:#888;padding:8px 10px 10px;word-break:break-all;border-bottom:1px solid #222;margin-bottom:6px}
+  .user-logout{width:100%;text-align:left;background:none;border:none;color:#fff;font-family:inherit;font-size:14px;font-weight:600;padding:9px 10px;border-radius:8px;cursor:pointer;transition:background .12s,color .12s}
+  .user-logout:hover{background:rgba(255,90,90,.13);color:#ff5a5a}
+</style>
 </head>
 <body>
 
@@ -27,6 +53,13 @@
     <span class="logo-name">NightKit</span>
   </a>
   <a class="topbar-back" href="/">← Zurück zur Übersicht</a>
+  <div class="user-chip" id="userChip" hidden>
+    <button class="user-av" id="userAv" type="button" aria-label="Account">U</button>
+    <div class="user-menu" id="userMenu">
+      <div class="user-email" id="userEmail">…</div>
+      <button class="user-logout" id="userLogout" type="button">Abmelden</button>
+    </div>
+  </div>
 </header>
 
 <div class="app">
@@ -145,6 +178,29 @@
 </div><!-- /app -->
 
 <script type="module" src="/js/main.js"></script>
+<script>
+  // Render the user chip (avatar + email + logout) once the session resolves.
+  (async function(){
+    var session = await (window.__nkSession || Promise.resolve(null));
+    if (!session || !window.sb) return; // not authenticated (already redirecting)
+    var email = (session.user && session.user.email) || '';
+    var chip   = document.getElementById('userChip');
+    var av     = document.getElementById('userAv');
+    var menu   = document.getElementById('userMenu');
+    document.getElementById('userEmail').textContent = email;
+    av.textContent = (email.charAt(0) || 'U').toUpperCase();
+    chip.hidden = false;
+
+    // Click toggles the menu too (hover handled by CSS for desktop).
+    av.addEventListener('click', function(e){ e.stopPropagation(); menu.classList.toggle('open'); });
+    document.addEventListener('click', function(e){ if (!chip.contains(e.target)) menu.classList.remove('open'); });
+
+    document.getElementById('userLogout').addEventListener('click', async function(){
+      try { await window.sb.auth.signOut(); } catch (e) {}
+      location.replace('/login.html');
+    });
+  })();
+</script>
 
 </body>
 </html>
