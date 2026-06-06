@@ -19,7 +19,7 @@ html{scroll-behavior:smooth}
 body{
   font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
   background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased;
-  min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden;
+  overflow-x:hidden;
 }
 a{text-decoration:none;color:inherit}
 img{display:block;max-width:100%}
@@ -37,13 +37,15 @@ img{display:block;max-width:100%}
 .logo-tx{font-weight:800;font-size:20px;letter-spacing:.3px}
 
 /* hero layout */
-.hero-wrap{flex:1;display:grid;grid-template-columns:1.05fr .95fr;align-items:center;gap:48px;width:100%;max-width:1340px;margin:0 auto;padding:104px 56px 36px}
-.hero{max-width:580px}
+.hero-screen{position:relative;min-height:100vh;display:flex;flex-direction:column}
+.hero-wrap{flex:1;display:flex;align-items:center;width:100%;max-width:1340px;margin:0 auto;padding:104px 56px 36px}
+.hero{max-width:680px}
 .badge{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);border-radius:100px;padding:7px 15px;font-size:11px;font-weight:600;letter-spacing:.07em;color:#fff;margin-bottom:28px}
 .badge .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
 .h1{font-size:clamp(48px,7vw,84px);line-height:.97;font-weight:800;letter-spacing:-.025em;margin-bottom:22px}
-.sub{font-size:18px;color:var(--muted);margin-bottom:28px;line-height:1.55}
-.feat-row{display:flex;flex-wrap:wrap;gap:14px 24px;margin-bottom:32px}
+.h1 .h1-line{display:block}
+.sub{font-size:18px;color:var(--muted);margin-bottom:28px;line-height:1.55;max-width:540px}
+.feat-row{display:flex;flex-direction:column;gap:11px;margin-bottom:32px;align-items:flex-start}
 .feat{display:flex;align-items:center;gap:8px;font-size:14px;color:#fff}
 .feat .fi{color:var(--accent);font-size:15px;line-height:1}
 .cta{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:36px}
@@ -58,39 +60,36 @@ img{display:block;max-width:100%}
 .proof-text{font-size:12px;color:var(--muted);line-height:1.4}
 .stars{color:var(--accent);letter-spacing:2px;font-size:12px}
 
-/* app mockup */
-.mockup{display:flex;justify-content:center}
-.mock-win{width:100%;max-width:620px;background:#101010;border:1px solid rgba(255,255,255,.1);border-radius:16px;overflow:hidden;box-shadow:0 50px 120px rgba(0,0,0,.7)}
-.mock-bar{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:#0c0c0c;border-bottom:1px solid rgba(255,255,255,.08)}
-.mb-dots{display:flex;gap:6px}
-.mb-dots i{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.18)}
-.mb-dl{background:var(--accent);color:#0a0a0a;font-size:11px;font-weight:700;padding:6px 12px;border-radius:6px}
-.mock-body{display:grid;grid-template-columns:78px 1fr 116px;gap:11px;padding:14px;height:360px}
-.mock-form{display:flex;flex-direction:column;gap:6px;overflow:hidden}
-.mf-title{font-size:8px;font-weight:700;letter-spacing:.12em;color:var(--accent);margin-bottom:1px}
-.mf-lbl{font-size:6px;letter-spacing:.08em;color:rgba(255,255,255,.4);text-transform:uppercase}
-.mf-in{height:15px;border-radius:3px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1)}
-.mf-btn{margin-top:auto;height:20px;border-radius:5px;background:var(--accent)}
-.mock-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;align-content:start;overflow:hidden}
-.mock-grid img{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:5px;border:1.5px solid rgba(255,255,255,.08)}
-.mock-grid img:first-child{border-color:var(--accent)}
-.mock-preview{display:flex;align-items:flex-start;justify-content:center}
-.mock-preview img{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:7px;box-shadow:0 10px 28px rgba(0,0,0,.55)}
-
 /* feature bar */
 .feature-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 16px;padding:18px 40px;border-top:1px solid var(--border);background:rgba(0,0,0,.35)}
 .fb-item{font-size:12.5px;color:rgba(255,255,255,.58)}
 .fb-item b{color:var(--accent);font-weight:700;margin-right:4px}
 .fb-sep{color:rgba(255,255,255,.2)}
 
+/* benefits section */
+.benefits{position:relative;background:#111;padding:84px 40px 92px;border-top:1px solid var(--border)}
+.benefits-inner{max-width:1080px;margin:0 auto}
+.benefits h2{font-size:clamp(34px,5vw,52px);font-weight:800;letter-spacing:-.02em;text-align:center;margin-bottom:46px}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.card{background:#1a1a1a;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:26px 24px;transition:border-color .2s,box-shadow .2s,transform .2s}
+.card:hover{border-color:rgba(204,255,0,.55);box-shadow:0 0 26px rgba(204,255,0,.13);transform:translateY(-2px)}
+.card-ic{width:48px;height:48px;border-radius:11px;background:rgba(204,255,0,.12);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:16px}
+.card h3{font-size:17px;font-weight:700;margin-bottom:8px}
+.card p{font-size:14px;color:var(--muted);line-height:1.55}
+.benefits-cta{text-align:center;margin-top:46px}
+
+/* footer */
+.site-foot{background:#0a0a0a;padding:26px 20px;text-align:center;font-size:12px;color:rgba(255,255,255,.4);border-top:1px solid var(--border)}
+
 @media(max-width:980px){
-  .hero-wrap{grid-template-columns:1fr;padding:84px 22px 26px;gap:30px}
-  .mockup{display:none}
+  .hero-wrap{padding:84px 22px 26px}
   .hdr{padding:18px 22px}
   .h1{font-size:clamp(42px,11vw,60px)}
   .feature-bar{padding:14px 18px;gap:6px 12px}
   .fb-item{font-size:11px}
   .bg-ov{background:linear-gradient(180deg,rgba(10,10,10,.8),rgba(10,10,10,.92))}
+  .benefits{padding:56px 22px 66px}
+  .cards{grid-template-columns:1fr;gap:12px}
 }
 
 /* ── DEMO MODAL ── */
@@ -231,16 +230,16 @@ img{display:block;max-width:100%}
   </a>
 </header>
 
+<section class="hero-screen">
 <main class="hero-wrap">
-  <!-- LEFT: hero -->
   <div class="hero">
     <div class="badge"><span class="dot"></span> FÜR CLUBS &amp; BARS – SOFORT NUTZBAR</div>
-    <h1 class="h1">CLUB FLYER<br><span class="ac">IN SEKUNDEN.</span></h1>
-    <p class="sub">KI erstellt professionelle Flyer für Clubs, Bars und Events.<br><span class="ac">Ohne Designkenntnisse.</span></p>
+    <h1 class="h1"><span class="h1-line">CLUB FLYER</span><span class="h1-line ac">IN SEKUNDEN.</span></h1>
+    <p class="sub">Das neue Tool für Clubs, Bars und Events, powered by AI.<br>Professionelle Flyer in Sekunden, ganz ohne Designkenntnisse.</p>
     <div class="feat-row">
       <span class="feat"><span class="fi">⚡</span> In 30 Sekunden erstellt</span>
       <span class="feat"><span class="fi">✦</span> Keine Designkenntnisse nötig</span>
-      <span class="feat"><span class="fi">↓</span> Sofort druckfertig</span>
+      <span class="feat"><span class="fi">📱</span> Direkt für Instagram &amp; Social Media optimiert</span>
     </div>
     <div class="cta">
       <a class="btn-primary" href="/app">Jetzt Flyer erstellen →</a>
@@ -257,37 +256,6 @@ img{display:block;max-width:100%}
       <div class="proof-text"><span class="stars">★★★★★</span><br>Über 2.500+ Flyer diesen Monat erstellt</div>
     </div>
   </div>
-
-  <!-- RIGHT: app mockup -->
-  <div class="mockup">
-    <div class="mock-win">
-      <div class="mock-bar">
-        <span class="mb-dots"><i></i><i></i><i></i></span>
-        <span class="mb-dl">Herunterladen ↓</span>
-      </div>
-      <div class="mock-body">
-        <div class="mock-form">
-          <div class="mf-title">EVENT</div>
-          <div class="mf-lbl">Headline</div><div class="mf-in"></div>
-          <div class="mf-lbl">Datum</div><div class="mf-in"></div>
-          <div class="mf-lbl">DJs</div><div class="mf-in"></div>
-          <div class="mf-lbl">Website</div><div class="mf-in"></div>
-          <div class="mf-btn"></div>
-        </div>
-        <div class="mock-grid">
-          <img src="/demo/tropical-night.png" alt="">
-          <img src="/templates/birthday-pink.jpg" alt="">
-          <img src="/templates/basshall-tropical.jpg" alt="">
-          <img src="/demo/tropical-night.png" alt="">
-          <img src="/templates/birthday-pink.jpg" alt="">
-          <img src="/templates/basshall-tropical.jpg" alt="">
-        </div>
-        <div class="mock-preview">
-          <img src="/demo/tropical-night.png" alt="Flyer-Vorschau">
-        </div>
-      </div>
-    </div>
-  </div>
 </main>
 
 <div class="feature-bar">
@@ -299,6 +267,27 @@ img{display:block;max-width:100%}
   <span class="fb-sep">·</span>
   <span class="fb-item"><b>✓</b>Keine Designkenntnisse nötig</span>
 </div>
+</section>
+
+<!-- ── BENEFITS ── -->
+<section class="benefits">
+  <div class="benefits-inner">
+    <h2>Alles was du brauchst.</h2>
+    <div class="cards">
+      <div class="card"><div class="card-ic">🎨</div><h3>Professionelle Templates</h3><p>Wähle aus einer wachsenden Bibliothek an Designs für jeden Anlass.</p></div>
+      <div class="card"><div class="card-ic">⚡</div><h3>Fertig in 30 Sekunden</h3><p>Event-Daten eingeben, Template wählen — AI generiert deinen Flyer.</p></div>
+      <div class="card"><div class="card-ic">📱</div><h3>Instagram-ready</h3><p>Alle Flyer im 9:16 Format, direkt optimiert für Stories und Reels.</p></div>
+      <div class="card"><div class="card-ic">🎬</div><h3>Video-Export inklusive</h3><p>Exportiere deinen Flyer als animiertes Video mit Glitch, Neon oder Reveal-Effekt.</p></div>
+      <div class="card"><div class="card-ic">🖼️</div><h3>Dein Logo, dein Look</h3><p>Lade dein Club-Logo hoch — es wird automatisch in den Flyer integriert.</p></div>
+      <div class="card"><div class="card-ic">🔄</div><h3>Unbegrenzte Varianten</h3><p>Generiere so viele Versionen wie du willst bis es perfekt passt.</p></div>
+    </div>
+    <div class="benefits-cta">
+      <a class="btn-primary" href="/app">Jetzt Flyer erstellen →</a>
+    </div>
+  </div>
+</section>
+
+<footer class="site-foot">© 2026 NightKit — Made for Clubs &amp; Bars</footer>
 
 <!-- ── DEMO MODAL ── -->
 <div class="demo-modal" id="demoModal" role="dialog" aria-modal="true" aria-label="NightKit Demo">
