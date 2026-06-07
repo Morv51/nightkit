@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NightKit — Neues Passwort</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --accent:#CCFF00; --bg:#0a0a0a; --card:#111111; --border:#222;
+    --input:#1a1a1a; --input-border:#333; --muted:#888; --err:#ff5a5a; --ok:#7CE38B;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:#fff;min-height:100vh;position:relative;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+  .bg{position:fixed;inset:0;z-index:-2;background:#0a0a0a url('/assets/landing-bg.png') center/cover no-repeat}
+  .bg-ov{position:fixed;inset:0;z-index:-1;background:rgba(0,0,0,.85)}
+
+  .brand{position:absolute;top:26px;left:30px;display:flex;align-items:center;gap:11px;text-decoration:none;z-index:3}
+  .brand .star{width:34px;height:34px;border-radius:9px;background:var(--accent);display:flex;align-items:center;justify-content:center}
+  .brand .star svg{width:17px;height:17px}
+  .brand .name{font-size:19px;font-weight:800;color:#fff;letter-spacing:-.02em}
+
+  .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:96px 20px 44px}
+  .card{width:100%;max-width:420px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:40px;box-shadow:0 30px 80px rgba(0,0,0,.55)}
+  .card-star{width:54px;height:54px;border-radius:14px;background:rgba(204,255,0,.12);display:flex;align-items:center;justify-content:center;margin:0 auto 22px}
+  .card-star svg{width:28px;height:28px}
+  .card-title{text-align:center;font-size:21px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px}
+  .card-sub{text-align:center;font-size:13.5px;color:var(--muted);margin-bottom:26px;line-height:1.5}
+
+  .state{text-align:center;font-size:14px;color:var(--muted);padding:8px 0 4px;line-height:1.6}
+  .state .back{display:inline-block;margin-top:16px;color:var(--accent);text-decoration:none;font-weight:600;font-size:13.5px}
+  .state .back:hover{text-decoration:underline}
+
+  .field{margin-bottom:16px}
+  .label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:7px;font-weight:500}
+  .input-wrap{position:relative}
+  .in{width:100%;background:var(--input);border:1px solid var(--input-border);border-radius:8px;color:#fff;font-family:inherit;font-size:15px;padding:13px 14px;transition:border-color .15s;outline:none}
+  .in:focus{border-color:var(--accent)}
+  .in::placeholder{color:#555}
+  #pw1{padding-right:44px}
+  .eye{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:7px;display:flex;align-items:center;border-radius:6px}
+  .eye:hover{color:#fff}
+  .eye svg{width:19px;height:19px}
+  .field-err{font-size:12px;color:var(--err);margin-top:6px;display:none}
+  .field-err.show{display:block}
+
+  .submit{width:100%;background:var(--accent);color:#0a0a0a;font-family:inherit;font-weight:700;font-size:15px;border:none;border-radius:8px;padding:14px;cursor:pointer;transition:background .15s,transform .08s;margin-top:4px}
+  .submit:hover{background:#bdec00}
+  .submit:active{transform:translateY(1px)}
+  .submit:disabled{opacity:.6;cursor:default}
+
+  .msg{font-size:13px;margin-top:15px;line-height:1.5;display:none}
+  .msg.err{color:var(--err);display:block}
+  .msg.ok{color:var(--ok);display:block}
+
+  @media(max-width:480px){ .card{padding:32px 22px} .brand{top:18px;left:18px} .wrap{padding:84px 16px 32px} }
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="bg-ov"></div>
+
+<a class="brand" href="/" aria-label="NightKit Startseite">
+  <span class="star"><svg viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12M4 2.5L10 11.5M10 2.5L4 11.5" stroke="#0a0a0a" stroke-width="1.8" stroke-linecap="round"/></svg></span>
+  <span class="name">NightKit</span>
+</a>
+
+<div class="wrap">
+  <div class="card">
+    <div class="card-star">
+      <svg viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12M4 2.5L10 11.5M10 2.5L4 11.5" stroke="#CCFF00" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </div>
+    <h1 class="card-title">Neues Passwort setzen</h1>
+    <p class="card-sub">Wähle ein neues Passwort für deinen Account.</p>
+
+    <!-- checking the recovery link -->
+    <div class="state" id="loading">Link wird geprüft…</div>
+
+    <!-- invalid / expired link -->
+    <div class="state" id="invalid" style="display:none">
+      <span id="invalidMsg">Der Link ist ungültig oder abgelaufen.</span>
+      <br><a class="back" href="/login.html">← Zurück zum Login</a>
+    </div>
+
+    <!-- the reset form -->
+    <form id="resetForm" novalidate style="display:none">
+      <div class="field">
+        <label class="label" for="pw1">Neues Passwort</label>
+        <div class="input-wrap">
+          <input class="in" type="password" id="pw1" autocomplete="new-password" placeholder="••••••••">
+          <button class="eye" id="eyeBtn" type="button" aria-label="Passwort anzeigen">
+            <svg id="eyeOpen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg id="eyeOff" style="display:none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 4.24A9.1 9.1 0 0 1 12 4c6.5 0 10 7 10 7a13.3 13.3 0 0 1-1.67 2.45M6.6 6.6A13.4 13.4 0 0 0 2 11s3.5 7 10 7a9 9 0 0 0 3.4-.65M3 3l18 18"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="field">
+        <label class="label" for="pw2">Passwort bestätigen</label>
+        <div class="input-wrap">
+          <input class="in" type="password" id="pw2" autocomplete="new-password" placeholder="••••••••">
+        </div>
+        <div class="field-err" id="pwErr"></div>
+      </div>
+      <button class="submit" id="submitBtn" type="submit">Passwort speichern</button>
+      <div class="msg" id="msg" role="status" aria-live="polite"></div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function(){
+  var SUPABASE_URL  = 'https://jnkujsfsmmieodthpelm.supabase.co';
+  var SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impua3Vqc2ZzbW1pZW9kdGhwZWxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3NDc1NzMsImV4cCI6MjA5NjMyMzU3M30.0Uc6KNZDFaQd94P0kqFyhvPFvwbgH-BHwLmHqzEUITQ';
+  var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  window.sb = supabase;
+
+  var $ = function(id){ return document.getElementById(id); };
+  var settled = false;
+
+  function showForm(){
+    if (settled) return; settled = true;
+    $('loading').style.display = 'none';
+    $('invalid').style.display = 'none';
+    $('resetForm').style.display = 'block';
+    $('pw1').focus();
+  }
+  function showInvalid(msg){
+    if (settled) return; settled = true;
+    $('loading').style.display = 'none';
+    $('resetForm').style.display = 'none';
+    if (msg) $('invalidMsg').textContent = msg;
+    $('invalid').style.display = 'block';
+  }
+
+  // Implicit / PKCE recovery sessions surface through this event.
+  supabase.auth.onAuthStateChange(function(event, session){ if (session) showForm(); });
+
+  // Establish the recovery session from the link.
+  (async function(){
+    try {
+      var q = new URLSearchParams(location.search);
+      if (q.get('token_hash')) {
+        var r = await supabase.auth.verifyOtp({ token_hash: q.get('token_hash'), type: q.get('type') || 'recovery' });
+        if (r && r.data && r.data.session) { showForm(); return; }
+        if (r && r.error) { showInvalid('Der Link ist ungültig oder abgelaufen.'); return; }
+      }
+      // Implicit (#access_token) / PKCE (?code) are auto-detected; a forwarded
+      // recovery session is already in storage.
+      var s = await supabase.auth.getSession();
+      if (s && s.data && s.data.session) { showForm(); return; }
+    } catch (e) {}
+    // Give onAuthStateChange a brief moment, otherwise the link is unusable.
+    setTimeout(function(){ showInvalid('Der Link ist ungültig oder abgelaufen.'); }, 1800);
+  })();
+
+  // password visibility toggle
+  $('eyeBtn').addEventListener('click', function(){
+    var p = $('pw1'); var reveal = (p.type === 'password');
+    p.type = reveal ? 'text' : 'password';
+    $('eyeOpen').style.display = reveal ? 'none' : '';
+    $('eyeOff').style.display  = reveal ? '' : 'none';
+    $('eyeBtn').setAttribute('aria-label', reveal ? 'Passwort verbergen' : 'Passwort anzeigen');
+  });
+
+  // submit → updateUser
+  $('resetForm').addEventListener('submit', async function(e){
+    e.preventDefault();
+    $('pwErr').className = 'field-err'; $('pwErr').textContent = '';
+    $('msg').className = 'msg'; $('msg').textContent = '';
+    var p1 = $('pw1').value, p2 = $('pw2').value;
+    if (p1.length < 6){ $('pwErr').textContent = 'Mindestens 6 Zeichen.'; $('pwErr').className = 'field-err show'; return; }
+    if (p1 !== p2){ $('pwErr').textContent = 'Die Passwörter stimmen nicht überein.'; $('pwErr').className = 'field-err show'; return; }
+
+    var btn = $('submitBtn'); var label = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Speichern…';
+    try {
+      var res = await supabase.auth.updateUser({ password: p1 });
+      if (res.error){
+        $('msg').textContent = res.error.message || 'Passwort konnte nicht geändert werden.';
+        $('msg').className = 'msg err';
+        btn.disabled = false; btn.textContent = label;
+        return;
+      }
+      $('msg').textContent = 'Passwort geändert. Du wirst weitergeleitet…';
+      $('msg').className = 'msg ok';
+      setTimeout(function(){ location.replace('/app'); }, 1200);
+    } catch (err){
+      $('msg').textContent = 'Etwas ist schiefgelaufen. Bitte erneut versuchen.';
+      $('msg').className = 'msg err';
+      btn.disabled = false; btn.textContent = label;
+    }
+  });
+})();
+</script>
+</body>
+</html>

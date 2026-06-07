@@ -24,6 +24,7 @@
         var q = new URLSearchParams(location.search);
         if (q.get('token_hash')) {
           await window.sb.auth.verifyOtp({ token_hash: q.get('token_hash'), type: q.get('type') || 'email' });
+          if (q.get('type') === 'recovery'){ location.replace('/reset.html'); return null; }
         }
         var r = await window.sb.auth.getSession();
         var session = r && r.data && r.data.session;

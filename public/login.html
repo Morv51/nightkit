@@ -142,8 +142,9 @@
   (function(){
     var cb = new URLSearchParams(location.search);
     if (cb.get('token_hash')) {
+      var cbDest = (cb.get('type') === 'recovery') ? '/reset.html' : '/app';
       supabase.auth.verifyOtp({ token_hash: cb.get('token_hash'), type: cb.get('type') || 'email' })
-        .then(function(r){ if (r && r.data && r.data.session) location.replace('/app'); });
+        .then(function(r){ if (r && r.data && r.data.session) location.replace(cbDest); });
     }
   })();
 
@@ -205,7 +206,7 @@
     clearMsgs();
     var email = $('email').value.trim();
     if (!email){ fieldErr('emailErr', 'Bitte zuerst deine Email eingeben.'); return; }
-    var res = await supabase.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/login.html' });
+    var res = await supabase.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/reset.html' });
     if (res.error) showMsg(mapError(res.error), false);
     else showMsg('Falls die Adresse existiert, haben wir dir einen Link zum Zurücksetzen geschickt.', true);
   });

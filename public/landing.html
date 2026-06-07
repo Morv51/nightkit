@@ -275,26 +275,29 @@ img{display:block;max-width:100%}
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impua3Vqc2ZzbW1pZW9kdGhwZWxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3NDc1NzMsImV4cCI6MjA5NjMyMzU3M30.0Uc6KNZDFaQd94P0kqFyhvPFvwbgH-BHwLmHqzEUITQ'
     );
     window.sb = sb;
-    function toApp(){ location.replace('/app'); }
+    // Password-recovery links must land on the reset form, not the app.
+    var isRecovery = /type=recovery/.test(hash) || /[?&]type=recovery/.test(search);
+    var dest = isRecovery ? '/reset.html' : '/app';
+    function go(){ location.replace(dest); }
 
     // Covers the implicit (#access_token) and PKCE (?code) flows that
     // supabase-js auto-detects from the URL.
     sb.auth.onAuthStateChange(function(event, session){
-      if (session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) toApp();
+      if (session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'PASSWORD_RECOVERY')) go();
     });
 
-    // OTP confirmation (?token_hash=…) is NOT auto-processed — do it explicitly.
+    // OTP links (?token_hash=…) are NOT auto-processed — do it explicitly.
     var q = new URLSearchParams(search);
     if (q.get('token_hash')) {
       sb.auth.verifyOtp({ token_hash: q.get('token_hash'), type: q.get('type') || 'email' })
-        .then(function(r){ if (r && r.data && r.data.session) toApp(); });
+        .then(function(r){ if (r && r.data && r.data.session) go(); });
     }
 
     // Fallback for implicit-flow tokens if auto-detection didn't consume them.
     var h = new URLSearchParams(hash.substring(1));
     if (h.get('access_token')) {
       sb.auth.setSession({ access_token: h.get('access_token'), refresh_token: h.get('refresh_token') || '' })
-        .then(function(r){ if (r && r.data && r.data.session) toApp(); });
+        .then(function(r){ if (r && r.data && r.data.session) go(); });
     }
   })();
 </script>
