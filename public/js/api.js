@@ -61,7 +61,7 @@ export async function getTemplates() {
   const res = await fetch("/api/templates");
   if (!res.ok) throw new Error("Templates konnten nicht geladen werden.");
   const data = await res.json();
-  return data.templates || [];
+  return { templates: data.templates || [], categories: data.categories || [] };
 }
 
 export function proxyUrl(externalUrl) {

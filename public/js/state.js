@@ -11,6 +11,7 @@ export const state = {
 
   // templates
   templates: [],
+  categories: [],
   currentTemplateFile: null,
 
   // logo

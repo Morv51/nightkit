@@ -79,7 +79,11 @@
     <div class="col-left-scroll">
 
       <div class="sec-label">Template</div>
-      <div class="tpl-row" id="tplGrid"></div>
+      <div class="tpl-current">
+        <img class="tpl-cur-thumb" id="tplCurrentThumb" alt="">
+        <div class="tpl-cur-name" id="tplCurrentName">—</div>
+        <button class="tpl-switch" id="tplSwitch" type="button">Wechseln</button>
+      </div>
 
       <div class="sec-divider"></div>
 
@@ -124,22 +128,17 @@
   <!-- ── STAGE ── -->
   <div class="stage">
 
-    <!-- STATE A: empty -->
+    <!-- STATE A: sharp template preview -->
     <div id="statePreview" class="stage-empty">
-      <div class="empty-card">
+      <div class="preview-col">
         <div class="preview-stage" id="previewStage">
-          <img id="previewImg" class="preview-img" alt="">
+          <img id="previewImg" class="preview-img" alt="Template-Vorschau">
           <div class="logo-overlay" id="logoOverlay">
-            <span class="logo-overlay-text">LOGO ziehen</span>
             <img id="logoOverlayImg" class="logo-overlay-img" alt="Logo">
             <div class="logo-resize" id="logoResize"></div>
           </div>
         </div>
-        <div class="empty-msg">
-          <span class="empty-star"><svg viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12M4 2.5L10 11.5M10 2.5L4 11.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>
-          <div class="empty-title">Dein Flyer erscheint hier</div>
-          <div class="empty-sub">Fülle das Formular aus und klicke auf „Flyer generieren"</div>
-        </div>
+        <div class="preview-note">Vorschau des Templates. Fülle links das Formular aus und klicke auf „Flyer generieren".</div>
       </div>
     </div>
 
@@ -208,6 +207,20 @@
   </div><!-- /stage -->
 
 </div><!-- /app -->
+
+<!-- ── TEMPLATE PICKER MODAL ── -->
+<div class="picker" id="pickerModal">
+  <div class="picker-backdrop" id="pickerBackdrop"></div>
+  <div class="picker-panel">
+    <div class="picker-head">
+      <div class="picker-title">Template wählen</div>
+      <button class="picker-close" id="pickerClose" type="button" aria-label="Schließen">✕</button>
+    </div>
+    <input class="picker-search" id="pickerSearch" type="search" placeholder="Template suchen…" autocomplete="off">
+    <div class="picker-cats" id="pickerCats"></div>
+    <div class="picker-grid" id="pickerGrid"></div>
+  </div>
+</div>
 
 <script type="module" src="/js/main.js"></script>
 <script>

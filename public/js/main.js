@@ -1,7 +1,5 @@
 import { initDom, els, on } from "./dom.js";
-import { state } from "./state.js";
-import { loadTemplates, renderTemplateGrid, selectTemplate } from "./templates.js";
-import { updateLivePreview } from "./preview.js";
+import { loadTemplates, renderPicker, applyCurrentTemplate, initPicker, maybeAutoOpenPicker } from "./templates.js";
 import { generate, resetToPreview } from "./generator.js";
 import { download, copyImage } from "./download.js";
 import { renderStyleButtons, toggleVideo, previewVideo, exportVideo } from "./video.js";
@@ -27,15 +25,16 @@ async function init() {
   initLogo();
   initDatePicker();
   initCaption();
+  initPicker();
 
   try {
     await loadTemplates();
   } catch (e) {
     console.error("Templates konnten nicht geladen werden:", e);
   }
-  renderTemplateGrid();
-  if (state.currentTemplateFile) selectTemplate(state.currentTemplateFile);
-  else updateLivePreview();
+  renderPicker();
+  applyCurrentTemplate();
+  maybeAutoOpenPicker();
 }
 
 if (document.readyState === "loading") {

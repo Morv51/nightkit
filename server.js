@@ -118,8 +118,13 @@ router.get("/api/proxy", (req, res) => {
 });
 
 router.get("/api/templates", (_req, res) => {
-  const list = templates.list().map((t) => ({ ...t, src: `/templates/${t.file}` }));
-  sendJson(res, 200, { templates: list });
+  const list = templates.list().map((t) => ({
+    file: t.file,
+    name: t.name,
+    category: t.category,
+    src: `/templates/${t.file}`,
+  }));
+  sendJson(res, 200, { templates: list, categories: templates.categories() });
 });
 
 router.post("/api/convert", async (req, res) => {
