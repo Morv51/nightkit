@@ -31,13 +31,12 @@ export function renderStyleButtons() {
   if (!row) return;
   row.innerHTML = "";
   for (const s of STYLES) {
-    const btn = document.createElement("div");
-    btn.className = "style-btn" + (s.id === state.currentVideoStyle ? " active" : "");
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "pill" + (s.id === state.currentVideoStyle ? " active" : "");
     btn.id = "vbtn-" + s.id;
     btn.dataset.styleId = s.id;
-    btn.innerHTML =
-      '<div class="style-icon">' + s.icon + '</div>' +
-      '<div class="style-name">' + s.name + '</div>';
+    btn.textContent = s.name;
     btn.addEventListener("click", () => selectVideoStyle(s.id));
     row.appendChild(btn);
   }

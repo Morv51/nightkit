@@ -56,7 +56,7 @@ async function showResult(proxiedUrl) {
 
   els.resultImg.src = displayUrl;
   els.statePreview.style.display = "none";
-  els.stateResult.style.display = "block";
+  els.stateResult.style.display = "grid"; // .result-split is a grid; triggers the entrance animations
   addToHistory(displayUrl);
 }
 
@@ -97,8 +97,9 @@ export async function generate() {
   }
 }
 
-export function resetToPreview() {
+export function resetToPreview(e) {
+  if (e && e.preventDefault) e.preventDefault();
   els.stateResult.style.display = "none";
-  els.statePreview.style.display = "block";
+  els.statePreview.style.display = "flex";
   import("./preview.js").then((m) => m.updateLivePreview());
 }
