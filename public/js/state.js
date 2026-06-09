@@ -4,7 +4,7 @@
 export const state = {
   last: null,
   lastImg: null,
-  currentVideoStyle: "horror",
+  currentVideoStyle: "glitch",
   animFrameId: null,
   historyUrls: [],
   videoPanelOpen: true,
