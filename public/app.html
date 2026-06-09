@@ -42,6 +42,26 @@
   .user-email{font-size:12px;color:#888;padding:8px 10px 10px;word-break:break-all;border-bottom:1px solid #222;margin-bottom:6px}
   .user-logout{width:100%;text-align:left;background:none;border:none;color:#fff;font-family:inherit;font-size:14px;font-weight:600;padding:9px 10px;border-radius:8px;cursor:pointer;transition:background .12s,color .12s}
   .user-logout:hover{background:rgba(255,90,90,.13);color:#ff5a5a}
+  /* vibe textarea */
+  .vibe-input{width:100%;padding:8px 10px;background:rgba(255,255,255,.05);border:0.5px solid rgba(255,255,255,.1);border-radius:6px;color:var(--text);font-size:13px;font-family:inherit;line-height:1.45;resize:none;outline:none;transition:border-color .15s}
+  .vibe-input:focus{border-color:rgba(232,255,71,.4)}
+  .vibe-input::placeholder{color:rgba(245,245,240,.2)}
+  /* instagram caption */
+  .caption-section{margin-top:8px;padding-top:14px;border-top:0.5px solid rgba(255,255,255,.08)}
+  .caption-head{font-size:10px;color:rgba(245,245,240,.35);letter-spacing:.08em;text-transform:uppercase;font-weight:600;margin-bottom:9px}
+  .caption-styles{display:flex;gap:6px;margin-bottom:10px}
+  .cap-style{flex:1;background:rgba(255,255,255,.05);border:0.5px solid rgba(255,255,255,.1);border-radius:6px;color:var(--text);font-family:inherit;font-size:12.5px;font-weight:500;padding:8px 4px;cursor:pointer;transition:border-color .15s,background .15s}
+  .cap-style:hover{border-color:rgba(255,255,255,.2)}
+  .cap-style.active{border-color:var(--accent);background:rgba(232,255,71,.1)}
+  .cap-gen{width:100%;justify-content:center}
+  .caption-box{margin-top:12px;background:rgba(255,255,255,.04);border:0.5px solid rgba(255,255,255,.1);border-radius:8px;padding:14px}
+  .caption-box-head{display:flex;justify-content:flex-end;margin-bottom:6px}
+  .cap-copy{background:rgba(255,255,255,.06);border:0.5px solid rgba(255,255,255,.12);border-radius:6px;color:var(--text);font-family:inherit;font-size:11.5px;font-weight:600;padding:5px 10px;cursor:pointer;transition:border-color .15s,color .15s}
+  .cap-copy:hover{border-color:var(--accent);color:var(--accent)}
+  .cap-copy.copied{border-color:#7CE38B;color:#7CE38B}
+  .caption-text{font-size:12.5px;line-height:1.6;color:var(--text);white-space:pre-wrap;word-break:break-word}
+  .cap-regen{display:inline-block;margin-top:11px;font-size:11.5px;color:var(--muted);text-decoration:none}
+  .cap-regen:hover{color:var(--accent)}
 </style>
 </head>
 <body>
@@ -96,6 +116,10 @@
       <div class="sec-label">Details</div>
       <div class="field"><label>Uhrzeit</label><input id="fTime" value="23:00"></div>
       <div class="field"><label>Website</label><input id="fContact" value="www.crazy-cutz.de"></div>
+      <div class="field">
+        <label>Vibe / Beschreibung</label>
+        <textarea id="fVibe" class="vibe-input" rows="4" placeholder="z. B. Open Air Sommerfest, entspannte Atmosphäre, Eintritt frei bis 23 Uhr, Fokus auf House und Deep House…"></textarea>
+      </div>
       <div class="field">
         <label>Logo</label>
         <input type="file" id="fLogo" class="file-input" accept="image/*">
@@ -169,6 +193,24 @@
               <div class="pv-canvas-wrap" id="previewWrap">
                 <canvas id="videoCanvas"></canvas>
               </div>
+            </div>
+          </div>
+
+          <!-- Instagram Caption -->
+          <div class="caption-section">
+            <div class="caption-head">Instagram Caption</div>
+            <div class="caption-styles" id="captionStyles">
+              <button class="cap-style active" data-style="hype" type="button">🔥 Hype</button>
+              <button class="cap-style" data-style="elegant" type="button">✨ Elegant</button>
+              <button class="cap-style" data-style="casual" type="button">😎 Casual</button>
+            </div>
+            <button class="rbtn rbtn-primary cap-gen" id="btnCaption">Caption generieren</button>
+            <div class="caption-box" id="captionBox" style="display:none">
+              <div class="caption-box-head">
+                <button class="cap-copy" id="captionCopy" type="button">⎘ Kopieren</button>
+              </div>
+              <div class="caption-text" id="captionText"></div>
+              <a class="cap-regen" id="captionRegen" href="#">↺ Neu generieren</a>
             </div>
           </div>
         </div>

@@ -38,6 +38,19 @@ export async function postGenerate(event) {
   return data.jobId;
 }
 
+export async function postCaption(payload) {
+  const res = await fetch("/api/caption", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+    body: JSON.stringify(payload),
+  });
+  if (res.status === 401) throw new Error("Sitzung abgelaufen. Bitte neu anmelden.");
+  if (!res.ok) throw new Error(await parseError(res));
+  const data = await res.json();
+  if (!data.caption) throw new Error("Keine Caption erhalten.");
+  return data.caption;
+}
+
 export async function getJobStatus(jobId) {
   const res = await fetch("/api/status/" + encodeURIComponent(jobId));
   if (!res.ok) throw new Error("Job nicht mehr vorhanden.");

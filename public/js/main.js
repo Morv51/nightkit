@@ -7,6 +7,7 @@ import { download, copyImage } from "./download.js";
 import { renderStyleButtons, toggleVideo, previewVideo, exportVideo } from "./video.js";
 import { initLogo } from "./logo.js";
 import { initDatePicker } from "./datepicker.js";
+import { initCaption } from "./caption.js";
 
 function bindActions() {
   on(els.genBtn, "click", generate);
@@ -25,6 +26,7 @@ async function init() {
   renderStyleButtons();
   initLogo();
   initDatePicker();
+  initCaption();
 
   try {
     await loadTemplates();

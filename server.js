@@ -12,6 +12,7 @@ const { proxy }             = require("./lib/proxy");
 const { webmToMp4 }         = require("./lib/convert");
 const { createRouter }      = require("./lib/router");
 const auth                  = require("./lib/auth");
+const caption               = require("./lib/caption");
 const { readJson, readBody, sendJson, sendError, applyCors } = require("./lib/http");
 
 const PORT         = process.env.PORT || 3000;
@@ -68,6 +69,31 @@ router.post("/api/generate", async (req, res) => {
     console.error(`Job ${jobId} failed:`, e.message);
     jobs.set(jobId, { status: "error", error: e.message });
   });
+});
+
+// Instagram caption generation (Claude). Auth-protected like /api/generate.
+router.post("/api/caption", async (req, res) => {
+  if (!caption.isConfigured()) return sendError(res, 500, "ANTHROPIC_API_KEY not configured");
+
+  if (auth.isConfigured()) {
+    const user = await auth.verifyToken(auth.bearer(req));
+    if (!user) return sendError(res, 401, "Authentifizierung erforderlich");
+  }
+
+  let body;
+  try {
+    body = await readJson(req);
+  } catch (e) {
+    return sendError(res, e.status || 400, e.message);
+  }
+
+  try {
+    const text = await caption.generateCaption(body);
+    sendJson(res, 200, { caption: text });
+  } catch (e) {
+    console.error("caption error:", e.message);
+    sendError(res, 502, "Caption konnte nicht erstellt werden.");
+  }
 });
 
 // Verify a Supabase JWT (Authorization: Bearer <token>) and echo the user.
