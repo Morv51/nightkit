@@ -33,6 +33,8 @@ function readEventForm() {
     dj:      val("fDj"),
     contact: val("fContact"),
     time:    val("fTime"),
+    club:     val("fClub"),
+    location: val("fLocation"),
   };
 }
 

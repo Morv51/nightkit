@@ -110,10 +110,12 @@ router.post("/api/correct", async (req, res) => {
     ? `Replace the content in the masked areas with: ${instruction}. ` +
       "Match the existing design style, fonts, colors and lighting of the flyer. " +
       "Keep everything outside the mask exactly unchanged."
-    : "Remove the marked content completely. Fill the masked areas seamlessly " +
-      "so they match the surrounding design, background, textures and lighting. " +
-      "Do not add any new text or objects in the masked areas. " +
-      "Keep everything outside the mask exactly unchanged.";
+    : "Completely remove any content in the masked areas. Fill the masked areas ONLY " +
+      "with a seamless continuation of the surrounding background, textures, colors and " +
+      "lighting. Absolutely DO NOT generate any text, letters, words, numbers, symbols " +
+      "or new objects in the masked areas under any circumstances. The masked areas must " +
+      "look like empty background that blends perfectly with the surroundings. Keep " +
+      "everything outside the mask exactly unchanged.";
 
   try {
     const { url } = await ideogram.editMasked({

@@ -191,7 +191,8 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
    drawn opaque, the element itself is 45% — overlap stays uniform */
 .correct-canvas{position:absolute;inset:0;width:100%;height:100%;display:none;opacity:.45;cursor:none;touch-action:none;z-index:5;border-radius:14px}
 .correct-cursor{position:absolute;display:none;border:1.5px solid var(--accent);border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);box-shadow:0 0 10px rgba(204,255,0,.4),inset 0 0 6px rgba(204,255,0,.25);z-index:6}
-.correct-bar{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:none;align-items:center;gap:6px;background:rgba(10,10,10,.88);border:1px solid rgba(255,255,255,.12);border-radius:100px;padding:6px 10px;z-index:7;backdrop-filter:blur(8px);white-space:nowrap}
+/* toolbar as its own row ABOVE the flyer (never covers image content) */
+.correct-bar{display:none;align-items:center;gap:6px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:100px;padding:6px 10px;margin-bottom:2px;white-space:nowrap}
 .cbar-size{width:64px;accent-color:var(--accent);cursor:pointer}
 .cbar-btn{background:none;border:none;color:rgba(245,245,240,.65);font-family:inherit;font-size:11.5px;font-weight:500;padding:5px 8px;border-radius:6px;cursor:pointer;transition:all .12s;white-space:nowrap}
 .cbar-btn:hover{background:rgba(255,255,255,.08);color:var(--text)}
@@ -201,7 +202,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .cb-spin{width:34px;height:34px;border:3px solid rgba(204,255,0,.18);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
 
 .flyer-frame.correcting .correct-canvas{display:block}
-.flyer-frame.correcting .correct-bar{display:flex}
+.result-flyer.correct-mode .correct-bar{display:flex}
 .flyer-frame.correcting .done-badge{display:none}
 
 .correct-panel{display:none;width:100%;max-width:440px;flex-direction:column;gap:8px}

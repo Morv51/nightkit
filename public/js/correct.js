@@ -166,8 +166,7 @@ function buildMaskDataUrl() {
   return c.toDataURL("image/png");
 }
 
-async function currentImageDataUrl() {
-  const blob = await (await fetch(state.last)).blob();
+function blobToDataUrl(blob) {
   if (blob.size > MAX_UPLOAD) {
     throw new Error("Das Bild ist zu groß für die Korrektur (max. 10 MB).");
   }
@@ -177,6 +176,60 @@ async function currentImageDataUrl() {
     r.onerror = () => reject(new Error("Bild konnte nicht gelesen werden."));
     r.readAsDataURL(blob);
   });
+}
+
+async function currentImageDataUrl() {
+  return blobToDataUrl(await (await fetch(state.last)).blob());
+}
+
+// Entfernen-Härtung: vor dem Senden die maskierten Flächen im Bild mit der
+// Durchschnittsfarbe der direkt angrenzenden Randpixel füllen. Ideogram sieht
+// dort dann schon eine neutrale Fläche statt des alten Texts, was das
+// Neu-Erfinden von Text in der Leerfläche deutlich reduziert.
+async function neutralizedImageDataUrl() {
+  const W = canvas.width, H = canvas.height;
+  const c = document.createElement("canvas");
+  c.width = W; c.height = H;
+  const cx = c.getContext("2d");
+  cx.drawImage(els.resultImg, 0, 0, W, H);
+
+  // Maske als Alphakanal (gleiche Strich-Geometrie wie die gesendete Maske)
+  const mc = document.createElement("canvas");
+  mc.width = W; mc.height = H;
+  const mx = mc.getContext("2d");
+  drawStrokes(mx, "#000000");
+  const mask = mx.getImageData(0, 0, W, H).data;
+  const masked = (i) => mask[i * 4 + 3] > 127;
+
+  const id = cx.getImageData(0, 0, W, H);
+  const d = id.data;
+
+  // Durchschnittsfarbe der Randpixel (unmaskiert mit maskiertem 4er-Nachbarn)
+  let r = 0, g = 0, b = 0, n = 0;
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const i = y * W + x;
+      if (masked(i)) continue;
+      if ((x > 0 && masked(i - 1)) || (x < W - 1 && masked(i + 1)) ||
+          (y > 0 && masked(i - W)) || (y < H - 1 && masked(i + W))) {
+        r += d[i * 4]; g += d[i * 4 + 1]; b += d[i * 4 + 2]; n++;
+      }
+    }
+  }
+  if (n) {
+    r = Math.round(r / n); g = Math.round(g / n); b = Math.round(b / n);
+    for (let i = 0; i < W * H; i++) {
+      if (masked(i)) { d[i * 4] = r; d[i * 4 + 1] = g; d[i * 4 + 2] = b; d[i * 4 + 3] = 255; }
+    }
+    cx.putImageData(id, 0, 0);
+  }
+
+  let blob = await new Promise((res) => c.toBlob(res, "image/png"));
+  if (blob && blob.size > MAX_UPLOAD) {
+    blob = await new Promise((res) => c.toBlob(res, "image/jpeg", 0.92));
+  }
+  if (!blob) throw new Error("Bild konnte nicht exportiert werden.");
+  return blobToDataUrl(blob);
 }
 
 // ── Korrektur anwenden ───────────────────────────────────────────
@@ -195,10 +248,13 @@ async function apply() {
   hideToast();
   setBusy(true);
   try {
+    const instruction = $("correctInstruction").value.trim();
     const corrected = await postCorrect({
-      image: await currentImageDataUrl(),
+      // Beim Entfernen (keine Anweisung) die markierten Flächen vorab
+      // neutralisieren; beim Ersetzen das Original unverändert mitschicken.
+      image: instruction ? await currentImageDataUrl() : await neutralizedImageDataUrl(),
       mask: buildMaskDataUrl(),
-      instruction: $("correctInstruction").value.trim(),
+      instruction,
     });
 
     // Alte Version für einen Schritt zurück behalten, dann übernehmen:

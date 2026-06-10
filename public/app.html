@@ -105,6 +105,8 @@
       <div class="sec-label">Details</div>
       <div class="field"><label>Uhrzeit</label><input id="fTime" value="23:00"></div>
       <div class="field"><label>Website</label><input id="fContact" value="www.crazy-cutz.de"></div>
+      <div class="field"><label>Club Name</label><input id="fClub" placeholder="z. B. Nachtschicht"></div>
+      <div class="field"><label>Location</label><input id="fLocation" placeholder="z. B. Braunschweig"></div>
       <div class="field">
         <label>Vibe / Beschreibung</label>
         <textarea id="fVibe" class="vibe-input" rows="3" placeholder="z. B. Open Air Sommerfest, entspannte Atmosphäre, Eintritt frei bis 23 Uhr, Fokus auf House…"></textarea>
@@ -147,18 +149,19 @@
 
       <!-- flyer (sticky) -->
       <div class="result-flyer">
+        <!-- Korrektur-Toolbar: eigene Zeile ÜBER dem Flyer, verdeckt nie Bildinhalt -->
+        <div class="correct-bar" id="correctBar">
+          <input class="cbar-size" id="correctSize" type="range" min="0" max="2" step="1" value="1" title="Pinselgröße" aria-label="Pinselgröße">
+          <button class="cbar-btn" id="correctUndo" type="button">↶ Rückgängig</button>
+          <button class="cbar-btn" id="correctClear" type="button">Alles löschen</button>
+          <button class="cbar-btn cbar-cancel" id="correctCancel" type="button">✕ Abbrechen</button>
+        </div>
         <div class="flyer-frame" id="flyerFrame">
           <img id="resultImg" alt="Ergebnis">
           <div class="done-badge">✓ Fertig</div>
           <!-- Korrektur-Modus: Mal-Canvas über dem Flyer (native Auflösung, per CSS skaliert) -->
           <canvas class="correct-canvas" id="correctCanvas"></canvas>
           <div class="correct-cursor" id="correctCursor"></div>
-          <div class="correct-bar" id="correctBar">
-            <input class="cbar-size" id="correctSize" type="range" min="0" max="2" step="1" value="1" title="Pinselgröße" aria-label="Pinselgröße">
-            <button class="cbar-btn" id="correctUndo" type="button">↶ Rückgängig</button>
-            <button class="cbar-btn" id="correctClear" type="button">Alles löschen</button>
-            <button class="cbar-btn cbar-cancel" id="correctCancel" type="button">✕ Abbrechen</button>
-          </div>
           <div class="correct-busy" id="correctBusy"><span class="cb-spin"></span></div>
         </div>
         <div class="result-btns">
