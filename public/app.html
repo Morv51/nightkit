@@ -147,15 +147,31 @@
 
       <!-- flyer (sticky) -->
       <div class="result-flyer">
-        <div class="flyer-frame">
+        <div class="flyer-frame" id="flyerFrame">
           <img id="resultImg" alt="Ergebnis">
           <div class="done-badge">✓ Fertig</div>
+          <!-- Korrektur-Modus: Mal-Canvas über dem Flyer (native Auflösung, per CSS skaliert) -->
+          <canvas class="correct-canvas" id="correctCanvas"></canvas>
+          <div class="correct-cursor" id="correctCursor"></div>
+          <div class="correct-bar" id="correctBar">
+            <input class="cbar-size" id="correctSize" type="range" min="0" max="2" step="1" value="1" title="Pinselgröße" aria-label="Pinselgröße">
+            <button class="cbar-btn" id="correctUndo" type="button">↶ Rückgängig</button>
+            <button class="cbar-btn" id="correctClear" type="button">Alles löschen</button>
+            <button class="cbar-btn cbar-cancel" id="correctCancel" type="button">✕ Abbrechen</button>
+          </div>
+          <div class="correct-busy" id="correctBusy"><span class="cb-spin"></span></div>
         </div>
         <div class="result-btns">
           <button class="rbtn rbtn-ghost" id="btnDlPng">↓ PNG</button>
           <button class="rbtn rbtn-ghost" id="btnDlJpg">↓ JPG</button>
           <button class="rbtn rbtn-ghost" id="copyBtn">⎘ Kopieren</button>
+          <button class="rbtn rbtn-ghost" id="btnCorrect">✎ Korrigieren</button>
         </div>
+        <div class="correct-panel" id="correctPanel">
+          <input class="correct-input" id="correctInstruction" placeholder="Optional: Was soll stattdessen dort stehen? Leer lassen zum Entfernen">
+          <button class="rbtn rbtn-primary correct-apply" id="correctApply" type="button">Korrektur anwenden</button>
+        </div>
+        <a class="newtpl-link prev-link" id="correctPrevLink" href="#" style="display:none">↩ Vorherige Version</a>
         <a class="newtpl-link" id="btnReset" href="#">↻ Neues Template wählen</a>
         <div class="hist-wrap" id="histWrap" style="display:none">
           <div class="hist-lbl">Zuletzt</div>
@@ -220,6 +236,13 @@
     <div class="picker-cats" id="pickerCats"></div>
     <div class="picker-grid" id="pickerGrid"></div>
   </div>
+</div>
+
+<!-- Fehler-Toast des Korrektur-Modus (mit Retry) -->
+<div class="correct-toast" id="correctToast">
+  <span class="ct-msg" id="correctToastMsg"></span>
+  <button class="ct-retry" id="correctToastRetry" type="button">Erneut versuchen</button>
+  <button class="ct-close" id="correctToastClose" type="button" aria-label="Schließen">✕</button>
 </div>
 
 <script type="module" src="/js/main.js"></script>

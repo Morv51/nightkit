@@ -4,6 +4,7 @@ import { postGenerate, getJobStatus, proxyUrl } from "./api.js";
 import { showErr, clearErr } from "./errors.js";
 import { addToHistory } from "./history.js";
 import { compositeLogo } from "./composite.js";
+import { resetCorrectState } from "./correct.js";
 
 const POLL_INTERVAL_MS = 2000;
 const MAX_POLL_MS = 180 * 1000;
@@ -49,6 +50,7 @@ async function showResult(proxiedUrl) {
     }
   }
 
+  resetCorrectState(); // neuer Flyer → Korrektur-Verlauf des alten verwerfen
   state.last = displayUrl;
   state.lastImg = new Image();
   state.lastImg.crossOrigin = "anonymous";
@@ -99,6 +101,7 @@ export async function generate() {
 
 export function resetToPreview(e) {
   if (e && e.preventDefault) e.preventDefault();
+  resetCorrectState();
   els.stateResult.style.display = "none";
   els.statePreview.style.display = "flex";
   import("./preview.js").then((m) => m.updateLivePreview());

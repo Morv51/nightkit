@@ -38,6 +38,21 @@ export async function postGenerate(event) {
   return data.jobId;
 }
 
+// Inpainting correction: image + mask as base64 data URLs, instruction
+// optional. Returns the corrected image as a base64 data URL.
+export async function postCorrect(payload) {
+  const res = await fetch("/api/correct", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+    body: JSON.stringify(payload),
+  });
+  if (res.status === 401) throw new Error("Sitzung abgelaufen. Bitte neu anmelden.");
+  if (!res.ok) throw new Error(await parseError(res));
+  const data = await res.json();
+  if (!data.image) throw new Error("Kein korrigiertes Bild erhalten.");
+  return data.image;
+}
+
 export async function postCaption(payload) {
   const res = await fetch("/api/caption", {
     method: "POST",

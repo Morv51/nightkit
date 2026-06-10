@@ -71,6 +71,66 @@ router.post("/api/generate", async (req, res) => {
   });
 });
 
+// Decode a data URL into { buffer, mime }; null if invalid or not an image.
+function parseDataUrl(s) {
+  if (typeof s !== "string") return null;
+  const m = s.match(/^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/);
+  if (!m) return null;
+  const buffer = Buffer.from(m[2], "base64");
+  if (!buffer.length || buffer.length > 10 * 1024 * 1024) return null; // Ideogram limit: 10MB
+  return { buffer, mime: m[1] };
+}
+
+// Inpainting-Korrektur: vom User markierte Bereiche (Maske) werden per
+// Ideogram V3 Edit entfernt oder ersetzt, der Rest bleibt unverändert.
+// Auth-geschützt wie /api/generate.
+// Kosten: Jede Korrektur ist ein bezahlter Ideogram-Call (~0,20 USD).
+router.post("/api/correct", async (req, res) => {
+  if (!IDEOGRAM_KEY) return sendError(res, 500, "IDEOGRAM_API_KEY not configured");
+
+  if (auth.isConfigured()) {
+    const user = await auth.verifyToken(auth.bearer(req));
+    if (!user) return sendError(res, 401, "Authentifizierung erforderlich");
+  }
+
+  let body;
+  try {
+    body = await readJson(req, { limit: 25 * 1024 * 1024 }); // flyer + mask as base64
+  } catch (e) {
+    return sendError(res, e.status || 400, e.message);
+  }
+
+  const image = parseDataUrl(body.image);
+  const mask  = parseDataUrl(body.mask);
+  if (!image) return sendError(res, 400, "Flyer-Bild fehlt oder ist ungültig");
+  if (!mask)  return sendError(res, 400, "Maske fehlt oder ist ungültig");
+
+  const instruction = typeof body.instruction === "string" ? body.instruction.trim() : "";
+  const prompt = instruction
+    ? `Replace the content in the masked areas with: ${instruction}. ` +
+      "Match the existing design style, fonts, colors and lighting of the flyer. " +
+      "Keep everything outside the mask exactly unchanged."
+    : "Remove the marked content completely. Fill the masked areas seamlessly " +
+      "so they match the surrounding design, background, textures and lighting. " +
+      "Do not add any new text or objects in the masked areas. " +
+      "Keep everything outside the mask exactly unchanged.";
+
+  try {
+    const { url } = await ideogram.editMasked({
+      apiKey: IDEOGRAM_KEY,
+      prompt,
+      imageBuffer: image.buffer,
+      imageType: image.mime,
+      maskBuffer: mask.buffer,
+    });
+    const dl = await ideogram.download(url);
+    sendJson(res, 200, { image: `data:${dl.contentType};base64,${dl.buffer.toString("base64")}` });
+  } catch (e) {
+    console.error("correct error:", e.message);
+    sendError(res, 502, "Korrektur fehlgeschlagen: " + e.message);
+  }
+});
+
 // Instagram caption generation (Claude). Auth-protected like /api/generate.
 router.post("/api/caption", async (req, res) => {
   if (!caption.isConfigured()) return sendError(res, 500, "ANTHROPIC_API_KEY not configured");
