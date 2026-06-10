@@ -1,4 +1,15 @@
 [
   { "file": "basshall-tropical.jpg", "name": "Basshall Tropical", "category": "House" },
-  { "file": "birthday-pink.jpg", "name": "Birthday Pink", "category": "R&B" }
+  { "file": "birthday-pink.jpg", "name": "Birthday Pink", "category": "R&B" },
+  { "file": "back-to-2000-hiphop.png", "name": "Back to 2000 HipHop", "category": "HipHop" },
+  { "file": "back-to-2000-rnb.png", "name": "Back to 2000 R&B", "category": "R&B" },
+  { "file": "christmas-party.jpeg", "name": "Christmas Party", "category": "Weihnachten" },
+  { "file": "christmas-party-2.jpeg", "name": "Christmas Party 2", "category": "Weihnachten" },
+  { "file": "summer-party.jpeg", "name": "Summer Party", "category": "Sommer" },
+  { "file": "summer-party-2.jpeg", "name": "Summer Party 2", "category": "Sommer" },
+  { "file": "summer-party-3.jpeg", "name": "Summer Party 3", "category": "Sommer" },
+  { "file": "summer-party-4.jpeg", "name": "Summer Party 4", "category": "Sommer" },
+  { "file": "winter-party.jpeg", "name": "Winter Party", "category": "Winter" },
+  { "file": "winter-party-2.jpeg", "name": "Winter Party 2", "category": "Winter" },
+  { "file": "winter-party-3.jpeg", "name": "Winter Party 3", "category": "Winter" }
 ]
