@@ -43,6 +43,7 @@ function setLoading(loading) {
 
 function readEventForm() {
   return {
+    engine:  state.engine, // 'v3' | 'v4' — Server wählt den Generierungs-Pfad
     template: state.currentTemplateFile,
     prefix:  val("fPrefix"),
     name:    val("fName"),
@@ -56,7 +57,7 @@ function readEventForm() {
   };
 }
 
-async function showResult(proxiedUrl) {
+async function showResult(proxiedUrl, engineUsed) {
   // Burn the uploaded logo into the result so it shows in the flyer and in
   // every export (download, copy, video). Falls back to the plain image if
   // compositing fails for any reason.
@@ -76,6 +77,13 @@ async function showResult(proxiedUrl) {
   els.statePreview.style.display = "none";
   els.stateResult.style.display = "grid"; // .result-split is a grid; triggers the entrance animations
   addToHistory(displayUrl);
+
+  // Vergleichshilfe: dezent anzeigen, mit welcher Engine generiert wurde.
+  const tag = document.getElementById("engineTag");
+  if (tag && engineUsed) {
+    tag.textContent = "via " + engineUsed.toUpperCase();
+    tag.style.display = "block";
+  }
 }
 
 async function pollUntilDone(jobId) {
@@ -104,10 +112,14 @@ export async function generate() {
   clearErr();
   setLoading(true);
 
+  // Engine beim Absenden festhalten — der Toggle könnte während der
+  // Generierung umgeschaltet werden.
+  const engineUsed = state.engine;
+
   try {
     const jobId = await postGenerate(readEventForm());
     const proxied = await pollUntilDone(jobId);
-    await showResult(proxied);
+    await showResult(proxied, engineUsed);
   } catch (e) {
     showErr(e.message || "Fehler.");
     toast(e.message || "Generierung fehlgeschlagen.", {

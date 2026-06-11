@@ -78,6 +78,14 @@
   <aside class="col-left">
     <div class="col-left-scroll">
 
+      <div class="sec-label">Engine <button type="button" class="hint" aria-label="Info" data-tip="V4 ist das neue Ideogram-Modell mit besserer Textplatzierung. Beta, zum Vergleichen.">i</button></div>
+      <div class="engine-toggle" id="engineToggle">
+        <button class="pill eng-pill active" data-engine="v3" type="button">V3</button>
+        <button class="pill eng-pill" data-engine="v4" type="button">V4 (Beta)</button>
+      </div>
+
+      <div class="sec-divider"></div>
+
       <div class="sec-label">Template</div>
       <div class="tpl-current">
         <img class="tpl-cur-thumb" id="tplCurrentThumb" alt="">
@@ -179,6 +187,8 @@
         <div class="flyer-frame" id="flyerFrame">
           <img id="resultImg" alt="Ergebnis">
           <div class="done-badge">✓ Fertig</div>
+          <!-- Vergleichshilfe: zeigt die Engine der letzten Generierung -->
+          <div class="engine-tag" id="engineTag" style="display:none"></div>
           <!-- Korrektur-Modus: Mal-Canvas über dem Flyer (native Auflösung, per CSS skaliert) -->
           <canvas class="correct-canvas" id="correctCanvas"></canvas>
           <div class="correct-cursor" id="correctCursor"></div>

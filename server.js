@@ -3,7 +3,7 @@
 const http = require("http");
 const path = require("path");
 
-const { buildPrompt }       = require("./lib/prompt");
+const { buildPrompt, buildPromptV4 } = require("./lib/prompt");
 const ideogram              = require("./lib/ideogram");
 const jobs                  = require("./lib/jobs");
 const templates             = require("./lib/templates");
@@ -59,13 +59,17 @@ router.post("/api/generate", async (req, res) => {
     return sendError(res, 400, "Unknown template");
   }
 
+  // Engine-Wahl: 'v3' (Default, bestehender Flow) oder 'v4' (paralleler
+  // Vergleichspfad). Alles außer exakt "v4" fällt auf v3 zurück.
+  const engine = ev.engine === "v4" ? "v4" : "v3";
+
   const jobId = jobs.create();
   sendJson(res, 202, { jobId });
 
   // Count this generation against the user's profile (best-effort).
   if (user) auth.incrementGenerations(user.id);
 
-  runIdeogramJob(jobId, ev, file).catch((e) => {
+  runIdeogramJob(jobId, ev, file, engine).catch((e) => {
     console.error(`Job ${jobId} failed:`, e.message);
     jobs.set(jobId, { status: "error", error: e.message });
   });
@@ -278,9 +282,16 @@ router.post("/api/convert", async (req, res) => {
   }
 });
 
-async function runIdeogramJob(jobId, ev, file) {
-  const prompt = buildPrompt(ev);
-  console.log(`Job ${jobId} template=${file} prompt:\n${prompt}`);
+// V3 (Default): bestehender Edit-Call mit buildPrompt — 1:1 unverändert.
+// V4: paralleler Pfad über remix-v4 mit dem Template als Basisbild (es gibt
+// kein edit-v4) und eigenem buildPromptV4; rendering_speed QUALITY, kein
+// magic_prompt-Feld bei remix-v4 (entspricht OFF). Beide Pfade liefern
+// dasselbe Ergebnis-Format ({ url } im Job).
+// Kosten: V4-Calls können anders bepreist sein als V3 — Ideogram-Preisliste
+// prüfen.
+async function runIdeogramJob(jobId, ev, file, engine = "v3") {
+  const prompt = engine === "v4" ? buildPromptV4(ev) : buildPrompt(ev);
+  console.log(`Job ${jobId} engine=${engine} template=${file} prompt:\n${prompt}`);
 
   let imgBuffer;
   try {
@@ -289,11 +300,9 @@ async function runIdeogramJob(jobId, ev, file) {
     throw new Error("Template not found: " + e.message);
   }
 
-  const { url } = await ideogram.edit({
-    apiKey: IDEOGRAM_KEY,
-    prompt,
-    imageBuffer: imgBuffer,
-  });
+  const { url } = engine === "v4"
+    ? await ideogram.remixV4({ apiKey: IDEOGRAM_KEY, textPrompt: prompt, imageBuffer: imgBuffer })
+    : await ideogram.edit({ apiKey: IDEOGRAM_KEY, prompt, imageBuffer: imgBuffer });
 
   jobs.set(jobId, { status: "done", url });
   console.log(`Job ${jobId} done`);
