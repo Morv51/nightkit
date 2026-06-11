@@ -20,7 +20,110 @@ const FORMATS = [
 
 const MAX_UPLOAD = 9.5 * 1024 * 1024; // Ideogram-Limit: 10MB
 
+// ── Rand-Nachbearbeitung (Shadow-Falloff) ────────────────────────
+// Die per Reframe erweiterten Flächen außerhalb des Master-Rechtecks werden
+// nach dem Call beruhigt, damit sie wie ein gewolltes dunkles Gestaltungsmittel
+// wirken statt wie KI-Füllung: weicher Blur + leichte Entsättigung gegen
+// Muster, dazu ein dunkler Verlauf von der Flyer-Kante (transparent) nach
+// außen, der Reststrukturen schluckt. Der Übergang ist über `feather` px
+// gefedert; das Master-Rechteck selbst bleibt zu 100% scharf und unbearbeitet.
+// Justierbare Werte pro Format:
+const EDGE_TREAT = {
+  feed:   { blur: 8,  desat: 40, darkMax: 0.7, feather: 80 }, // 4:5 — schmale Randstreifen (Blur-Spielraum 6–10px)
+  square: { blur: 15, desat: 40, darkMax: 0.7, feather: 90 }, // 1:1 — breite Randstreifen (Blur-Spielraum 12–18px)
+};
+
 const loading = new Set();
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("Bild konnte nicht geladen werden."));
+    img.src = src;
+  });
+}
+
+async function treatEdges(dataUrl, formatId) {
+  const t = EDGE_TREAT[formatId];
+  if (!t) return dataUrl;
+  const [img, master] = await Promise.all([loadImage(dataUrl), loadImage(state.master)]);
+  const W = img.naturalWidth, H = img.naturalHeight;
+
+  // Das Master sitzt "contain"-zentriert im Reframe-Ergebnis.
+  const s = Math.min(W / master.naturalWidth, H / master.naturalHeight);
+  const mw = Math.round(master.naturalWidth * s);
+  const mh = Math.round(master.naturalHeight * s);
+  const x0 = Math.round((W - mw) / 2);
+  const y0 = Math.round((H - mh) / 2);
+  if (x0 < 3 && y0 < 3) return dataUrl; // keine nennenswerte Erweiterung
+
+  // 1) Beruhigte Basis: Blur + Entsättigung über schwarzem Grund (der
+  //    Blur-Alphasaum am Canvas-Rand fällt damit ins Dunkle statt transparent).
+  const base = document.createElement("canvas");
+  base.width = W; base.height = H;
+  const bx = base.getContext("2d");
+  bx.fillStyle = "#000";
+  bx.fillRect(0, 0, W, H);
+  bx.filter = `blur(${t.blur}px) grayscale(${t.desat}%)`;
+  bx.drawImage(img, 0, 0);
+  bx.filter = "none";
+
+  // 2) Dunkler Verlauf auf den Erweiterungsflächen: an der Flyer-Kante
+  //    transparent, außen bis rgba(0,0,0,darkMax).
+  function darken(x, y, w, h, gx0, gy0, gx1, gy1) {
+    const g = bx.createLinearGradient(gx0, gy0, gx1, gy1);
+    g.addColorStop(0, "rgba(0,0,0,0)");
+    g.addColorStop(1, `rgba(0,0,0,${t.darkMax})`);
+    bx.fillStyle = g;
+    bx.fillRect(x, y, w, h);
+  }
+  if (x0 > 2) {
+    darken(0, 0, x0, H, x0, 0, 0, 0);                     // links
+    darken(x0 + mw, 0, W - x0 - mw, H, x0 + mw, 0, W, 0); // rechts
+  }
+  if (y0 > 2) {
+    darken(0, 0, W, y0, 0, y0, 0, 0);                     // oben
+    darken(0, y0 + mh, W, H - y0 - mh, 0, y0 + mh, 0, H); // unten
+  }
+
+  // 3) Gefederte Maske: deckend im Flyer-Rechteck, Fade über `feather` px in
+  //    die Erweiterung hinein. Eigene Canvas + EIN destination-in-Draw —
+  //    mehrere destination-in-Fills würden den Rest der Fläche löschen.
+  const mask = document.createElement("canvas");
+  mask.width = W; mask.height = H;
+  const mx = mask.getContext("2d");
+  mx.fillStyle = "#fff";
+  mx.fillRect(x0, y0, mw, mh);
+  function fade(x, y, w, h, gx0, gy0, gx1, gy1) {
+    const g = mx.createLinearGradient(gx0, gy0, gx1, gy1);
+    g.addColorStop(0, "rgba(255,255,255,1)");
+    g.addColorStop(1, "rgba(255,255,255,0)");
+    mx.fillStyle = g;
+    mx.fillRect(x, y, w, h);
+  }
+  if (x0 > 2) {
+    const f = Math.min(t.feather, x0);
+    fade(x0 - f, y0, f, mh, x0, 0, x0 - f, 0);
+    fade(x0 + mw, y0, f, mh, x0 + mw, 0, x0 + mw + f, 0);
+  }
+  if (y0 > 2) {
+    const f = Math.min(t.feather, y0);
+    fade(x0, y0 - f, mw, f, 0, y0, 0, y0 - f);
+    fade(x0, y0 + mh, mw, f, 0, y0 + mh, 0, y0 + mh + f);
+  }
+
+  // 4) Scharfes Original mit der Maske über die beruhigte Basis legen.
+  const sharp = document.createElement("canvas");
+  sharp.width = W; sharp.height = H;
+  const sx = sharp.getContext("2d");
+  sx.drawImage(img, 0, 0);
+  sx.globalCompositeOperation = "destination-in";
+  sx.drawImage(mask, 0, 0);
+
+  bx.drawImage(sharp, 0, 0);
+  return base.toDataURL("image/png");
+}
 
 function makeImg(url) {
   const img = new Image();
@@ -78,7 +181,14 @@ async function ensureFormat(id) {
   loading.add(id);
   renderTiles();
   try {
-    const image = await postReframe({ image: await masterDataUrl(), targetFormat: id });
+    let image = await postReframe({ image: await masterDataUrl(), targetFormat: id });
+    // Shadow-Falloff auf den erweiterten Flächen; bei Fehlern lieber das
+    // unbehandelte Reframe-Ergebnis zeigen als gar keins.
+    try {
+      image = await treatEdges(image, id);
+    } catch (e) {
+      console.error("Rand-Nachbearbeitung fehlgeschlagen:", e);
+    }
     loading.delete(id);
     if (state.master !== masterAtStart) { renderTiles(); return; }
     state.formats[id] = image;
