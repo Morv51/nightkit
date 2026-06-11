@@ -133,6 +133,56 @@ router.post("/api/correct", async (req, res) => {
   }
 });
 
+// Ziel-Formate → Ideogram-V3-Resolution-Enum. Die Wunschgrößen (1080x1350,
+// 1080x1080, 1920x1080) existieren im Enum nicht; gewählt ist jeweils der
+// Enum-Wert mit exakt (Feed/Quadrat) bzw. nahezu exakt (Banner, ~16:9)
+// passendem Seitenverhältnis.
+const REFRAME_RESOLUTIONS = {
+  feed:   "896x1120",  // 4:5
+  square: "1024x1024", // 1:1
+  banner: "1312x736",  // ≈16:9
+};
+
+// Multi-Format-Export: erweitert das 9:16-Master-Bild per Ideogram V3 Reframe
+// intelligent auf ein anderes Seitenverhältnis (keine schwarzen Ränder, kein
+// hartes Cropping). Auth-geschützt wie /api/generate.
+// Kosten: Jeder Reframe-Aufruf ist ein zusätzlicher Ideogram-Call (~0,20 USD).
+router.post("/api/reframe", async (req, res) => {
+  if (!IDEOGRAM_KEY) return sendError(res, 500, "IDEOGRAM_API_KEY not configured");
+
+  if (auth.isConfigured()) {
+    const user = await auth.verifyToken(auth.bearer(req));
+    if (!user) return sendError(res, 401, "Authentifizierung erforderlich");
+  }
+
+  let body;
+  try {
+    body = await readJson(req, { limit: 25 * 1024 * 1024 }); // master as base64
+  } catch (e) {
+    return sendError(res, e.status || 400, e.message);
+  }
+
+  const image = parseDataUrl(body.image);
+  if (!image) return sendError(res, 400, "Master-Bild fehlt oder ist ungültig");
+
+  const resolution = REFRAME_RESOLUTIONS[body.targetFormat];
+  if (!resolution) return sendError(res, 400, "Unbekanntes Zielformat");
+
+  try {
+    const { url } = await ideogram.reframe({
+      apiKey: IDEOGRAM_KEY,
+      imageBuffer: image.buffer,
+      imageType: image.mime,
+      resolution,
+    });
+    const dl = await ideogram.download(url);
+    sendJson(res, 200, { image: `data:${dl.contentType};base64,${dl.buffer.toString("base64")}` });
+  } catch (e) {
+    console.error("reframe error:", e.message);
+    sendError(res, 502, "Format konnte nicht erstellt werden: " + e.message);
+  }
+});
+
 // Instagram caption generation (Claude). Auth-protected like /api/generate.
 router.post("/api/caption", async (req, res) => {
   if (!caption.isConfigured()) return sendError(res, 500, "ANTHROPIC_API_KEY not configured");

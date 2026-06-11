@@ -2,6 +2,8 @@ import { state } from "./state.js";
 import { $, els, on } from "./dom.js";
 import { postCorrect } from "./api.js";
 import { addToHistory } from "./history.js";
+import { setMaster, selectFormat } from "./formats.js";
+import { toast } from "./toast.js";
 
 // Korrektur-Modus (Inpainting): der User malt mit einem Pinsel über
 // fehlerhafte Stellen des generierten Flyers; die markierten Bereiche werden
@@ -25,7 +27,6 @@ let busy = false;
 let showingPrev = false;
 
 let canvas, ctx, frame, flyerCol, cursorEl, busyEl;
-let toastEl, toastMsg, toastRetry;
 
 function isActive() {
   return frame && frame.classList.contains("correcting");
@@ -84,6 +85,9 @@ function moveCursor(e) {
 // ── Modus betreten / verlassen ───────────────────────────────────
 function enterMode() {
   if (busy || !state.last) return;
+  // Korrektur arbeitet immer auf dem 9:16-Master — falls gerade ein
+  // abgeleitetes Format angezeigt wird, erst zurückschalten.
+  if (state.currentFormat !== "story") selectFormat("story");
   const img = els.resultImg;
   if (!img.complete || !img.naturalWidth) {
     // Bild dekodiert noch (z.B. direkt nach Versions-Wechsel) → nachholen
@@ -136,22 +140,26 @@ function updatePrevLink() {
 function togglePrev(e) {
   e.preventDefault();
   if (busy || !state.correctPrev) return;
-  [state.last, state.correctPrev] = [state.correctPrev, state.last];
-  [state.lastImg, state.correctPrevImg] = [state.correctPrevImg, state.lastImg];
-  els.resultImg.src = state.last;
+  const prevUrl = state.correctPrev;
+  state.correctPrev = state.master;
+  state.correctPrevImg = state.masterImg;
+  setMaster(prevUrl); // Master-Wechsel → gecachte Formate verfallen
   showingPrev = !showingPrev;
   updatePrevLink();
 }
 
-// ── Toast (Fehler mit Retry) ─────────────────────────────────────
+// ── Toast (Fehler, optional mit Retry) ───────────────────────────
+let dismissToast = null;
+
 function showToast(msg, withRetry) {
-  toastMsg.textContent = msg;
-  toastRetry.style.display = withRetry ? "" : "none";
-  toastEl.classList.add("on");
+  hideToast();
+  dismissToast = toast(msg, withRetry
+    ? { type: "error", action: { label: "Erneut versuchen", onClick: apply } }
+    : { type: "error" });
 }
 
 function hideToast() {
-  toastEl.classList.remove("on");
+  if (dismissToast) { dismissToast(); dismissToast = null; }
 }
 
 // ── Maske + Bild-Payload ─────────────────────────────────────────
@@ -257,16 +265,13 @@ async function apply() {
       instruction,
     });
 
-    // Alte Version für einen Schritt zurück behalten, dann übernehmen:
-    // Downloads, Kopieren und Video nutzen ab jetzt das korrigierte Bild.
-    state.correctPrev = state.last;
-    state.correctPrevImg = state.lastImg;
+    // Alte Version für einen Schritt zurück behalten, dann als neues Master
+    // übernehmen: Downloads, Video und Formate nutzen ab jetzt das
+    // korrigierte Bild; gecachte Reframe-Formate verfallen.
+    state.correctPrev = state.master;
+    state.correctPrevImg = state.masterImg;
     showingPrev = false;
-    state.last = corrected;
-    state.lastImg = new Image();
-    state.lastImg.crossOrigin = "anonymous";
-    state.lastImg.src = corrected;
-    els.resultImg.src = corrected;
+    setMaster(corrected);
     addToHistory(corrected);
 
     $("correctInstruction").value = "";
@@ -311,9 +316,6 @@ export function initCorrect() {
   flyerCol = document.querySelector(".result-flyer");
   cursorEl = $("correctCursor");
   busyEl = $("correctBusy");
-  toastEl = $("correctToast");
-  toastMsg = $("correctToastMsg");
-  toastRetry = $("correctToastRetry");
 
   on($("btnCorrect"), "click", enterMode);
   on($("correctCancel"), "click", () => { if (!busy) exitMode(); });
@@ -321,8 +323,6 @@ export function initCorrect() {
   on($("correctClear"), "click", () => { if (!busy) { strokes = []; drawing = null; redraw(); } });
   on($("correctApply"), "click", apply);
   on($("correctPrevLink"), "click", togglePrev);
-  on($("correctToastRetry"), "click", () => { hideToast(); apply(); });
-  on($("correctToastClose"), "click", hideToast);
   on($("correctSize"), "input", () => { if (cursorEl.style.display === "block") cursorEl.style.display = "none"; });
   on($("correctInstruction"), "keydown", (e) => { if (e.key === "Enter") apply(); });
 

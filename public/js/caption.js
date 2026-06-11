@@ -1,5 +1,6 @@
 import { $, val } from "./dom.js";
 import { postCaption } from "./api.js";
+import { toast } from "./toast.js";
 
 // Instagram caption generator. The whole UI lives inside the result panel, so
 // it only appears after a flyer has been generated. Reads the same event form
@@ -59,6 +60,10 @@ async function generateCaption() {
   } catch (e) {
     $("captionText").textContent = "⚠ " + (e.message || "Caption konnte nicht erstellt werden.");
     box.style.display = "block";
+    toast(e.message || "Caption konnte nicht erstellt werden.", {
+      type: "error",
+      action: { label: "Erneut versuchen", onClick: generateCaption },
+    });
   } finally {
     btn.disabled = false;
     btn.textContent = label;

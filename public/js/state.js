@@ -2,8 +2,14 @@
 // shared values. Keep flat & boring.
 
 export const state = {
-  last: null,
+  last: null,      // currently DISPLAYED image (downloads/copy follow this)
   lastImg: null,
+  master: null,    // the 9:16 master (video + correction always use this)
+  masterImg: null,
+
+  // multi-format export: cached reframe results per format id
+  formats: {},          // { story|feed|square|banner: url }
+  currentFormat: "story",
   currentVideoStyle: "glitch",
   animFrameId: null,
   historyUrls: [],

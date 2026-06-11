@@ -2,7 +2,9 @@ import { state } from "./state.js";
 import { els, val } from "./dom.js";
 
 function flyerBaseName() {
-  return (val("fName") || "flyer").replace(/\s+/g, "-").toLowerCase();
+  const base = (val("fName") || "flyer").replace(/\s+/g, "-").toLowerCase();
+  // downloads follow the displayed format; suffix marks non-master formats
+  return state.currentFormat !== "story" ? base + "-" + state.currentFormat : base;
 }
 
 export function download(fmt) {

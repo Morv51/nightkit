@@ -5,17 +5,35 @@ import { showErr, clearErr } from "./errors.js";
 import { addToHistory } from "./history.js";
 import { compositeLogo } from "./composite.js";
 import { resetCorrectState } from "./correct.js";
+import { setMaster } from "./formats.js";
+import { toast } from "./toast.js";
 
 const POLL_INTERVAL_MS = 2000;
 const MAX_POLL_MS = 180 * 1000;
 
+// Rotierender Fortschrittstext im Lade-Overlay; die letzte Meldung bleibt
+// stehen (kein Zurückspringen zur ersten bei längeren Generierungen).
+const PROGRESS_MSGS = ["Template wird vorbereitet…", "KI platziert deine Texte…", "Feinschliff…"];
+let progressTimer = null;
+
 function setLoading(loading) {
+  const title = document.querySelector(".ov-title");
   if (loading) {
     els.genTxt.innerHTML = '<span class="spinner"></span>';
     els.genBtn.disabled = true;
     els.ov.classList.add("on");
     els.ovTimer.textContent = "";
+    let i = 0;
+    if (title) title.textContent = PROGRESS_MSGS[0];
+    clearInterval(progressTimer);
+    progressTimer = setInterval(() => {
+      i = Math.min(i + 1, PROGRESS_MSGS.length - 1);
+      if (title) title.textContent = PROGRESS_MSGS[i];
+      if (i === PROGRESS_MSGS.length - 1) clearInterval(progressTimer);
+    }, 3500);
   } else {
+    clearInterval(progressTimer);
+    if (title) title.textContent = "Flyer wird generiert…";
     els.genTxt.textContent = "Flyer generieren";
     els.genBtn.disabled = false;
     els.ov.classList.remove("on");
@@ -53,12 +71,8 @@ async function showResult(proxiedUrl) {
   }
 
   resetCorrectState(); // neuer Flyer → Korrektur-Verlauf des alten verwerfen
-  state.last = displayUrl;
-  state.lastImg = new Image();
-  state.lastImg.crossOrigin = "anonymous";
-  state.lastImg.src = displayUrl;
+  setMaster(displayUrl); // setzt Master + Anzeige, verwirft gecachte Formate
 
-  els.resultImg.src = displayUrl;
   els.statePreview.style.display = "none";
   els.stateResult.style.display = "grid"; // .result-split is a grid; triggers the entrance animations
   addToHistory(displayUrl);
@@ -96,6 +110,10 @@ export async function generate() {
     await showResult(proxied);
   } catch (e) {
     showErr(e.message || "Fehler.");
+    toast(e.message || "Generierung fehlgeschlagen.", {
+      type: "error",
+      action: { label: "Erneut versuchen", onClick: generate },
+    });
   } finally {
     setLoading(false);
   }

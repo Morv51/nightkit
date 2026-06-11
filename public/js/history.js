@@ -1,5 +1,6 @@
 import { state } from "./state.js";
 import { els } from "./dom.js";
+import { setMaster } from "./formats.js";
 
 const MAX = 8;
 
@@ -28,9 +29,6 @@ function render() {
 }
 
 function selectFromHistory(url) {
-  els.resultImg.src = url;
-  state.last = url;
-  state.lastImg = new Image();
-  state.lastImg.crossOrigin = "anonymous";
-  state.lastImg.src = url;
+  // Eine frühere Version wird wieder zum Master — abgeleitete Formate verfallen.
+  setMaster(url);
 }

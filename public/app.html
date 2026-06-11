@@ -170,6 +170,12 @@
           <button class="rbtn rbtn-ghost" id="copyBtn">⎘ Kopieren</button>
           <button class="rbtn rbtn-ghost" id="btnCorrect">✎ Korrigieren</button>
         </div>
+        <!-- Multi-Format-Export (Kacheln werden von js/formats.js gerendert) -->
+        <div class="formats-block" id="formatsBlock">
+          <div class="formats-label">Formate</div>
+          <div class="formats-row" id="formatsRow"></div>
+          <div class="formats-hint">Weitere Formate werden per KI passend erweitert</div>
+        </div>
         <div class="correct-panel" id="correctPanel">
           <input class="correct-input" id="correctInstruction" placeholder="Optional: Was soll stattdessen dort stehen? Leer lassen zum Entfernen">
           <button class="rbtn rbtn-primary correct-apply" id="correctApply" type="button">Korrektur anwenden</button>
@@ -239,13 +245,6 @@
     <div class="picker-cats" id="pickerCats"></div>
     <div class="picker-grid" id="pickerGrid"></div>
   </div>
-</div>
-
-<!-- Fehler-Toast des Korrektur-Modus (mit Retry) -->
-<div class="correct-toast" id="correctToast">
-  <span class="ct-msg" id="correctToastMsg"></span>
-  <button class="ct-retry" id="correctToastRetry" type="button">Erneut versuchen</button>
-  <button class="ct-close" id="correctToastClose" type="button" aria-label="Schließen">✕</button>
 </div>
 
 <script type="module" src="/js/main.js"></script>

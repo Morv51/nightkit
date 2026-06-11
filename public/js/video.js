@@ -7,8 +7,10 @@ const MAX_W = 1080, MAX_H = 1920; // H.264 level cap
 
 // Exact flyer pixel size, capped to the encoder limit and rounded to even
 // (H.264 requires even dimensions). Falls back to 1080x1920 if not loaded yet.
+// Video always renders the 9:16 MASTER, regardless of which export format is
+// currently displayed in the preview.
 function flyerSize() {
-  const img = state.lastImg;
+  const img = state.masterImg;
   let W = (img && img.naturalWidth) || MAX_W;
   let H = (img && img.naturalHeight) || MAX_H;
   if (W > MAX_W || H > MAX_H) {
@@ -70,7 +72,7 @@ export function previewVideo() {
   function frame() {
     const t = ((Date.now() - startT) % dur) / dur;
     const style = getStyle(state.currentVideoStyle);
-    style.draw(ctx, W, H, t, state.lastImg);
+    style.draw(ctx, W, H, t, state.masterImg);
     state.animFrameId = requestAnimationFrame(frame);
   }
   frame();
@@ -83,7 +85,7 @@ function ensureVideoEncoder() {
 }
 
 export async function exportVideo() {
-  if (!state.last) {
+  if (!state.master) {
     els.videoStatus.textContent = "Bitte zuerst Flyer generieren.";
     return;
   }
@@ -128,7 +130,7 @@ export async function exportVideo() {
 
     for (let i = 0; i < totalFrames; i++) {
       if (encErr) throw encErr;
-      style.draw(ctx, W, H, i / totalFrames, state.lastImg);
+      style.draw(ctx, W, H, i / totalFrames, state.masterImg);
       const frame = new VideoFrame(canvas, { timestamp: Math.round(i / EXPORT_FPS * 1000000) });
       encoder.encode(frame, { keyFrame: i % EXPORT_FPS === 0 });
       frame.close();

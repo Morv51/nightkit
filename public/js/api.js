@@ -53,6 +53,21 @@ export async function postCorrect(payload) {
   return data.image;
 }
 
+// Multi-format export: master image as base64 data URL + target format id
+// ('feed' | 'square' | 'banner'). Returns the reframed image as a data URL.
+export async function postReframe(payload) {
+  const res = await fetch("/api/reframe", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+    body: JSON.stringify(payload),
+  });
+  if (res.status === 401) throw new Error("Sitzung abgelaufen. Bitte neu anmelden.");
+  if (!res.ok) throw new Error(await parseError(res));
+  const data = await res.json();
+  if (!data.image) throw new Error("Kein Bild erhalten.");
+  return data.image;
+}
+
 export async function postCaption(payload) {
   const res = await fetch("/api/caption", {
     method: "POST",
