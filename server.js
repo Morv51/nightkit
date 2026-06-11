@@ -143,10 +143,30 @@ const REFRAME_RESOLUTIONS = {
   banner: "1312x736",  // ≈16:9
 };
 
+// Deterministischer Seed aus den Master-Bytes (FNV-1a): gleiches Master ⇒
+// gleicher Seed für alle Zielformate und Wiederholungen — Reframes bleiben
+// damit "pro Session" (= pro generiertem Flyer) konsistent.
+function seedFromBuffer(buf) {
+  let h = 2166136261;
+  for (let i = 0; i < buf.length; i++) {
+    h ^= buf[i];
+    h = (h * 16777619) >>> 0;
+  }
+  return h % 2147483647;
+}
+
 // Multi-Format-Export: erweitert das 9:16-Master-Bild per Ideogram V3 Reframe
 // intelligent auf ein anderes Seitenverhältnis (keine schwarzen Ränder, kein
 // hartes Cropping). Auth-geschützt wie /api/generate.
 // Kosten: Jeder Reframe-Aufruf ist ein zusätzlicher Ideogram-Call (~0,20 USD).
+//
+// Stiltreue: Der Reframe-Endpoint akzeptiert laut Ideogram-Doku KEIN
+// prompt / negative_prompt / style_type — die gewünschte Steuerung läuft
+// stattdessen über die unterstützten Hebel: das Master-Bild selbst als
+// style_reference_image (Farbgebung, Textur und Look der erweiterten Flächen
+// folgen dem Flyer — DER entscheidende Hebel gegen Fantasietext und falsche
+// Hintergrundfarben), rendering_speed QUALITY (höchste Fidelity) und ein
+// fester, aus dem Master abgeleiteter Seed.
 router.post("/api/reframe", async (req, res) => {
   if (!IDEOGRAM_KEY) return sendError(res, 500, "IDEOGRAM_API_KEY not configured");
 
@@ -174,6 +194,10 @@ router.post("/api/reframe", async (req, res) => {
       imageBuffer: image.buffer,
       imageType: image.mime,
       resolution,
+      styleReferenceBuffer: image.buffer, // Master als Style-Referenz
+      styleReferenceType: image.mime,
+      renderingSpeed: "QUALITY",
+      seed: seedFromBuffer(image.buffer),
     });
     const dl = await ideogram.download(url);
     sendJson(res, 200, { image: `data:${dl.contentType};base64,${dl.buffer.toString("base64")}` });
