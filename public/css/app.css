@@ -273,6 +273,21 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .cap-regen{display:inline-block;margin-top:12px;font-size:12px;color:var(--muted);text-decoration:none}
 .cap-regen:hover{color:var(--accent)}
 
+/* ── INFO-HINTS (Tooltips) ── */
+.hint{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;margin-left:5px;padding:0;border-radius:50%;border:1px solid rgba(245,245,240,.25);background:none;color:rgba(245,245,240,.4);font-family:inherit;font-size:9px;font-weight:600;font-style:normal;text-transform:none;letter-spacing:0;line-height:1;cursor:help;vertical-align:middle;flex-shrink:0;transition:all .15s}
+.hint:hover{border-color:rgba(245,245,240,.5);color:var(--text)}
+.tip-box{position:fixed;z-index:600;background:#1a1a1a;border:1px solid #333;border-radius:8px;padding:10px 12px;max-width:240px;color:#fff;font-size:13px;font-weight:400;line-height:1.45;letter-spacing:0;text-transform:none;box-shadow:0 10px 28px rgba(0,0,0,.45);opacity:0;visibility:hidden;transition:opacity .12s;pointer-events:none}
+.tip-box.on{opacity:1;visibility:visible}
+.tip-arrow{position:absolute;left:var(--arrow-x,50%);bottom:-4.5px;width:8px;height:8px;background:#1a1a1a;border-right:1px solid #333;border-bottom:1px solid #333;transform:translateX(-50%) rotate(45deg)}
+.tip-box.below .tip-arrow{bottom:auto;top:-4.5px;transform:translateX(-50%) rotate(225deg)}
+
+/* Best-Practice-Box (nur im Leerzustand) */
+.tips-card{width:100%;max-width:440px;background:#111111;border:1px solid #222;border-radius:12px;padding:20px;text-align:left}
+.tips-label{color:var(--accent);font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px}
+.tip-item{position:relative;padding-left:20px;color:#bbb;font-size:13.5px;line-height:1.5;margin-bottom:9px}
+.tip-item:last-child{margin-bottom:0}
+.tip-item::before{content:"✓";position:absolute;left:0;top:1px;color:var(--accent);font-size:12px;font-weight:700}
+
 /* ── MOBILE ── */
 @media(max-width:900px){
   html,body{height:auto;overflow:auto}

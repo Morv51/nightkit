@@ -88,31 +88,43 @@
       <div class="sec-divider"></div>
 
       <div class="sec-label">Event</div>
-      <div class="field"><label>Subline</label><input id="fPrefix" placeholder="z. B. 5 Jahre"></div>
-      <div class="field"><label>Headline</label><input id="fName" value="Black Friday"></div>
+      <div class="field">
+        <label>Subline <button type="button" class="hint" aria-label="Info" data-tip="Die kleine Zeile über der Headline, oft kursiv. Zum Beispiel der Anlass oder ein Motto.">i</button></label>
+        <input id="fPrefix" placeholder="z. B. Your Night. Your Rules.">
+      </div>
+      <div class="field">
+        <label>Headline <button type="button" class="hint" aria-label="Info" data-tip="Der größte Text auf der Grafik. Kurz und knackig wirkt am stärksten.">i</button></label>
+        <input id="fName" placeholder="z. B. Tropical Night">
+      </div>
       <div class="row">
-        <div class="field"><label>Datum</label><input type="date" id="fDatePicker" value="2026-06-30"></div>
-        <div class="field"><label>Wochentag</label><input id="fDay" readonly placeholder="automatisch"></div>
+        <div class="field"><label>Datum</label><input type="date" id="fDatePicker"></div>
+        <div class="field"><label>Wochentag</label><input id="fDay" readonly placeholder="z. B. Samstag"></div>
       </div>
       <input type="hidden" id="fDate">
       <div class="field">
-        <label>DJs / Acts</label>
-        <input id="fDj" value="Crazy Cutz, Marveles" placeholder="kommagetrennt">
+        <label>DJs / Acts <button type="button" class="hint" aria-label="Info" data-tip="Mehrere mit Komma trennen. Schreib 'DJ' nur dazu, wenn es auch auf der Grafik stehen soll. Namen ohne Prefix bleiben ohne.">i</button></label>
+        <input id="fDj" placeholder="z. B. DJ Kess, Marveles, Adam Paul">
         <div class="field-hint">Mehrere mit Komma trennen — erscheinen als Lineup-Zeile unter dem Banner.</div>
       </div>
 
       <div class="sec-divider"></div>
       <div class="sec-label">Details</div>
-      <div class="field"><label>Uhrzeit</label><input id="fTime" value="23:00"></div>
-      <div class="field"><label>Website</label><input id="fContact" value="www.crazy-cutz.de"></div>
-      <div class="field"><label>Club Name</label><input id="fClub" placeholder="z. B. Nachtschicht"></div>
-      <div class="field"><label>Location</label><input id="fLocation" placeholder="z. B. Braunschweig"></div>
+      <div class="field"><label>Uhrzeit</label><input id="fTime" placeholder="z. B. 23:00"></div>
+      <div class="field"><label>Website</label><input id="fContact" placeholder="z. B. www.nachtschicht.de"></div>
       <div class="field">
-        <label>Vibe / Beschreibung</label>
-        <textarea id="fVibe" class="vibe-input" rows="3" placeholder="z. B. Open Air Sommerfest, entspannte Atmosphäre, Eintritt frei bis 23 Uhr, Fokus auf House…"></textarea>
+        <label>Club Name <button type="button" class="hint" aria-label="Info" data-tip="Der Name deines Clubs oder deiner Location, zum Beispiel Nachtschicht.">i</button></label>
+        <input id="fClub" placeholder="z. B. Nachtschicht">
       </div>
       <div class="field">
-        <label>Logo</label>
+        <label>Location <button type="button" class="hint" aria-label="Info" data-tip="Die Stadt oder der Ort, zum Beispiel Braunschweig.">i</button></label>
+        <input id="fLocation" placeholder="z. B. Braunschweig">
+      </div>
+      <div class="field">
+        <label>Vibe / Beschreibung <button type="button" class="hint" aria-label="Info" data-tip="Je konkreter, desto besser die Caption. Nenne Specials wie freien Eintritt, Open Air, Musikrichtung oder Aktionen. Allgemeine Floskeln bringen wenig.">i</button></label>
+        <textarea id="fVibe" class="vibe-input" rows="3" placeholder="z. B. Open Air, House und Deep House, freier Eintritt bis 23 Uhr, ein Shot aufs Haus"></textarea>
+      </div>
+      <div class="field">
+        <label>Logo <button type="button" class="hint" aria-label="Info" data-tip="Am besten ein PNG mit transparentem Hintergrund. Nach dem Upload kannst du das Logo direkt auf der Grafik positionieren.">i</button></label>
         <input type="file" id="fLogo" class="file-input" accept="image/*">
         <img id="logoPreview" class="logo-preview" alt="Logo-Vorschau">
       </div>
@@ -141,6 +153,14 @@
           </div>
         </div>
         <div class="preview-note">Vorschau des Templates. Fülle links das Formular aus und klicke auf „Flyer generieren".</div>
+        <!-- Best-Practice-Box: nur im Leerzustand sichtbar (verschwindet mit statePreview) -->
+        <div class="tips-card">
+          <div class="tips-label">Tipps für beste Ergebnisse</div>
+          <div class="tip-item">Halte die Headline kurz. Wenige starke Worte wirken besser als lange Sätze.</div>
+          <div class="tip-item">Lade dein Logo als PNG mit transparentem Hintergrund hoch.</div>
+          <div class="tip-item">Beschreibe im Vibe-Feld konkrete Specials, das macht die Caption stark.</div>
+          <div class="tip-item">Schreib 'DJ' nur vor Namen, wenn es auch auf der Grafik erscheinen soll.</div>
+        </div>
       </div>
     </div>
 
@@ -169,10 +189,11 @@
           <button class="rbtn rbtn-ghost" id="btnDlJpg">↓ JPG</button>
           <button class="rbtn rbtn-ghost" id="copyBtn">⎘ Kopieren</button>
           <button class="rbtn rbtn-ghost" id="btnCorrect">✎ Korrigieren</button>
+          <button type="button" class="hint" aria-label="Info" data-tip="Male über störende Stellen. Die KI entfernt sie und füllt den Hintergrund auf. Mit Texteingabe kannst du stattdessen etwas ersetzen lassen.">i</button>
         </div>
         <!-- Multi-Format-Export (Kacheln werden von js/formats.js gerendert) -->
         <div class="formats-block" id="formatsBlock">
-          <div class="formats-label">Formate</div>
+          <div class="formats-label">Formate <button type="button" class="hint" aria-label="Info" data-tip="Deine Grafik wird per KI passend auf andere Seitenverhältnisse erweitert, ganz ohne schwarze Ränder oder Beschneiden.">i</button></div>
           <div class="formats-row" id="formatsRow"></div>
           <div class="formats-hint">Weitere Formate werden per KI passend erweitert</div>
         </div>
@@ -193,7 +214,7 @@
 
         <!-- Card 1: Video Export -->
         <div class="action-card card-video">
-          <div class="card-label">Video Export</div>
+          <div class="card-label">Video Export <button type="button" class="hint" aria-label="Info" data-tip="Verwandelt deine fertige Grafik in ein 10-Sekunden-Video für Stories und Reels. Wähle einen Effekt, der zum Vibe passt.">i</button></div>
           <div class="card-help">Exportiere deinen Flyer als 10-Sek-Video</div>
           <div class="style-row"></div>
           <div class="card-actions">
@@ -208,7 +229,7 @@
 
         <!-- Card 2: Instagram Caption -->
         <div class="action-card card-caption">
-          <div class="card-label">Instagram Caption</div>
+          <div class="card-label">Instagram Caption <button type="button" class="hint" aria-label="Info" data-tip="Erstellt einen fertigen Caption-Text mit Hashtags. Fülle das Vibe-Feld aus, damit die Caption konkret und glaubwürdig wird.">i</button></div>
           <div class="card-help">Conversion-optimierte Caption mit Hashtags</div>
           <div class="caption-styles" id="captionStyles">
             <button class="pill cap-style active" data-style="hype" type="button">Hype</button>

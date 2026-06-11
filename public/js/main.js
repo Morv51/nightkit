@@ -8,6 +8,7 @@ import { initDatePicker } from "./datepicker.js";
 import { initCaption } from "./caption.js";
 import { initCorrect } from "./correct.js";
 import { initFormats } from "./formats.js";
+import { initHints } from "./hints.js";
 
 function bindActions() {
   on(els.genBtn, "click", generate);
@@ -29,6 +30,7 @@ async function init() {
   initCaption();
   initCorrect();
   initFormats();
+  initHints();
   initPicker();
 
   try {
