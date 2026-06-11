@@ -54,7 +54,7 @@ export async function postCorrect(payload) {
 }
 
 // Multi-format export: master image as base64 data URL + target format id
-// ('feed' | 'square' | 'banner'). Returns the reframed image as a data URL.
+// ('feed' | 'square'). Returns the reframed image as a data URL.
 export async function postReframe(payload) {
   const res = await fetch("/api/reframe", {
     method: "POST",

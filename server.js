@@ -134,13 +134,11 @@ router.post("/api/correct", async (req, res) => {
 });
 
 // Ziel-Formate → Ideogram-V3-Resolution-Enum. Die Wunschgrößen (1080x1350,
-// 1080x1080, 1920x1080) existieren im Enum nicht; gewählt ist jeweils der
-// Enum-Wert mit exakt (Feed/Quadrat) bzw. nahezu exakt (Banner, ~16:9)
-// passendem Seitenverhältnis.
+// 1080x1080) existieren im Enum nicht; gewählt ist jeweils der Enum-Wert
+// mit exakt passendem Seitenverhältnis.
 const REFRAME_RESOLUTIONS = {
   feed:   "896x1120",  // 4:5
   square: "1024x1024", // 1:1
-  banner: "1312x736",  // ≈16:9
 };
 
 // Deterministischer Seed aus den Master-Bytes (FNV-1a): gleiches Master ⇒

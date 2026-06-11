@@ -16,7 +16,6 @@ const FORMATS = [
   { id: "story",  name: "Story",   ratio: "9:16", shapeW: 14, shapeH: 24 },
   { id: "feed",   name: "Feed",    ratio: "4:5",  shapeW: 19, shapeH: 24 },
   { id: "square", name: "Quadrat", ratio: "1:1",  shapeW: 22, shapeH: 22 },
-  { id: "banner", name: "Banner",  ratio: "16:9", shapeW: 24, shapeH: 14 },
 ];
 
 const MAX_UPLOAD = 9.5 * 1024 * 1024; // Ideogram-Limit: 10MB

@@ -8,7 +8,7 @@ export const state = {
   masterImg: null,
 
   // multi-format export: cached reframe results per format id
-  formats: {},          // { story|feed|square|banner: url }
+  formats: {},          // { story|feed|square: url }
   currentFormat: "story",
   currentVideoStyle: "glitch",
   animFrameId: null,
