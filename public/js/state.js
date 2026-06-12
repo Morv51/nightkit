@@ -2,7 +2,6 @@
 // shared values. Keep flat & boring.
 
 export const state = {
-  engine: "v3",    // generation engine: 'v3' (default) | 'v4' (beta compare)
   last: null,      // currently DISPLAYED image (downloads/copy follow this)
   lastImg: null,
   master: null,    // the 9:16 master (video + correction always use this)

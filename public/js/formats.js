@@ -1,6 +1,6 @@
 import { state } from "./state.js";
 import { $, els } from "./dom.js";
-import { postReframe } from "./api.js";
+import { postReframe, postFormatV4 } from "./api.js";
 import { toast } from "./toast.js";
 
 // Multi-Format-Export: das 9:16-Master bleibt wie bisher, weitere
@@ -34,6 +34,19 @@ const EDGE_TREAT = {
 };
 
 const loading = new Set();
+
+// V4-Beta für die Quadrat-Kachel: bei aktivem Toggle wird 1:1 nicht per
+// Reframe outgepainted, sondern per /api/format-v4 (Ideogram 4.0, fertiger
+// Flyer als Vorlage) neu ins Quadrat gesetzt. Beide Varianten werden separat
+// gecacht ('square' = Reframe, 'square-v4' = V4) und kosten je einen Call.
+let squareV4 = false;
+
+const variantOf = (tileId) => (tileId === "square" && squareV4 ? "square-v4" : tileId);
+
+function updateViaTag() {
+  const tag = $("fmtViaTag");
+  if (tag) tag.style.display = state.currentFormat === "square-v4" ? "block" : "none";
+}
 
 function loadImage(src) {
   return new Promise((resolve, reject) => {
@@ -142,6 +155,7 @@ export function setMaster(url) {
   state.formats = { story: url };
   state.currentFormat = "story";
   if (els.resultImg) els.resultImg.src = url;
+  updateViaTag();
   renderTiles();
 }
 
@@ -154,6 +168,7 @@ export function selectFormat(id) {
   state.last = url;
   state.lastImg = id === "story" ? state.masterImg : makeImg(url);
   if (els.resultImg) els.resultImg.src = url;
+  updateViaTag();
   renderTiles();
 }
 
@@ -181,13 +196,20 @@ async function ensureFormat(id) {
   loading.add(id);
   renderTiles();
   try {
-    let image = await postReframe({ image: await masterDataUrl(), targetFormat: id });
-    // Shadow-Falloff auf den erweiterten Flächen; bei Fehlern lieber das
-    // unbehandelte Reframe-Ergebnis zeigen als gar keins.
-    try {
-      image = await treatEdges(image, id);
-    } catch (e) {
-      console.error("Rand-Nachbearbeitung fehlgeschlagen:", e);
+    let image;
+    if (id === "square-v4") {
+      // V4-Adaption: komplettes Re-Layout aus der Vorlage — es gibt keine
+      // erweiterten Randflächen, daher auch keine Rand-Nachbearbeitung.
+      image = await postFormatV4({ masterImage: await masterDataUrl(), targetFormat: "square" });
+    } else {
+      image = await postReframe({ image: await masterDataUrl(), targetFormat: id });
+      // Shadow-Falloff auf den erweiterten Flächen; bei Fehlern lieber das
+      // unbehandelte Reframe-Ergebnis zeigen als gar keins.
+      try {
+        image = await treatEdges(image, id);
+      } catch (e) {
+        console.error("Rand-Nachbearbeitung fehlgeschlagen:", e);
+      }
     }
     loading.delete(id);
     if (state.master !== masterAtStart) { renderTiles(); return; }
@@ -209,11 +231,14 @@ export function renderTiles() {
   if (!row) return;
   row.innerHTML = "";
   for (const f of FORMATS) {
+    // Die Quadrat-Kachel hat zwei Varianten (Reframe vs. V4-Beta) — Status,
+    // Häkchen und Klick beziehen sich immer auf die aktive Variante.
+    const vid = variantOf(f.id);
     const tile = document.createElement("button");
     tile.type = "button";
     tile.className = "fmt-tile"
-      + (state.currentFormat === f.id ? " active" : "")
-      + (state.formats[f.id] ? " done" : "");
+      + (state.currentFormat === vid ? " active" : "")
+      + (state.formats[vid] ? " done" : "");
     tile.dataset.fmt = f.id;
     tile.title = f.name + " " + f.ratio;
 
@@ -235,11 +260,36 @@ export function renderTiles() {
 
     const status = document.createElement("span");
     status.className = "fmt-status";
-    if (loading.has(f.id)) status.innerHTML = '<span class="fmt-spin"></span>';
-    else if (state.formats[f.id]) status.textContent = "✓";
+    if (loading.has(vid)) status.innerHTML = '<span class="fmt-spin"></span>';
+    else if (state.formats[vid]) status.textContent = "✓";
     tile.appendChild(status);
 
-    tile.addEventListener("click", () => ensureFormat(f.id));
+    // V4-Beta-Toggle an der Quadrat-Kachel (span statt button — verschachtelte
+    // Buttons sind ungültiges HTML). Klick toggelt nur den Modus, generiert
+    // nichts; der Kachel-Klick nutzt dann den V4- bzw. Reframe-Weg.
+    if (f.id === "square") {
+      const chip = document.createElement("span");
+      chip.className = "fmt-v4-chip" + (squareV4 ? " active" : "");
+      chip.setAttribute("role", "button");
+      chip.tabIndex = 0;
+      chip.textContent = "V4 (Beta)";
+      chip.title = "Quadrat per Ideogram V4 aus dem fertigen Flyer neu setzen (Beta), statt per Reframe zu erweitern";
+      chip.addEventListener("click", (e) => {
+        e.stopPropagation();
+        squareV4 = !squareV4;
+        // Ist die andere Variante schon gecacht und gerade eine
+        // Quadrat-Ansicht aktiv, direkt umschalten — sonst nur neu rendern.
+        const v = variantOf("square");
+        if ((state.currentFormat === "square" || state.currentFormat === "square-v4") && state.formats[v]) {
+          selectFormat(v);
+        } else {
+          renderTiles();
+        }
+      });
+      tile.appendChild(chip);
+    }
+
+    tile.addEventListener("click", () => ensureFormat(variantOf(f.id)));
     row.appendChild(tile);
   }
 }

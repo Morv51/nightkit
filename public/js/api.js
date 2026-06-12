@@ -68,6 +68,21 @@ export async function postReframe(payload) {
   return data.image;
 }
 
+// V4-Format-Adaption: der fertige Flyer als Vorlage ({ masterImage, targetFormat }),
+// V4 baut das Design ins Zielformat um. Antwort: Bild als Base64-Data-URL.
+export async function postFormatV4(payload) {
+  const res = await fetch("/api/format-v4", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+    body: JSON.stringify(payload),
+  });
+  if (res.status === 401) throw new Error("Sitzung abgelaufen. Bitte neu anmelden.");
+  if (!res.ok) throw new Error(await parseError(res));
+  const data = await res.json();
+  if (!data.image) throw new Error("Kein Bild erhalten.");
+  return data.image;
+}
+
 export async function postCaption(payload) {
   const res = await fetch("/api/caption", {
     method: "POST",

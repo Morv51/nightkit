@@ -57,9 +57,6 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .col-left-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.07);border-radius:2px}
 .col-left-foot{padding:12px 16px 14px;border-top:0.5px solid rgba(255,255,255,.07);flex-shrink:0}
 
-/* engine toggle (V3/V4-Vergleich) — aktive Pill: Accent-BG + schwarzer Text */
-.engine-toggle{display:flex;gap:8px}
-.engine-toggle .pill{flex:1;text-align:center}
 
 /* current-template chip (sidebar) */
 .tpl-current{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.04);border:0.5px solid rgba(255,255,255,.1);border-radius:8px;padding:8px}
@@ -167,8 +164,9 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .flyer-frame{position:relative;display:inline-block;line-height:0;border-radius:14px}
 .flyer-frame img{display:block;max-width:100%;max-height:calc(100vh - 210px);width:auto;height:auto;border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.55)}
 .done-badge{position:absolute;top:12px;right:12px;background:#7CE38B;color:#062a12;font-size:12px;font-weight:700;padding:6px 12px;border-radius:100px;box-shadow:0 6px 18px rgba(124,227,139,.35);animation:badgeIn .45s cubic-bezier(.2,1.5,.45,1) both .35s}
-.engine-tag{position:absolute;bottom:10px;right:12px;background:rgba(0,0,0,.55);color:rgba(245,245,240,.55);font-size:10.5px;font-weight:500;padding:4px 10px;border-radius:100px;backdrop-filter:blur(4px)}
-.flyer-frame.correcting .engine-tag{display:none!important}
+/* Vergleichshilfe: graues Tag am Flyer, wenn 1:1 per V4 erzeugt wurde */
+.fmt-via{position:absolute;bottom:10px;right:12px;background:rgba(0,0,0,.55);color:rgba(245,245,240,.55);font-size:10.5px;font-weight:500;padding:4px 10px;border-radius:100px;backdrop-filter:blur(4px)}
+.flyer-frame.correcting .fmt-via{display:none!important}
 .result-btns{display:flex;gap:8px;justify-content:center}
 .rbtn{
   height:34px;padding:0 14px;border-radius:8px;
@@ -232,6 +230,9 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .fmt-ratio{font-size:9px;opacity:.65;line-height:1}
 .fmt-status{position:absolute;top:4px;right:6px;font-size:9.5px;color:var(--accent);line-height:1}
 .fmt-spin{display:block;width:9px;height:9px;border:1.5px solid rgba(204,255,0,.25);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+.fmt-v4-chip{display:inline-block;margin-top:4px;padding:2px 8px;border:1px solid #333;border-radius:100px;font-size:8.5px;font-weight:600;letter-spacing:.04em;color:rgba(245,245,240,.45);cursor:pointer;transition:all .15s;line-height:1.5}
+.fmt-v4-chip:hover{border-color:#555;color:var(--text)}
+.fmt-v4-chip.active{background:var(--accent);border-color:var(--accent);color:#0c0c0c;font-weight:700}
 .formats-hint{font-size:10px;color:rgba(245,245,240,.3);margin-top:7px;text-align:center}
 
 /* ── TOASTS (unten rechts) ── */
