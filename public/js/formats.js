@@ -35,17 +35,23 @@ const EDGE_TREAT = {
 
 const loading = new Set();
 
-// V4-Beta für die Quadrat-Kachel: bei aktivem Toggle wird 1:1 nicht per
-// Reframe outgepainted, sondern per /api/format-v4 (Ideogram 4.0, fertiger
-// Flyer als Vorlage) neu ins Quadrat gesetzt. Beide Varianten werden separat
-// gecacht ('square' = Reframe, 'square-v4' = V4) und kosten je einen Call.
-let squareV4 = false;
+// V4-Beta pro Kachel (Feed + Quadrat): bei aktivem Toggle wird das Format
+// nicht per Reframe outgepainted, sondern per /api/format-v4 (Ideogram 4.0,
+// fertiger Flyer als Vorlage) vollflächig neu layoutet. Beide Varianten
+// werden separat gecacht ('feed'/'square' = Reframe, 'feed-v4'/'square-v4'
+// = V4) und kosten je einen Call.
+const v4Mode = { feed: false, square: false };
 
-const variantOf = (tileId) => (tileId === "square" && squareV4 ? "square-v4" : tileId);
+const variantOf = (tileId) => (v4Mode[tileId] ? tileId + "-v4" : tileId);
+
+const VIA_LABELS = { "square-v4": "1:1 via V4", "feed-v4": "4:5 via V4" };
 
 function updateViaTag() {
   const tag = $("fmtViaTag");
-  if (tag) tag.style.display = state.currentFormat === "square-v4" ? "block" : "none";
+  if (!tag) return;
+  const label = VIA_LABELS[state.currentFormat];
+  tag.textContent = label || "";
+  tag.style.display = label ? "block" : "none";
 }
 
 function loadImage(src) {
@@ -197,10 +203,10 @@ async function ensureFormat(id) {
   renderTiles();
   try {
     let image;
-    if (id === "square-v4") {
-      // V4-Adaption: komplettes Re-Layout aus der Vorlage — es gibt keine
+    if (id.endsWith("-v4")) {
+      // V4-Adaption: vollflächiges Re-Layout aus der Vorlage — es gibt keine
       // erweiterten Randflächen, daher auch keine Rand-Nachbearbeitung.
-      image = await postFormatV4({ masterImage: await masterDataUrl(), targetFormat: "square" });
+      image = await postFormatV4({ masterImage: await masterDataUrl(), targetFormat: id.slice(0, -3) });
     } else {
       image = await postReframe({ image: await masterDataUrl(), targetFormat: id });
       // Shadow-Falloff auf den erweiterten Flächen; bei Fehlern lieber das
@@ -231,8 +237,8 @@ export function renderTiles() {
   if (!row) return;
   row.innerHTML = "";
   for (const f of FORMATS) {
-    // Die Quadrat-Kachel hat zwei Varianten (Reframe vs. V4-Beta) — Status,
-    // Häkchen und Klick beziehen sich immer auf die aktive Variante.
+    // Feed- und Quadrat-Kachel haben zwei Varianten (Reframe vs. V4-Beta) —
+    // Status, Häkchen und Klick beziehen sich immer auf die aktive Variante.
     const vid = variantOf(f.id);
     const tile = document.createElement("button");
     tile.type = "button";
@@ -264,23 +270,23 @@ export function renderTiles() {
     else if (state.formats[vid]) status.textContent = "✓";
     tile.appendChild(status);
 
-    // V4-Beta-Toggle an der Quadrat-Kachel (span statt button — verschachtelte
-    // Buttons sind ungültiges HTML). Klick toggelt nur den Modus, generiert
-    // nichts; der Kachel-Klick nutzt dann den V4- bzw. Reframe-Weg.
-    if (f.id === "square") {
+    // V4-Beta-Toggle an Feed- und Quadrat-Kachel (span statt button —
+    // verschachtelte Buttons sind ungültiges HTML). Klick toggelt nur den
+    // Modus, generiert nichts; der Kachel-Klick nutzt dann V4 bzw. Reframe.
+    if (f.id in v4Mode) {
       const chip = document.createElement("span");
-      chip.className = "fmt-v4-chip" + (squareV4 ? " active" : "");
+      chip.className = "fmt-v4-chip" + (v4Mode[f.id] ? " active" : "");
       chip.setAttribute("role", "button");
       chip.tabIndex = 0;
       chip.textContent = "V4 (Beta)";
-      chip.title = "Quadrat per Ideogram V4 aus dem fertigen Flyer neu setzen (Beta), statt per Reframe zu erweitern";
+      chip.title = f.name + " per Ideogram V4 aus dem fertigen Flyer vollflächig neu layouten (Beta), statt per Reframe zu erweitern";
       chip.addEventListener("click", (e) => {
         e.stopPropagation();
-        squareV4 = !squareV4;
-        // Ist die andere Variante schon gecacht und gerade eine
-        // Quadrat-Ansicht aktiv, direkt umschalten — sonst nur neu rendern.
-        const v = variantOf("square");
-        if ((state.currentFormat === "square" || state.currentFormat === "square-v4") && state.formats[v]) {
+        v4Mode[f.id] = !v4Mode[f.id];
+        // Ist die andere Variante schon gecacht und gerade eine Ansicht
+        // dieser Kachel aktiv, direkt umschalten — sonst nur neu rendern.
+        const v = variantOf(f.id);
+        if ((state.currentFormat === f.id || state.currentFormat === f.id + "-v4") && state.formats[v]) {
           selectFormat(v);
         } else {
           renderTiles();

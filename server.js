@@ -205,25 +205,39 @@ router.post("/api/reframe", async (req, res) => {
   }
 });
 
-// Zielformate der V4-Adaption. 2048x2048 ist die 2K-Variante von 1080x1080
-// im remix-v4-Resolution-Enum (exakt 1:1). Der Prompt enthält die Verbote als
-// Avoid-Regeln, weil remix-v4 kein negative_prompt-Feld kennt.
+// Zielformate der V4-Adaption — Auflösungen sind exakte Treffer aus dem
+// remix-v4-Resolution-Enum (2048x2048 = 1:1, 1792x2240 = 4:5), damit V4 das
+// 9:16-Quellformat sicher NICHT beibehält.
 const FORMAT_V4 = {
-  square: {
-    resolution: "2048x2048",
-    prompt:
-      "Recreate this exact flyer design in a 1:1 square format. Keep the same visual " +
-      "style, the same colors, the same typography, the same photos and the same " +
-      "collage composition. Preserve ALL text content exactly as shown in the " +
-      "reference image, including headline, subline, artist names, date, time, club " +
-      "name, location and website. Do not change, translate or invent any text. Only " +
-      "adapt the layout and arrangement so the design fits the square format naturally " +
-      "and looks balanced. The result must look like the same flyer, just designed for " +
-      "a square format. " +
-      "Strictly avoid: gibberish, random letters, misspelled words, altered text, " +
-      "duplicate text, placeholder text, extra people, watermark.",
-  },
+  square: { resolution: "2048x2048", label: "1:1 square" },
+  feed:   { resolution: "1792x2240", label: "4:5 portrait" },
 };
+
+// Referenz-Einfluss (image_weight, 1–100): bewusst MITTLERER Wert — hoch
+// genug, dass Stil, Farben und Texte der Vorlage übernommen werden, niedrig
+// genug, dass V4 das Layout fürs neue Format wirklich neu anordnen darf,
+// statt den 9:16-Flyer mittig mit dunklen Rändern einzusetzen. Justierbar.
+const FORMAT_V4_IMAGE_WEIGHT = 50;
+
+// Prompt: bewusst "neu gestalten" statt "exakt kopieren" — vollflächiges
+// Re-Layout ohne Ränder/Letterbox. remix-v4 kennt kein negative_prompt-Feld,
+// die Verbote stehen deshalb als Avoid-Block im text_prompt.
+function formatV4Prompt(label) {
+  return (
+    `Redesign this flyer as a NEW ${label} layout that completely fills the canvas ` +
+    "edge to edge, with no empty borders, no black bars and no padding. Keep the " +
+    "same visual style, color palette, typography style, mood and the same " +
+    "photographic elements and graphics. Preserve ALL text content exactly as in " +
+    "the reference: headline, subline, artist names, date, time, club name, " +
+    "location and website. Do not change, translate or invent any text. Rearrange " +
+    `and rescale the elements so they are well balanced and fill the entire ${label} ` +
+    "canvas naturally, like a flyer that was originally designed for this format. " +
+    "The whole canvas must be filled with the design. " +
+    "Strictly avoid: black bars, empty borders, padding, letterbox, framed image, " +
+    "centered image with margins, gibberish, random letters, misspelled words, " +
+    "altered text, duplicate text, placeholder text, watermark."
+  );
+}
 
 // Format-Adaption über Ideogram 4.0: der fertige V3-Flyer (mit allen korrekten
 // Texten) dient als Vorlage, V4 baut genau dieses Design ins Zielformat um,
@@ -258,17 +272,19 @@ router.post("/api/format-v4", async (req, res) => {
   try {
     const { url } = await ideogram.remixV4({
       apiKey: IDEOGRAM_KEY,
-      textPrompt: target.prompt,
+      textPrompt: formatV4Prompt(target.label),
       imageBuffer: image.buffer,
       imageType: image.mime,
       resolution: target.resolution,
-      imageWeight: 80, // justierbar (60–90): höher = texttreuer, niedriger = mehr Layout-Freiheit
+      imageWeight: FORMAT_V4_IMAGE_WEIGHT,
       renderingSpeed: "QUALITY",
     });
     const dl = await ideogram.download(url);
     sendJson(res, 200, { image: `data:${dl.contentType};base64,${dl.buffer.toString("base64")}` });
   } catch (e) {
-    console.error("format-v4 error:", e.message);
+    // Voller Ideogram-Response im Log — für die Diagnose von Prompt-/
+    // Parameter-Problemen unverzichtbar.
+    console.error("format-v4 error:", body.targetFormat, e.message, e.response || "");
     sendError(res, 502, "V4-Format konnte nicht erstellt werden: " + e.message);
   }
 });
