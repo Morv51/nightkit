@@ -1,12 +1,16 @@
+/* App-level aliases onto the shared design tokens (styles/tokens.css).
+   Variable names kept so existing rules need no change; values now flow
+   from the central token set. App-specific extras (card-inset, muted
+   micro-scale, border-s) stay local. */
 :root{
-  --bg:#0c0c0c;
-  --surface:#111111;
-  --card:#111111;
+  --bg:var(--color-bg);
+  --surface:var(--color-surface);
+  --card:var(--color-surface);
   --card-inset:#0d0d0d;
-  --accent:#CCFF00;
-  --accent-hover:#b8e600;
+  --accent:var(--color-accent);
+  --accent-hover:var(--color-accent-hover);
   --accent-dim:rgba(204,255,0,0.09);
-  --text:#F5F5F0;
+  --text:var(--color-text);
   --muted:rgba(245,245,240,0.42);
   --border:rgba(255,255,255,0.07);
   --border-s:0.5px solid rgba(255,255,255,0.08);

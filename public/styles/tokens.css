@@ -1,0 +1,71 @@
+/* ============================================================
+   NightKit Design Tokens — single source of truth
+   Shared by landing.html, app.html (via css/app.css) and login.html.
+   Values are normalised from the real values that were in use; near
+   identical values (e.g. #0a0a0a vs #0c0c0c, #888 vs #aaa) collapse
+   onto one token on purpose. This file defines the design language;
+   it does not style any element.
+   ============================================================ */
+:root {
+  /* ---- Colours ---------------------------------------------------- */
+  --color-bg:            #0a0a0a; /* page background (was #0a0a0a / #0c0c0c) */
+  --color-surface:       #111111; /* cards, panels (was #111 / #111111) */
+  --color-surface-2:     #1a1a1a; /* inputs, pills, raised chips (was #1a1a1a / #161616) */
+  --color-border:        #222222; /* default borders (was #222 / rgba white .07–.12) */
+  --color-border-strong: #333333; /* lighter/visible borders: inputs, pills (was #333) */
+
+  --color-text:          #ffffff; /* primary text (was #fff / #f5f5f0) */
+  --color-text-muted:    #888888; /* secondary text (was #888 / #aaa / #bbb) */
+  --color-text-dim:      #555555; /* tertiary text, placeholders (was #555 / #666) */
+
+  --color-accent:        #ccff00; /* brand accent */
+  --color-accent-hover:  #b8e600; /* accent, slightly darker for :hover */
+  --color-accent-ink:    #0c0c0c; /* text/icon colour ON the accent */
+
+  --color-danger:        #ff5a5a; /* errors */
+  --color-success:       #7ce38b; /* success / "done" */
+
+  /* ---- Radii ------------------------------------------------------ */
+  --radius-xs:   4px;  /* tiny handles, progress bars (was 2–5px) */
+  --radius-sm:   8px;  /* buttons, inputs, chips (was 6–9px) */
+  --radius-md:   12px; /* mid cards (was 10–12px) */
+  --radius-lg:   16px; /* large cards, modals (was 14–16px) */
+  --radius-pill: 100px;/* pill chips / fully rounded bars */
+  --radius-full: 50%;  /* circles (avatars, dots) */
+
+  /* ---- Spacing scale (4-based) ------------------------------------ */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* ---- Elevation shadows ------------------------------------------ */
+  --shadow-sm: 0 2px 8px rgba(0,0,0,.4);      /* subtle lift */
+  --shadow-md: 0 16px 40px rgba(0,0,0,.5);    /* cards, menus (was 10–16 / 28–44) */
+  --shadow-lg: 0 30px 80px rgba(0,0,0,.55);   /* modals, login card (was 18–30 / 50–80) */
+  --glow-accent: 0 8px 30px rgba(204,255,0,.4); /* accent button glow */
+
+  /* ---- Typography ------------------------------------------------- */
+  --font-size-2xs: 10px; /* micro labels (was 9–10.5) */
+  --font-size-xs:  11px; /* small labels (was 11–11.5) */
+  --font-size-sm:  12px;
+  --font-size-base:13px; /* default UI text (was 12.5–13.5) */
+  --font-size-md:  14px; /* (was 14–14.5) */
+  --font-size-lg:  15px;
+  --font-size-xl:  16px; /* (was 16–17) */
+  --font-size-2xl: 18px; /* (was 18–19) */
+  --font-size-3xl: 20px;
+
+  --font-weight-normal:     400;
+  --font-weight-medium:     500;
+  --font-weight-semibold:   600;
+  --font-weight-bold:       700;
+  --font-weight-extrabold:  800;
+
+  --line-height-tight:  1.2;
+  --line-height-normal: 1.5;
+}

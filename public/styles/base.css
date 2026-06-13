@@ -1,0 +1,57 @@
+/* ============================================================
+   NightKit shared component classes — built on tokens.css.
+   Reusable patterns so buttons, cards, inputs and labels look
+   identical across landing.html, app.html and login.html.
+   Load AFTER tokens.css.
+   ============================================================ */
+
+/* ---- Buttons ----------------------------------------------------- */
+.btn-primary {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+  background: var(--color-accent); color: var(--color-accent-ink);
+  border: none; border-radius: var(--radius-sm);
+  font-family: inherit; font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold);
+  cursor: pointer; transition: background .15s;
+}
+.btn-primary:hover:not(:disabled) { background: var(--color-accent-hover); }
+.btn-primary:disabled { opacity: .45; cursor: not-allowed; }
+
+.btn-secondary {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+  background: var(--color-surface-2); color: var(--color-text);
+  border: 1px solid var(--color-border-strong); border-radius: var(--radius-sm);
+  font-family: inherit; font-size: var(--font-size-lg); font-weight: var(--font-weight-medium);
+  cursor: pointer; transition: border-color .15s, background .15s;
+}
+.btn-secondary:hover:not(:disabled) { border-color: var(--color-text-dim); }
+.btn-secondary:disabled { opacity: .45; cursor: not-allowed; }
+
+/* ---- Card -------------------------------------------------------- */
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+}
+
+/* ---- Input + Label ----------------------------------------------- */
+.input {
+  width: 100%;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-family: inherit; font-size: var(--font-size-lg);
+  padding: var(--space-3) var(--space-4);
+  outline: none; transition: border-color .15s;
+}
+.input:focus { border-color: var(--color-accent); }
+.input::placeholder { color: var(--color-text-dim); }
+
+.label {
+  display: block;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-2);
+}
