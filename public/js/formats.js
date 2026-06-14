@@ -1,6 +1,6 @@
 import { state } from "./state.js";
 import { $, els } from "./dom.js";
-import { postReframe, postFormatV4 } from "./api.js";
+import { postReframe, postFormatV4, friendlyMessage } from "./api.js";
 import { toast } from "./toast.js";
 
 // Multi-Format-Export: das 9:16-Master bleibt wie bisher, weitere
@@ -225,7 +225,7 @@ async function ensureFormat(id) {
     loading.delete(id);
     renderTiles();
     if (state.master !== masterAtStart) return; // veraltet → kein Retry-Toast
-    toast(e.message || "Format konnte nicht erstellt werden.", {
+    toast(friendlyMessage(e), {
       type: "error",
       action: { label: "Erneut versuchen", onClick: () => ensureFormat(id) },
     });
@@ -244,7 +244,8 @@ export function renderTiles() {
     tile.type = "button";
     tile.className = "fmt-tile"
       + (state.currentFormat === vid ? " active" : "")
-      + (state.formats[vid] ? " done" : "");
+      + (state.formats[vid] ? " done" : "")
+      + (loading.has(vid) ? " loading" : "");
     tile.dataset.fmt = f.id;
     tile.title = f.name + " " + f.ratio;
 

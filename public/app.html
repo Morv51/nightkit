@@ -147,6 +147,11 @@
     <!-- STATE A: sharp template preview -->
     <div id="statePreview" class="stage-empty">
       <div class="preview-col">
+        <div class="empty-head">
+          <div class="empty-star"><svg viewBox="0 0 14 14" fill="none"><path d="M7 1L8.5 5.5L13 7L8.5 8.5L7 13L5.5 8.5L1 7L5.5 5.5L7 1Z" fill="currentColor"/></svg></div>
+          <div class="empty-title">Deine Grafik erscheint hier</div>
+          <div class="empty-sub">Wähle ein Template, fülle die Daten aus und klicke auf Generieren.</div>
+        </div>
         <div class="preview-stage" id="previewStage">
           <img id="previewImg" class="preview-img" alt="Template-Vorschau">
           <div class="logo-overlay" id="logoOverlay">
@@ -154,7 +159,6 @@
             <div class="logo-resize" id="logoResize"></div>
           </div>
         </div>
-        <div class="preview-note">Vorschau des Templates. Fülle links das Formular aus und klicke auf „Flyer generieren".</div>
         <!-- Best-Practice-Box: nur im Leerzustand sichtbar (verschwindet mit statePreview) -->
         <div class="tips-card">
           <div class="tips-label">Tipps für beste Ergebnisse</div>
@@ -162,6 +166,16 @@
           <div class="tip-item">Lade dein Logo als PNG mit transparentem Hintergrund hoch.</div>
           <div class="tip-item">Beschreibe im Vibe-Feld konkrete Specials, das macht die Caption stark.</div>
           <div class="tip-item">Schreib 'DJ' nur vor Namen, wenn es auch auf der Grafik erscheinen soll.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATE C: loading skeleton (shown on the stage while /generate runs) -->
+    <div id="stateLoading" class="stage-loading" style="display:none">
+      <div class="skel-card">
+        <div class="skel-overlay">
+          <span class="skel-spinner"></span>
+          <span class="skel-msg" id="skelMsg">Template wird vorbereitet…</span>
         </div>
       </div>
     </div>
@@ -242,6 +256,9 @@
           </div>
           <button class="rbtn rbtn-primary cap-gen" id="btnCaption">Caption generieren</button>
           <div class="caption-box" id="captionBox" style="display:none">
+            <div class="cap-skeleton" id="captionSkeleton" aria-hidden="true">
+              <span></span><span></span><span></span><span></span>
+            </div>
             <div class="caption-box-head">
               <button class="cap-copy" id="captionCopy" type="button">⎘ Kopieren</button>
             </div>

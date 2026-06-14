@@ -25,6 +25,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 @keyframes flyerIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
 @keyframes cardIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
 @keyframes badgeIn{0%{transform:scale(0)}70%{transform:scale(1.12)}100%{transform:scale(1)}}
+@keyframes shimmer{100%{transform:translateX(100%)}}
 
 /* ── OVERLAY ── */
 .overlay{position:fixed;inset:0;z-index:999;background:rgba(8,8,15,.93);backdrop-filter:blur(20px);display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px}
@@ -125,6 +126,21 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .preview-img{display:block;max-width:100%;max-height:calc(100vh - 170px);width:auto;height:auto;border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.55)}
 .preview-note{font-size:13px;color:var(--muted);text-align:center;line-height:1.5;max-width:360px}
 
+/* EMPTY STATE — dashed placeholder card above the sharp template preview */
+.empty-head{display:flex;flex-direction:column;align-items:center;text-align:center;gap:var(--space-2);max-width:360px;padding:var(--space-5);border:1px dashed var(--color-border);border-radius:var(--radius-lg)}
+.empty-star{width:40px;height:40px;border-radius:var(--radius-md);background:var(--accent-dim);color:var(--color-accent);display:flex;align-items:center;justify-content:center;margin-bottom:var(--space-1)}
+.empty-star svg{width:18px;height:18px}
+.empty-title{font-size:var(--font-size-xl);font-weight:var(--font-weight-bold);color:var(--color-text)}
+.empty-sub{font-size:var(--font-size-base);color:var(--color-text-muted);line-height:var(--line-height-normal)}
+
+/* LOADING STATE — shimmering 9:16 skeleton card on the stage */
+.stage-loading{min-height:100%;display:flex;align-items:center;justify-content:center;padding:6px 0}
+.skel-card{position:relative;height:min(72vh,760px);aspect-ratio:9/16;max-width:100%;background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-lg)}
+.skel-card::after{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent 20%,var(--color-surface-2) 50%,transparent 80%);transform:translateX(-100%);animation:shimmer 1.6s ease-in-out infinite}
+.skel-overlay{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--space-3);padding:var(--space-4)}
+.skel-spinner{width:34px;height:34px;border:3px solid var(--color-surface-2);border-top-color:var(--color-accent);border-radius:var(--radius-full);animation:spin .8s linear infinite}
+.skel-msg{font-size:var(--font-size-base);color:var(--color-text-muted);font-weight:var(--font-weight-medium);text-align:center}
+
 /* draggable logo — only present after a logo is uploaded (no marker otherwise) */
 .logo-overlay{
   position:absolute;left:50%;top:15%;transform:translate(-50%,-50%);width:30%;
@@ -167,7 +183,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .result-flyer{position:sticky;top:0;display:flex;flex-direction:column;align-items:center;gap:14px;animation:flyerIn .45s ease both}
 .flyer-frame{position:relative;display:inline-block;line-height:0;border-radius:14px}
 .flyer-frame img{display:block;max-width:100%;max-height:calc(100vh - 210px);width:auto;height:auto;border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.55)}
-.done-badge{position:absolute;top:12px;right:12px;background:#7CE38B;color:#062a12;font-size:12px;font-weight:700;padding:6px 12px;border-radius:100px;box-shadow:0 6px 18px rgba(124,227,139,.35);animation:badgeIn .45s cubic-bezier(.2,1.5,.45,1) both .35s}
+.done-badge{position:absolute;top:12px;right:12px;background:var(--color-success);color:#062a12;font-size:12px;font-weight:700;padding:6px 12px;border-radius:var(--radius-pill);box-shadow:0 6px 18px rgba(124,227,139,.35);animation:badgeIn .45s cubic-bezier(.2,1.5,.45,1) both .35s}
 /* Vergleichshilfe: graues Tag am Flyer, wenn 1:1 per V4 erzeugt wurde */
 .fmt-via{position:absolute;bottom:10px;right:12px;background:rgba(0,0,0,.55);color:rgba(245,245,240,.55);font-size:10.5px;font-weight:500;padding:4px 10px;border-radius:100px;backdrop-filter:blur(4px)}
 .flyer-frame.correcting .fmt-via{display:none!important}
@@ -234,6 +250,9 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .fmt-ratio{font-size:9px;opacity:.65;line-height:1}
 .fmt-status{position:absolute;top:4px;right:6px;font-size:9.5px;color:var(--accent);line-height:1}
 .fmt-spin{display:block;width:9px;height:9px;border:1.5px solid rgba(204,255,0,.25);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+/* tile shimmer while a (paid) format call runs */
+.fmt-tile.loading{overflow:hidden}
+.fmt-tile.loading::after{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent 20%,var(--color-surface-2) 50%,transparent 80%);transform:translateX(-100%);animation:shimmer 1.4s ease-in-out infinite;pointer-events:none}
 .fmt-v4-chip{display:inline-block;margin-top:4px;padding:2px 8px;border:1px solid #333;border-radius:100px;font-size:8.5px;font-weight:600;letter-spacing:.04em;color:rgba(245,245,240,.45);cursor:pointer;transition:all .15s;line-height:1.5}
 .fmt-v4-chip:hover{border-color:#555;color:var(--text)}
 .fmt-v4-chip.active{background:var(--accent);border-color:var(--accent);color:#0c0c0c;font-weight:700}
@@ -241,10 +260,10 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 
 /* ── TOASTS (unten rechts) ── */
 .toasts{position:fixed;right:18px;bottom:18px;z-index:500;display:flex;flex-direction:column;gap:8px;max-width:min(380px,calc(100vw - 32px))}
-.toast{display:flex;align-items:center;gap:12px;background:#161616;border:1px solid;border-radius:12px;padding:11px 14px;box-shadow:0 16px 40px rgba(0,0,0,.5);cursor:pointer;animation:toastIn .22s ease}
+.toast{display:flex;align-items:center;gap:var(--space-3);background:var(--color-surface-2);border:1px solid;border-radius:var(--radius-md);padding:var(--space-3) var(--space-4);box-shadow:var(--shadow-md);cursor:pointer;animation:toastIn .22s ease}
 .toast.out{opacity:0;transform:translateY(6px);transition:opacity .18s,transform .18s}
-.toast-success{border-color:rgba(204,255,0,.5)}
-.toast-error{border-color:rgba(255,90,90,.45)}
+.toast-success{border-color:var(--color-success)}
+.toast-error{border-color:var(--color-danger)}
 .toast-msg{font-size:12.5px;color:var(--text);line-height:1.4}
 .toast-act{flex-shrink:0;background:rgba(204,255,0,.12);border:0.5px solid rgba(204,255,0,.4);border-radius:6px;color:var(--accent);font-family:inherit;font-size:11.5px;font-weight:600;padding:6px 11px;cursor:pointer;transition:background .15s}
 .toast-act:hover{background:rgba(204,255,0,.2)}
@@ -283,6 +302,16 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .caption-text{font-size:13px;line-height:1.65;color:var(--text);white-space:pre-wrap;word-break:break-word}
 .cap-regen{display:inline-block;margin-top:12px;font-size:12px;color:var(--muted);text-decoration:none}
 .cap-regen:hover{color:var(--accent)}
+/* caption loading skeleton (shimmer lines while the caption is generated) */
+.cap-skeleton{display:none;flex-direction:column;gap:var(--space-2)}
+.cap-skeleton span{height:11px;border-radius:var(--radius-xs);background:var(--color-surface-2);position:relative;overflow:hidden}
+.cap-skeleton span:nth-child(1){width:92%}
+.cap-skeleton span:nth-child(2){width:100%}
+.cap-skeleton span:nth-child(3){width:85%}
+.cap-skeleton span:nth-child(4){width:60%}
+.cap-skeleton span::after{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent 20%,rgba(255,255,255,.06) 50%,transparent 80%);transform:translateX(-100%);animation:shimmer 1.4s ease-in-out infinite}
+.caption-box.cap-busy .cap-skeleton{display:flex}
+.caption-box.cap-busy :is(.caption-box-head,.caption-text,.cap-regen){display:none}
 
 /* ── INFO-HINTS (Tooltips) ── */
 .hint{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;margin-left:5px;padding:0;border-radius:50%;border:1px solid rgba(245,245,240,.25);background:none;color:rgba(245,245,240,.4);font-family:inherit;font-size:9px;font-weight:600;font-style:normal;text-transform:none;letter-spacing:0;line-height:1;cursor:help;vertical-align:middle;flex-shrink:0;transition:all .15s}

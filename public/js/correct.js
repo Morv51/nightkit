@@ -1,6 +1,6 @@
 import { state } from "./state.js";
 import { $, els, on } from "./dom.js";
-import { postCorrect } from "./api.js";
+import { postCorrect, friendlyMessage } from "./api.js";
 import { addToHistory } from "./history.js";
 import { setMaster, selectFormat } from "./formats.js";
 import { toast } from "./toast.js";
@@ -277,7 +277,7 @@ async function apply() {
     $("correctInstruction").value = "";
     exitMode();
   } catch (e) {
-    showToast(e.message || "Korrektur fehlgeschlagen.", true); // Striche bleiben für Retry erhalten
+    showToast(friendlyMessage(e), true); // Striche bleiben für Retry erhalten
   } finally {
     setBusy(false);
   }

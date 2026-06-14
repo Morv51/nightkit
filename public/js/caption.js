@@ -1,5 +1,5 @@
 import { $, val } from "./dom.js";
-import { postCaption } from "./api.js";
+import { postCaption, friendlyMessage } from "./api.js";
 import { toast } from "./toast.js";
 
 // Instagram caption generator. The whole UI lives inside the result panel, so
@@ -42,6 +42,9 @@ async function generateCaption() {
   btn.innerHTML = '<span class="spinner"></span> Wird generiert…';
 
   const box = $("captionBox");
+  box.style.display = "block";
+  box.classList.add("cap-busy"); // dezenter Ladezustand (Shimmer-Zeilen) im Caption-Bereich
+  box.scrollIntoView({ behavior: "smooth", block: "nearest" });
   try {
     const caption = await postCaption({
       headline: val("fName"),
@@ -54,13 +57,13 @@ async function generateCaption() {
       vibe:     val("fVibe"),
       style:    currentStyle(),
     });
+    box.classList.remove("cap-busy");
     $("captionText").textContent = caption;
-    box.style.display = "block";
-    box.scrollIntoView({ behavior: "smooth", block: "nearest" });
   } catch (e) {
-    $("captionText").textContent = "⚠ " + (e.message || "Caption konnte nicht erstellt werden.");
-    box.style.display = "block";
-    toast(e.message || "Caption konnte nicht erstellt werden.", {
+    box.classList.remove("cap-busy");
+    const msg = friendlyMessage(e);
+    $("captionText").textContent = "⚠ " + msg;
+    toast(msg, {
       type: "error",
       action: { label: "Erneut versuchen", onClick: generateCaption },
     });
