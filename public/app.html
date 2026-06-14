@@ -146,12 +146,21 @@
 
     <!-- STATE A: sharp template preview -->
     <div id="statePreview" class="stage-empty">
-      <div class="preview-col">
-        <div class="empty-head">
-          <div class="empty-star"><svg viewBox="0 0 14 14" fill="none"><path d="M7 1L8.5 5.5L13 7L8.5 8.5L7 13L5.5 8.5L1 7L5.5 5.5L7 1Z" fill="currentColor"/></svg></div>
-          <div class="empty-title">Deine Grafik erscheint hier</div>
-          <div class="empty-sub">Wähle ein Template, fülle die Daten aus und klicke auf Generieren.</div>
-        </div>
+      <div class="preview-col" id="previewCol">
+        <!-- Premium-Platzhalter: öffnet die Template-Galerie. Die scharfe
+             Template-Vorschau erscheint erst, wenn ein Logo platziert wird. -->
+        <button class="tpl-placeholder" id="tplPlaceholder" type="button">
+          <span class="tplph-glow"></span>
+          <span class="tplph-inner">
+            <span class="tplph-icon">
+              <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="8" height="8" rx="2.2" fill="currentColor"/><rect x="13" y="3" width="8" height="8" rx="2.2" fill="currentColor" opacity=".55"/><rect x="3" y="13" width="8" height="8" rx="2.2" fill="currentColor" opacity=".55"/><rect x="13" y="13" width="8" height="8" rx="2.2" fill="currentColor" opacity=".3"/></svg>
+            </span>
+            <span class="tplph-title">Deine Grafik beginnt hier</span>
+            <span class="tplph-sub">Wähle ein Template als Ausgangspunkt, fülle links die Event-Daten aus und generiere deine Grafik.</span>
+            <span class="tplph-cta">Template wählen →</span>
+            <span class="tplph-count" id="tplphCount"></span>
+          </span>
+        </button>
         <div class="preview-stage" id="previewStage">
           <img id="previewImg" class="preview-img" alt="Template-Vorschau">
           <div class="logo-overlay" id="logoOverlay">
@@ -159,6 +168,7 @@
             <div class="logo-resize" id="logoResize"></div>
           </div>
         </div>
+        <div class="preview-note logo-hint">Ziehe das Logo an die richtige Stelle und skaliere es an der Ecke.</div>
         <!-- Best-Practice-Box: nur im Leerzustand sichtbar (verschwindet mit statePreview) -->
         <div class="tips-card">
           <div class="tips-label">Tipps für beste Ergebnisse</div>

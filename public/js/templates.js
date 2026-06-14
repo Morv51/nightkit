@@ -51,6 +51,10 @@ export function selectTemplate(file) {
 
 // ── picker modal ─────────────────────────────────────────────────
 export function renderPicker() {
+  // Premium placeholder shows how many templates are available.
+  const count = $("tplphCount");
+  if (count) count.textContent = state.templates.length ? state.templates.length + " Vorlagen verfügbar" : "";
+
   const cats = $("pickerCats"), grid = $("pickerGrid");
   if (!cats || !grid) return;
 
@@ -119,6 +123,8 @@ export function initPicker() {
   if (bd) bd.addEventListener("click", closePicker);
   const sw = $("tplSwitch");
   if (sw) sw.addEventListener("click", openPicker);
+  const ph = $("tplPlaceholder");
+  if (ph) ph.addEventListener("click", openPicker);
 
   const search = $("pickerSearch");
   if (search) search.addEventListener("input", filterPicker);
