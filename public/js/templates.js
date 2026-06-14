@@ -45,6 +45,10 @@ export function selectTemplate(file) {
   for (const card of document.querySelectorAll(".pk-card")) {
     card.classList.toggle("selected", card.dataset.file === file);
   }
+  // An explicit pick reveals the sharp preview (placeholder only shows until
+  // the user has chosen a template).
+  const pc = $("previewCol");
+  if (pc) pc.classList.add("template-chosen");
   applyCurrentTemplate();
   closePicker();
 }

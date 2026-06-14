@@ -122,8 +122,11 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 /* STATE A — sharp, undimmed template preview */
 .stage-empty{min-height:100%;display:flex;align-items:center;justify-content:center;padding:6px 0}
 .preview-col{display:flex;flex-direction:column;align-items:center;gap:12px;max-width:440px}
+/* The sharp preview replaces the placeholder once a template is explicitly
+   chosen OR a logo is being positioned; otherwise the premium placeholder shows. */
 .preview-stage{position:relative;display:none;line-height:0}
-.preview-col.has-logo-preview .preview-stage{display:inline-block}
+.preview-col.template-chosen .preview-stage,
+.preview-col.has-logo .preview-stage{display:inline-block}
 .preview-img{display:block;max-width:100%;max-height:calc(100vh - 170px);width:auto;height:auto;border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.55)}
 .preview-note{font-size:13px;color:var(--muted);text-align:center;line-height:1.5;max-width:360px}
 
@@ -145,8 +148,9 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .tplph-cta{margin-top:var(--space-2);background:var(--color-accent);color:var(--color-accent-ink);font-size:var(--font-size-base);font-weight:var(--font-weight-semibold);padding:10px 18px;border-radius:var(--radius-pill);transition:background .15s}
 .tplph-count{font-size:var(--font-size-xs);color:var(--color-text-dim);letter-spacing:.06em;text-transform:uppercase}
 .logo-hint{display:none}
-.preview-col.has-logo-preview .logo-hint{display:block}
-.preview-col.has-logo-preview .tpl-placeholder{display:none}
+.preview-col.has-logo .logo-hint{display:block}
+.preview-col.template-chosen .tpl-placeholder,
+.preview-col.has-logo .tpl-placeholder{display:none}
 
 /* LOADING STATE — shimmering 9:16 skeleton card on the stage */
 .stage-loading{min-height:100%;display:flex;align-items:center;justify-content:center;padding:6px 0}

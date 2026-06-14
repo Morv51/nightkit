@@ -33,7 +33,7 @@ function setLogo(url) {
   if (els.logoOverlay) els.logoOverlay.classList.add("has-logo");
   // Reveal the sharp template preview so the logo can be positioned on it
   // (the placeholder is hidden while a logo is present).
-  if (els.previewCol) els.previewCol.classList.add("has-logo-preview");
+  if (els.previewCol) els.previewCol.classList.add("has-logo");
 }
 
 function clearLogo() {
@@ -47,7 +47,9 @@ function clearLogo() {
   }
   if (els.logoOverlayImg) els.logoOverlayImg.removeAttribute("src");
   if (els.logoOverlay) els.logoOverlay.classList.remove("has-logo");
-  if (els.previewCol) els.previewCol.classList.remove("has-logo-preview");
+  // Keep the preview if a template was explicitly chosen; only drop the
+  // logo-specific state (hint + logo-driven reveal).
+  if (els.previewCol) els.previewCol.classList.remove("has-logo");
 }
 
 // Load the saved box for a template (or the default) and apply it.
