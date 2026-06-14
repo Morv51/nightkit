@@ -226,8 +226,14 @@
           <div class="formats-hint">Weitere Formate werden per KI passend erweitert</div>
         </div>
         <div class="correct-panel" id="correctPanel">
-          <input class="correct-input" id="correctInstruction" placeholder="Optional: Was soll stattdessen dort stehen? Leer lassen zum Entfernen">
-          <button class="rbtn rbtn-primary correct-apply" id="correctApply" type="button">Korrektur anwenden</button>
+          <!-- Modus-Umschalter: Sauber entfernen (LaMa via Replicate) vs. Ersetzen (Ideogram) -->
+          <div class="correct-modes" id="correctModes" role="tablist" aria-label="Korrektur-Modus">
+            <button class="cmode-btn is-active" id="modeRemove" type="button" role="tab" aria-selected="true">Sauber entfernen</button>
+            <button class="cmode-btn" id="modeReplace" type="button" role="tab" aria-selected="false">Ersetzen</button>
+          </div>
+          <div class="correct-hint" id="correctHint">Markiere was weg soll. Der Bereich wird sauber entfernt.</div>
+          <input class="correct-input" id="correctInstruction" placeholder="Optional: Was soll stattdessen dort stehen? Leer lassen zum Entfernen" style="display:none">
+          <button class="rbtn rbtn-primary correct-apply" id="correctApply" type="button">Entfernen</button>
         </div>
         <a class="newtpl-link prev-link" id="correctPrevLink" href="#" style="display:none">↩ Vorherige Version</a>
         <a class="newtpl-link" id="btnReset" href="#">↻ Neues Template wählen</a>

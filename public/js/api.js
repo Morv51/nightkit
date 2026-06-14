@@ -89,6 +89,21 @@ export async function postCorrect(payload) {
   return data.image;
 }
 
+// Sauberes Entfernen (LaMa via Replicate): image + mask als base64 data URLs.
+// Maskenkonvention: WEISS = entfernen, SCHWARZ = behalten. Liefert das
+// bereinigte Bild als base64 data URL zurück.
+export async function postRemove(payload) {
+  const res = await fetch("/api/remove", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+    body: JSON.stringify(payload),
+  });
+  await ensureOk(res);
+  const data = await res.json();
+  if (!data.image) throw new Error("Kein bereinigtes Bild erhalten.");
+  return data.image;
+}
+
 // Multi-format export: master image as base64 data URL + target format id
 // ('feed' | 'square'). Returns the reframed image as a data URL.
 export async function postReframe(payload) {

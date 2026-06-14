@@ -5,6 +5,7 @@ const path = require("path");
 
 const { buildPrompt }       = require("./lib/prompt");
 const ideogram              = require("./lib/ideogram");
+const replicate             = require("./lib/replicate");
 const jobs                  = require("./lib/jobs");
 const templates             = require("./lib/templates");
 const { createServer: createStatic } = require("./lib/static");
@@ -15,8 +16,9 @@ const auth                  = require("./lib/auth");
 const caption               = require("./lib/caption");
 const { readJson, readBody, sendJson, sendError, applyCors } = require("./lib/http");
 
-const PORT         = process.env.PORT || 3000;
-const IDEOGRAM_KEY = process.env.IDEOGRAM_API_KEY || "";
+const PORT            = process.env.PORT || 3000;
+const IDEOGRAM_KEY    = process.env.IDEOGRAM_API_KEY || "";
+const REPLICATE_TOKEN = process.env.REPLICATE_API_TOKEN || "";
 
 const staticFiles = createStatic({
   roots: [
@@ -130,6 +132,51 @@ router.post("/api/correct", async (req, res) => {
   } catch (e) {
     console.error("correct error:", e.message);
     sendError(res, 502, "Korrektur fehlgeschlagen: " + e.message);
+  }
+});
+
+// Sauberes Entfernen (LaMa via Replicate): die markierten Flächen werden
+// wirklich gelöscht und content-aware mit Hintergrund aufgefüllt — im
+// Gegensatz zu /api/correct (Ideogram), das in der Lücke neuen Inhalt erfindet.
+// Maskenkonvention (LaMa): WEISS = entfernen, SCHWARZ = behalten.
+// Auth-geschützt wie /api/generate; ein erfolgreicher Lauf zählt als ein Call.
+// Kosten: Replicate LaMa ca. 0,0005 USD pro Lauf.
+router.post("/api/remove", async (req, res) => {
+  if (!REPLICATE_TOKEN) return sendError(res, 500, "REPLICATE_API_TOKEN not configured");
+
+  let user = null;
+  if (auth.isConfigured()) {
+    user = await auth.verifyToken(auth.bearer(req));
+    if (!user) return sendError(res, 401, "Authentifizierung erforderlich");
+  }
+
+  let body;
+  try {
+    body = await readJson(req, { limit: 25 * 1024 * 1024 }); // flyer + mask as base64
+  } catch (e) {
+    return sendError(res, e.status || 400, e.message);
+  }
+
+  // Format/Größe validieren; an Replicate gehen die Data-URLs unverändert.
+  const image = parseDataUrl(body.image);
+  const mask  = parseDataUrl(body.mask);
+  if (!image) return sendError(res, 400, "Flyer-Bild fehlt oder ist ungültig");
+  if (!mask)  return sendError(res, 400, "Maske fehlt oder ist ungültig");
+
+  try {
+    const { url } = await replicate.removeObject({
+      token: REPLICATE_TOKEN,
+      imageDataUrl: body.image,
+      maskDataUrl: body.mask,
+    });
+    const dl = await ideogram.download(url); // generischer Bild-Download (Buffer)
+    sendJson(res, 200, { image: `data:${dl.contentType};base64,${dl.buffer.toString("base64")}` });
+
+    // Erfolgreiches Entfernen wie eine Generierung gegen das Konto werten.
+    if (user) auth.incrementGenerations(user.id);
+  } catch (e) {
+    console.error("remove error:", e.message);
+    sendError(res, 502, "Entfernen fehlgeschlagen: " + e.message);
   }
 });
 

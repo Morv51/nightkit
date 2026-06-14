@@ -1,17 +1,20 @@
 import { state } from "./state.js";
 import { $, els, on } from "./dom.js";
-import { postCorrect, friendlyMessage } from "./api.js";
+import { postCorrect, postRemove, friendlyMessage } from "./api.js";
 import { addToHistory } from "./history.js";
 import { setMaster, selectFormat } from "./formats.js";
 import { toast } from "./toast.js";
 
-// Korrektur-Modus (Inpainting): der User malt mit einem Pinsel über
-// fehlerhafte Stellen des generierten Flyers; die markierten Bereiche werden
-// per Ideogram V3 Edit entfernt oder ersetzt, der Rest bleibt unverändert.
+// Korrektur-Modus (Inpainting): der User malt mit einem Pinsel über Stellen
+// des Flyers; nur die markierten Bereiche ändern sich. Zwei Modi teilen sich
+// dieselbe Mal-Oberfläche und unterscheiden sich nur in API-Call und Maske:
 //
-// Maskenkonvention laut Ideogram-Doku: SCHWARZE Pixel werden neu generiert,
-// WEISSE Pixel bleiben erhalten — die Maske wird daher mit weißem Hintergrund
-// und schwarzen Strichen aufgebaut.
+//  • "remove"  — Sauber entfernen via LaMa (Replicate /api/remove): die Fläche
+//                wird gelöscht und content-aware mit Hintergrund aufgefüllt.
+//                LaMa-Maske: WEISS = entfernen, SCHWARZ = behalten.
+//  • "replace" — Ersetzen via Ideogram (/api/correct, unverändert): neuer
+//                Inhalt laut Prompt. Ideogram-Maske: SCHWARZ = neu generieren,
+//                WEISS = behalten (also invers zur LaMa-Maske).
 //
 // Das Mal-Canvas läuft intern in der nativen Bildauflösung und wird per CSS
 // auf die Anzeigegröße skaliert; Koordinaten werden pro Event umgerechnet,
@@ -25,6 +28,7 @@ let strokes = [];     // [{ r, pts: [[x,y], …] }] in nativen Bildpixeln
 let drawing = null;   // aktiver Strich während eines Pointer-Drags
 let busy = false;
 let showingPrev = false;
+let mode = "remove";  // "remove" (LaMa) | "replace" (Ideogram); Default: entfernen
 
 let canvas, ctx, frame, flyerCol, cursorEl, busyEl;
 
@@ -174,6 +178,19 @@ function buildMaskDataUrl() {
   return c.toDataURL("image/png");
 }
 
+// LaMa-Maske (Replicate remove-object) — invers zur Ideogram-Maske oben:
+// SCHWARZ = behalten, WEISS = entfernen.
+function buildRemoveMaskDataUrl() {
+  const c = document.createElement("canvas");
+  c.width = canvas.width;
+  c.height = canvas.height;
+  const mctx = c.getContext("2d");
+  mctx.fillStyle = "#000000"; // schwarz = behalten
+  mctx.fillRect(0, 0, c.width, c.height);
+  drawStrokes(mctx, "#FFFFFF"); // weiß = entfernen
+  return c.toDataURL("image/png");
+}
+
 function blobToDataUrl(blob) {
   if (blob.size > MAX_UPLOAD) {
     throw new Error("Das Bild ist zu groß für die Korrektur (max. 10 MB).");
@@ -240,6 +257,24 @@ async function neutralizedImageDataUrl() {
   return blobToDataUrl(blob);
 }
 
+// ── Modus-Umschalter (Entfernen ⇄ Ersetzen) ──────────────────────
+function setMode(next) {
+  if (busy) return;
+  mode = next === "replace" ? "replace" : "remove";
+  const replace = mode === "replace";
+  $("modeRemove").classList.toggle("is-active", !replace);
+  $("modeReplace").classList.toggle("is-active", replace);
+  $("modeRemove").setAttribute("aria-selected", String(!replace));
+  $("modeReplace").setAttribute("aria-selected", String(replace));
+  // Prompt-Feld nur im Ersetzen-Modus; Hinweistext und Button-Label wechseln.
+  $("correctInstruction").style.display = replace ? "" : "none";
+  $("correctHint").textContent = replace
+    ? "Markiere den Bereich und beschreibe, was dort stehen soll."
+    : "Markiere was weg soll. Der Bereich wird sauber entfernt.";
+  $("correctApply").textContent = replace ? "Ersetzen" : "Entfernen";
+  hideToast();
+}
+
 // ── Korrektur anwenden ───────────────────────────────────────────
 function setBusy(b) {
   busy = b;
@@ -256,14 +291,23 @@ async function apply() {
   hideToast();
   setBusy(true);
   try {
-    const instruction = $("correctInstruction").value.trim();
-    const corrected = await postCorrect({
-      // Beim Entfernen (keine Anweisung) die markierten Flächen vorab
-      // neutralisieren; beim Ersetzen das Original unverändert mitschicken.
-      image: instruction ? await currentImageDataUrl() : await neutralizedImageDataUrl(),
-      mask: buildMaskDataUrl(),
-      instruction,
-    });
+    let corrected;
+    if (mode === "remove") {
+      // LaMa via Replicate: Original-Bild + invertierte Maske (weiß = entfernen).
+      corrected = await postRemove({
+        image: await currentImageDataUrl(),
+        mask: buildRemoveMaskDataUrl(),
+      });
+    } else {
+      const instruction = $("correctInstruction").value.trim();
+      corrected = await postCorrect({
+        // Beim Entfernen (keine Anweisung) die markierten Flächen vorab
+        // neutralisieren; beim Ersetzen das Original unverändert mitschicken.
+        image: instruction ? await currentImageDataUrl() : await neutralizedImageDataUrl(),
+        mask: buildMaskDataUrl(),
+        instruction,
+      });
+    }
 
     // Alte Version für einen Schritt zurück behalten, dann als neues Master
     // übernehmen: Downloads, Video und Formate nutzen ab jetzt das
@@ -318,6 +362,9 @@ export function initCorrect() {
   busyEl = $("correctBusy");
 
   on($("btnCorrect"), "click", enterMode);
+  on($("modeRemove"), "click", () => setMode("remove"));
+  on($("modeReplace"), "click", () => setMode("replace"));
+  setMode(mode); // DOM (Label, Hinweis, Prompt-Feld) auf den Default bringen
   on($("correctCancel"), "click", () => { if (!busy) exitMode(); });
   on($("correctUndo"), "click", () => { if (!busy) { strokes.pop(); drawing = null; redraw(); } });
   on($("correctClear"), "click", () => { if (!busy) { strokes = []; drawing = null; redraw(); } });
