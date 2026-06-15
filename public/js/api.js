@@ -75,20 +75,6 @@ export async function postGenerate(event) {
   return data.jobId;
 }
 
-// Inpainting correction: image + mask as base64 data URLs, instruction
-// optional. Returns the corrected image as a base64 data URL.
-export async function postCorrect(payload) {
-  const res = await fetch("/api/correct", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
-    body: JSON.stringify(payload),
-  });
-  await ensureOk(res);
-  const data = await res.json();
-  if (!data.image) throw new Error("Kein korrigiertes Bild erhalten.");
-  return data.image;
-}
-
 // Sauberes Entfernen (LaMa via Replicate): image + mask als base64 data URLs.
 // Maskenkonvention: WEISS = entfernen, SCHWARZ = behalten. Liefert das
 // bereinigte Bild als base64 data URL zurück.

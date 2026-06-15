@@ -1,34 +1,30 @@
 import { state } from "./state.js";
 import { $, els, on } from "./dom.js";
-import { postCorrect, postRemove, friendlyMessage } from "./api.js";
+import { postRemove, friendlyMessage } from "./api.js";
 import { addToHistory } from "./history.js";
 import { setMaster, selectFormat } from "./formats.js";
 import { toast } from "./toast.js";
 
 // Korrektur-Modus (Inpainting): der User malt mit einem Pinsel über Stellen
-// des Flyers; nur die markierten Bereiche ändern sich. Zwei Modi teilen sich
-// dieselbe Mal-Oberfläche und unterscheiden sich nur in API-Call und Maske:
-//
-//  • "remove"  — Sauber entfernen via LaMa (Replicate /api/remove): die Fläche
-//                wird gelöscht und content-aware mit Hintergrund aufgefüllt.
-//                LaMa-Maske: WEISS = entfernen, SCHWARZ = behalten.
-//  • "replace" — Ersetzen via Ideogram (/api/correct, unverändert): neuer
-//                Inhalt laut Prompt. Ideogram-Maske: SCHWARZ = neu generieren,
-//                WEISS = behalten (also invers zur LaMa-Maske).
+// des Flyers; die markierten Bereiche werden per LaMa (Replicate /api/remove)
+// sauber entfernt und content-aware mit Hintergrund aufgefüllt, der Rest
+// bleibt unverändert. LaMa-Maske: WEISS = entfernen, SCHWARZ = behalten.
 //
 // Das Mal-Canvas läuft intern in der nativen Bildauflösung und wird per CSS
 // auf die Anzeigegröße skaliert; Koordinaten werden pro Event umgerechnet,
 // damit Markierung und Maske auch bei responsiver Skalierung deckungsgleich
 // bleiben.
 
-const BRUSH_FRACTIONS = [0.022, 0.045, 0.085]; // Radius als Anteil der Bildbreite
-const MAX_UPLOAD = 9.5 * 1024 * 1024;          // Ideogram-Limit: 10MB pro Datei
+// Pinselradius als Anteil der Bildbreite — stufenlos vom feinen bis zum
+// groben Pinsel (der Slider liefert t = 0…1).
+const BRUSH_MIN_FRACTION = 0.005;
+const BRUSH_MAX_FRACTION = 0.085;
+const MAX_UPLOAD = 9.5 * 1024 * 1024; // Limit: 10MB pro Datei
 
 let strokes = [];     // [{ r, pts: [[x,y], …] }] in nativen Bildpixeln
 let drawing = null;   // aktiver Strich während eines Pointer-Drags
 let busy = false;
 let showingPrev = false;
-let mode = "remove";  // "remove" (LaMa) | "replace" (Ideogram); Default: entfernen
 
 let canvas, ctx, frame, flyerCol, cursorEl, busyEl;
 
@@ -37,8 +33,9 @@ function isActive() {
 }
 
 function brushRadius() {
-  const idx = Math.max(0, Math.min(2, Number($("correctSize").value) || 0));
-  return Math.max(4, canvas.width * BRUSH_FRACTIONS[idx]);
+  const t = Math.max(0, Math.min(1, Number($("correctSize").value) || 0));
+  const frac = BRUSH_MIN_FRACTION + (BRUSH_MAX_FRACTION - BRUSH_MIN_FRACTION) * t;
+  return Math.max(2, canvas.width * frac);
 }
 
 function toNative(e) {
@@ -167,19 +164,7 @@ function hideToast() {
 }
 
 // ── Maske + Bild-Payload ─────────────────────────────────────────
-function buildMaskDataUrl() {
-  const c = document.createElement("canvas");
-  c.width = canvas.width;
-  c.height = canvas.height;
-  const mctx = c.getContext("2d");
-  mctx.fillStyle = "#FFFFFF"; // weiß = unverändert lassen
-  mctx.fillRect(0, 0, c.width, c.height);
-  drawStrokes(mctx, "#000000"); // schwarz = neu generieren
-  return c.toDataURL("image/png");
-}
-
-// LaMa-Maske (Replicate remove-object) — invers zur Ideogram-Maske oben:
-// SCHWARZ = behalten, WEISS = entfernen.
+// LaMa-Maske (Replicate remove-object): SCHWARZ = behalten, WEISS = entfernen.
 function buildRemoveMaskDataUrl() {
   const c = document.createElement("canvas");
   c.width = canvas.width;
@@ -207,75 +192,7 @@ async function currentImageDataUrl() {
   return blobToDataUrl(await (await fetch(state.last)).blob());
 }
 
-// Entfernen-Härtung: vor dem Senden die maskierten Flächen im Bild mit der
-// Durchschnittsfarbe der direkt angrenzenden Randpixel füllen. Ideogram sieht
-// dort dann schon eine neutrale Fläche statt des alten Texts, was das
-// Neu-Erfinden von Text in der Leerfläche deutlich reduziert.
-async function neutralizedImageDataUrl() {
-  const W = canvas.width, H = canvas.height;
-  const c = document.createElement("canvas");
-  c.width = W; c.height = H;
-  const cx = c.getContext("2d");
-  cx.drawImage(els.resultImg, 0, 0, W, H);
-
-  // Maske als Alphakanal (gleiche Strich-Geometrie wie die gesendete Maske)
-  const mc = document.createElement("canvas");
-  mc.width = W; mc.height = H;
-  const mx = mc.getContext("2d");
-  drawStrokes(mx, "#000000");
-  const mask = mx.getImageData(0, 0, W, H).data;
-  const masked = (i) => mask[i * 4 + 3] > 127;
-
-  const id = cx.getImageData(0, 0, W, H);
-  const d = id.data;
-
-  // Durchschnittsfarbe der Randpixel (unmaskiert mit maskiertem 4er-Nachbarn)
-  let r = 0, g = 0, b = 0, n = 0;
-  for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) {
-      const i = y * W + x;
-      if (masked(i)) continue;
-      if ((x > 0 && masked(i - 1)) || (x < W - 1 && masked(i + 1)) ||
-          (y > 0 && masked(i - W)) || (y < H - 1 && masked(i + W))) {
-        r += d[i * 4]; g += d[i * 4 + 1]; b += d[i * 4 + 2]; n++;
-      }
-    }
-  }
-  if (n) {
-    r = Math.round(r / n); g = Math.round(g / n); b = Math.round(b / n);
-    for (let i = 0; i < W * H; i++) {
-      if (masked(i)) { d[i * 4] = r; d[i * 4 + 1] = g; d[i * 4 + 2] = b; d[i * 4 + 3] = 255; }
-    }
-    cx.putImageData(id, 0, 0);
-  }
-
-  let blob = await new Promise((res) => c.toBlob(res, "image/png"));
-  if (blob && blob.size > MAX_UPLOAD) {
-    blob = await new Promise((res) => c.toBlob(res, "image/jpeg", 0.92));
-  }
-  if (!blob) throw new Error("Bild konnte nicht exportiert werden.");
-  return blobToDataUrl(blob);
-}
-
-// ── Modus-Umschalter (Entfernen ⇄ Ersetzen) ──────────────────────
-function setMode(next) {
-  if (busy) return;
-  mode = next === "replace" ? "replace" : "remove";
-  const replace = mode === "replace";
-  $("modeRemove").classList.toggle("is-active", !replace);
-  $("modeReplace").classList.toggle("is-active", replace);
-  $("modeRemove").setAttribute("aria-selected", String(!replace));
-  $("modeReplace").setAttribute("aria-selected", String(replace));
-  // Prompt-Feld nur im Ersetzen-Modus; Hinweistext und Button-Label wechseln.
-  $("correctInstruction").style.display = replace ? "" : "none";
-  $("correctHint").textContent = replace
-    ? "Markiere den Bereich und beschreibe, was dort stehen soll."
-    : "Markiere was weg soll. Der Bereich wird sauber entfernt.";
-  $("correctApply").textContent = replace ? "Ersetzen" : "Entfernen";
-  hideToast();
-}
-
-// ── Korrektur anwenden ───────────────────────────────────────────
+// ── Entfernen anwenden ───────────────────────────────────────────
 function setBusy(b) {
   busy = b;
   busyEl.classList.toggle("on", b);
@@ -291,34 +208,21 @@ async function apply() {
   hideToast();
   setBusy(true);
   try {
-    let corrected;
-    if (mode === "remove") {
-      // LaMa via Replicate: Original-Bild + invertierte Maske (weiß = entfernen).
-      corrected = await postRemove({
-        image: await currentImageDataUrl(),
-        mask: buildRemoveMaskDataUrl(),
-      });
-    } else {
-      const instruction = $("correctInstruction").value.trim();
-      corrected = await postCorrect({
-        // Beim Entfernen (keine Anweisung) die markierten Flächen vorab
-        // neutralisieren; beim Ersetzen das Original unverändert mitschicken.
-        image: instruction ? await currentImageDataUrl() : await neutralizedImageDataUrl(),
-        mask: buildMaskDataUrl(),
-        instruction,
-      });
-    }
+    // LaMa via Replicate: Original-Bild + Maske (weiß = entfernen).
+    const corrected = await postRemove({
+      image: await currentImageDataUrl(),
+      mask: buildRemoveMaskDataUrl(),
+    });
 
     // Alte Version für einen Schritt zurück behalten, dann als neues Master
-    // übernehmen: Downloads, Video und Formate nutzen ab jetzt das
-    // korrigierte Bild; gecachte Reframe-Formate verfallen.
+    // übernehmen: Downloads, Video und Formate nutzen ab jetzt das bereinigte
+    // Bild; gecachte Reframe-Formate verfallen.
     state.correctPrev = state.master;
     state.correctPrevImg = state.masterImg;
     showingPrev = false;
     setMaster(corrected);
     addToHistory(corrected);
 
-    $("correctInstruction").value = "";
     exitMode();
   } catch (e) {
     showToast(friendlyMessage(e), true); // Striche bleiben für Retry erhalten
@@ -362,16 +266,12 @@ export function initCorrect() {
   busyEl = $("correctBusy");
 
   on($("btnCorrect"), "click", enterMode);
-  on($("modeRemove"), "click", () => setMode("remove"));
-  on($("modeReplace"), "click", () => setMode("replace"));
-  setMode(mode); // DOM (Label, Hinweis, Prompt-Feld) auf den Default bringen
   on($("correctCancel"), "click", () => { if (!busy) exitMode(); });
   on($("correctUndo"), "click", () => { if (!busy) { strokes.pop(); drawing = null; redraw(); } });
   on($("correctClear"), "click", () => { if (!busy) { strokes = []; drawing = null; redraw(); } });
   on($("correctApply"), "click", apply);
   on($("correctPrevLink"), "click", togglePrev);
   on($("correctSize"), "input", () => { if (cursorEl.style.display === "block") cursorEl.style.display = "none"; });
-  on($("correctInstruction"), "keydown", (e) => { if (e.key === "Enter") apply(); });
 
   on(canvas, "pointerdown", onPointerDown);
   on(canvas, "pointermove", onPointerMove);

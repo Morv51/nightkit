@@ -83,61 +83,9 @@ function parseDataUrl(s) {
   return { buffer, mime: m[1] };
 }
 
-// Inpainting-Korrektur: vom User markierte Bereiche (Maske) werden per
-// Ideogram V3 Edit entfernt oder ersetzt, der Rest bleibt unverändert.
-// Auth-geschützt wie /api/generate.
-// Kosten: Jede Korrektur ist ein bezahlter Ideogram-Call (~0,20 USD).
-router.post("/api/correct", async (req, res) => {
-  if (!IDEOGRAM_KEY) return sendError(res, 500, "IDEOGRAM_API_KEY not configured");
-
-  if (auth.isConfigured()) {
-    const user = await auth.verifyToken(auth.bearer(req));
-    if (!user) return sendError(res, 401, "Authentifizierung erforderlich");
-  }
-
-  let body;
-  try {
-    body = await readJson(req, { limit: 25 * 1024 * 1024 }); // flyer + mask as base64
-  } catch (e) {
-    return sendError(res, e.status || 400, e.message);
-  }
-
-  const image = parseDataUrl(body.image);
-  const mask  = parseDataUrl(body.mask);
-  if (!image) return sendError(res, 400, "Flyer-Bild fehlt oder ist ungültig");
-  if (!mask)  return sendError(res, 400, "Maske fehlt oder ist ungültig");
-
-  const instruction = typeof body.instruction === "string" ? body.instruction.trim() : "";
-  const prompt = instruction
-    ? `Replace the content in the masked areas with: ${instruction}. ` +
-      "Match the existing design style, fonts, colors and lighting of the flyer. " +
-      "Keep everything outside the mask exactly unchanged."
-    : "Completely remove any content in the masked areas. Fill the masked areas ONLY " +
-      "with a seamless continuation of the surrounding background, textures, colors and " +
-      "lighting. Absolutely DO NOT generate any text, letters, words, numbers, symbols " +
-      "or new objects in the masked areas under any circumstances. The masked areas must " +
-      "look like empty background that blends perfectly with the surroundings. Keep " +
-      "everything outside the mask exactly unchanged.";
-
-  try {
-    const { url } = await ideogram.editMasked({
-      apiKey: IDEOGRAM_KEY,
-      prompt,
-      imageBuffer: image.buffer,
-      imageType: image.mime,
-      maskBuffer: mask.buffer,
-    });
-    const dl = await ideogram.download(url);
-    sendJson(res, 200, { image: `data:${dl.contentType};base64,${dl.buffer.toString("base64")}` });
-  } catch (e) {
-    console.error("correct error:", e.message);
-    sendError(res, 502, "Korrektur fehlgeschlagen: " + e.message);
-  }
-});
-
-// Sauberes Entfernen (LaMa via Replicate): die markierten Flächen werden
-// wirklich gelöscht und content-aware mit Hintergrund aufgefüllt — im
-// Gegensatz zu /api/correct (Ideogram), das in der Lücke neuen Inhalt erfindet.
+// Sauberes Entfernen (LaMa via Replicate): die vom User markierten Flächen
+// werden wirklich gelöscht und content-aware mit Hintergrund aufgefüllt,
+// statt in der Lücke neuen Inhalt zu erfinden.
 // Maskenkonvention (LaMa): WEISS = entfernen, SCHWARZ = behalten.
 // Auth-geschützt wie /api/generate; ein erfolgreicher Lauf zählt als ein Call.
 // Kosten: Replicate LaMa ca. 0,0005 USD pro Lauf.
