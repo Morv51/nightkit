@@ -33,11 +33,11 @@ const EDGE_TREAT = {
   square: { blur: 15, desat: 40, darkMax: 0.7, feather: 90 }, // 1:1 — breite Randstreifen (Blur-Spielraum 12–18px)
 };
 
-// Schalter für die Rand-Nachbearbeitung: FAL FLUX.2 Outpaint liefert meist
-// schon saubere Übergänge; der Shadow-Falloff legt sich optional als
-// Absicherung über noch sichtbare Ränder. true = an, leicht zum Testen
-// umschaltbar (false = das rohe FAL-Ergebnis zeigen).
-const APPLY_SHADOW_FALLOFF = true;
+// Schalter für die Rand-Nachbearbeitung. AUS: FLUX.2 Outpaint rendert den
+// Übergang bereits im Modell — der manuelle Falloff (Blur/Abdunklung) macht
+// das Ergebnis eher schlechter, daher zeigen wir das rohe FAL-Ergebnis direkt.
+// Auf true setzen reaktiviert den Falloff (treatEdges) zum Testen.
+const APPLY_SHADOW_FALLOFF = false;
 
 const loading = new Set();
 
