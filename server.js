@@ -6,6 +6,7 @@ const path = require("path");
 const { buildPrompt }       = require("./lib/prompt");
 const ideogram              = require("./lib/ideogram");
 const replicate             = require("./lib/replicate");
+const fal                   = require("./lib/fal");
 const jobs                  = require("./lib/jobs");
 const templates             = require("./lib/templates");
 const { createServer: createStatic } = require("./lib/static");
@@ -19,6 +20,7 @@ const { readJson, readBody, sendJson, sendError, applyCors } = require("./lib/ht
 const PORT            = process.env.PORT || 3000;
 const IDEOGRAM_KEY    = process.env.IDEOGRAM_API_KEY || "";
 const REPLICATE_TOKEN = process.env.REPLICATE_API_TOKEN || "";
+const FAL_KEY         = process.env.FAL_KEY || "";
 
 const staticFiles = createStatic({
   roots: [
@@ -128,40 +130,57 @@ router.post("/api/remove", async (req, res) => {
   }
 });
 
-// Ziel-Formate → Ideogram-V3-Resolution-Enum. Die Wunschgrößen (1080x1350,
-// 1080x1080) existieren im Enum nicht; gewählt ist jeweils der Enum-Wert
-// mit exakt passendem Seitenverhältnis.
-const REFRAME_RESOLUTIONS = {
-  feed:   "896x1120",  // 4:5
-  square: "1024x1024", // 1:1
+// Ziel-Seitenverhältnisse (Breite:Höhe) der abgeleiteten Formate. Beide sind
+// breiter als das 9:16-Master ⇒ wir behalten die volle Höhe und erweitern nur
+// links/rechts (kein vertikales Cropping, volles Hochformat bleibt erhalten).
+const TARGET_RATIO = {
+  feed:   4 / 5, // 4:5  (z.B. 1080×1920 → 1536×1920)
+  square: 1 / 1, // 1:1  (z.B. 1080×1920 → 1920×1920)
 };
 
-// Deterministischer Seed aus den Master-Bytes (FNV-1a): gleiches Master ⇒
-// gleicher Seed für alle Zielformate und Wiederholungen — Reframes bleiben
-// damit "pro Session" (= pro generiertem Flyer) konsistent.
-function seedFromBuffer(buf) {
-  let h = 2166136261;
-  for (let i = 0; i < buf.length; i++) {
-    h ^= buf[i];
-    h = (h * 16777619) >>> 0;
+// Pixel-Dimensionen aus einem PNG/JPEG/WebP-Buffer lesen (Header-Parsing, ohne
+// externe Lib). Gibt { width, height } oder null.
+function imageDimensions(buf) {
+  if (!buf || buf.length < 24) return null;
+  // PNG: Signatur 0x89504E47, IHDR-Breite/Höhe als BE-UInt32 ab Byte 16.
+  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) {
+    return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
   }
-  return h % 2147483647;
+  // JPEG: ab 0xFFD8 die Segmente bis zu einem SOF-Marker durchlaufen.
+  if (buf[0] === 0xff && buf[1] === 0xd8) {
+    let o = 2;
+    while (o + 9 < buf.length) {
+      if (buf[o] !== 0xff) { o++; continue; }
+      let marker = buf[o + 1];
+      while (marker === 0xff && o + 2 < buf.length) { o++; marker = buf[o + 1]; }
+      const len = buf.readUInt16BE(o + 2);
+      // SOF0–SOF15 (außer DHT 0xC4 / JPG 0xC8 / DAC 0xCC) tragen die Maße.
+      if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) {
+        return { height: buf.readUInt16BE(o + 5), width: buf.readUInt16BE(o + 7) };
+      }
+      o += 2 + len;
+    }
+    return null;
+  }
+  // WebP (RIFF…WEBP): VP8 (lossy) / VP8L (lossless) / VP8X (extended).
+  if (buf.length >= 30 && buf.toString("ascii", 0, 4) === "RIFF" && buf.toString("ascii", 8, 12) === "WEBP") {
+    const fmt = buf.toString("ascii", 12, 16);
+    if (fmt === "VP8 ") return { width: buf.readUInt16LE(26) & 0x3fff, height: buf.readUInt16LE(28) & 0x3fff };
+    if (fmt === "VP8L") { const b = buf.readUInt32LE(21); return { width: (b & 0x3fff) + 1, height: ((b >> 14) & 0x3fff) + 1 }; }
+    if (fmt === "VP8X") return { width: (buf[24] | (buf[25] << 8) | (buf[26] << 16)) + 1, height: (buf[27] | (buf[28] << 8) | (buf[29] << 16)) + 1 };
+  }
+  return null;
 }
 
-// Multi-Format-Export: erweitert das 9:16-Master-Bild per Ideogram V3 Reframe
-// intelligent auf ein anderes Seitenverhältnis (keine schwarzen Ränder, kein
-// hartes Cropping). Auth-geschützt wie /api/generate.
-// Kosten: Jeder Reframe-Aufruf ist ein zusätzlicher Ideogram-Call (~0,20 USD).
-//
-// Stiltreue: Der Reframe-Endpoint akzeptiert laut Ideogram-Doku KEIN
-// prompt / negative_prompt / style_type — die gewünschte Steuerung läuft
-// stattdessen über die unterstützten Hebel: das Master-Bild selbst als
-// style_reference_image (Farbgebung, Textur und Look der erweiterten Flächen
-// folgen dem Flyer — DER entscheidende Hebel gegen Fantasietext und falsche
-// Hintergrundfarben), rendering_speed QUALITY (höchste Fidelity) und ein
-// fester, aus dem Master abgeleiteter Seed.
+// Multi-Format-Export: erweitert das fertige 9:16-Master per FAL FLUX.2 Pro
+// Outpaint auf ein anderes Seitenverhältnis (die KI füllt die neuen Rand-
+// flächen, kein hartes Cropping). Auth-geschützt wie /api/generate. Das Master
+// geht als data:-URL an FAL (image_url); danach legt das Frontend optional
+// einen Shadow-Falloff über die erweiterten Ränder.
+// Kosten: ca. 0,04–0,05 USD pro Bild (FAL FLUX.2 Pro Outpaint) — deutlich
+// günstiger als der bisherige Ideogram-Reframe (~0,20 EUR pro Bild).
 router.post("/api/reframe", async (req, res) => {
-  if (!IDEOGRAM_KEY) return sendError(res, 500, "IDEOGRAM_API_KEY not configured");
+  if (!FAL_KEY) return sendError(res, 500, "FAL_KEY not configured");
 
   if (auth.isConfigured()) {
     const user = await auth.verifyToken(auth.bearer(req));
@@ -178,21 +197,28 @@ router.post("/api/reframe", async (req, res) => {
   const image = parseDataUrl(body.image);
   if (!image) return sendError(res, 400, "Master-Bild fehlt oder ist ungültig");
 
-  const resolution = REFRAME_RESOLUTIONS[body.targetFormat];
-  if (!resolution) return sendError(res, 400, "Unbekanntes Zielformat");
+  const ratio = TARGET_RATIO[body.targetFormat];
+  if (!ratio) return sendError(res, 400, "Unbekanntes Zielformat");
+
+  const dim = imageDimensions(image.buffer);
+  if (!dim || !dim.width || !dim.height) {
+    return sendError(res, 400, "Bildgröße konnte nicht gelesen werden");
+  }
+
+  // Volle Höhe behalten, links+rechts symmetrisch bis zum Ziel-Verhältnis
+  // erweitern. Das Master bleibt dadurch horizontal zentriert — exakt die
+  // Annahme des Frontend-Shadow-Falloffs.
+  const side = Math.max(0, Math.round((dim.height * ratio - dim.width) / 2));
 
   try {
-    const { url } = await ideogram.reframe({
-      apiKey: IDEOGRAM_KEY,
-      imageBuffer: image.buffer,
-      imageType: image.mime,
-      resolution,
-      styleReferenceBuffer: image.buffer, // Master als Style-Referenz
-      styleReferenceType: image.mime,
-      renderingSpeed: "QUALITY",
-      seed: seedFromBuffer(image.buffer),
+    const { url } = await fal.outpaint({
+      imageDataUrl: body.image,
+      left: side,
+      right: side,
+      top: 0,
+      bottom: 0,
     });
-    const dl = await ideogram.download(url);
+    const dl = await ideogram.download(url); // generischer Bild-Download (Buffer)
     sendJson(res, 200, { image: `data:${dl.contentType};base64,${dl.buffer.toString("base64")}` });
   } catch (e) {
     console.error("reframe error:", e.message);

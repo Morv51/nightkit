@@ -4,12 +4,12 @@ import { postReframe, postFormatV4, friendlyMessage } from "./api.js";
 import { toast } from "./toast.js";
 
 // Multi-Format-Export: das 9:16-Master bleibt wie bisher, weitere
-// Instagram-Formate werden per Ideogram V3 Reframe abgeleitet (KI erweitert
-// das Bild passend — keine schwarzen Ränder, kein hartes Cropping).
+// Instagram-Formate werden per FAL FLUX.2 Pro Outpaint abgeleitet (KI
+// erweitert das Bild links/rechts — keine schwarzen Ränder, kein Cropping).
 // Bereits erzeugte Formate werden im Frontend-State gecacht; die große
 // Vorschau und die PNG/JPG-Downloads folgen immer dem aktiven Format.
 //
-// Kosten: Jeder Reframe-Aufruf ist ein zusätzlicher Ideogram-Call (~0,20 USD).
+// Kosten: Jeder Reframe-Aufruf ist ein zusätzlicher FAL-Call (~0,04–0,05 USD).
 // Es wird daher nur auf expliziten Klick reframed und nie doppelt (Cache).
 
 const FORMATS = [
@@ -32,6 +32,12 @@ const EDGE_TREAT = {
   feed:   { blur: 8,  desat: 40, darkMax: 0.7, feather: 80 }, // 4:5 — schmale Randstreifen (Blur-Spielraum 6–10px)
   square: { blur: 15, desat: 40, darkMax: 0.7, feather: 90 }, // 1:1 — breite Randstreifen (Blur-Spielraum 12–18px)
 };
+
+// Schalter für die Rand-Nachbearbeitung: FAL FLUX.2 Outpaint liefert meist
+// schon saubere Übergänge; der Shadow-Falloff legt sich optional als
+// Absicherung über noch sichtbare Ränder. true = an, leicht zum Testen
+// umschaltbar (false = das rohe FAL-Ergebnis zeigen).
+const APPLY_SHADOW_FALLOFF = true;
 
 const loading = new Set();
 
@@ -209,12 +215,14 @@ async function ensureFormat(id) {
       image = await postFormatV4({ masterImage: await masterDataUrl(), targetFormat: id.slice(0, -3) });
     } else {
       image = await postReframe({ image: await masterDataUrl(), targetFormat: id });
-      // Shadow-Falloff auf den erweiterten Flächen; bei Fehlern lieber das
-      // unbehandelte Reframe-Ergebnis zeigen als gar keins.
-      try {
-        image = await treatEdges(image, id);
-      } catch (e) {
-        console.error("Rand-Nachbearbeitung fehlgeschlagen:", e);
+      // Optionaler Shadow-Falloff auf den erweiterten Flächen (per Schalter);
+      // bei Fehlern lieber das rohe Outpaint-Ergebnis zeigen als gar keins.
+      if (APPLY_SHADOW_FALLOFF) {
+        try {
+          image = await treatEdges(image, id);
+        } catch (e) {
+          console.error("Rand-Nachbearbeitung fehlgeschlagen:", e);
+        }
       }
     }
     loading.delete(id);
