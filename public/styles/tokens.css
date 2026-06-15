@@ -50,22 +50,37 @@
   --glow-accent: 0 8px 30px rgba(204,255,0,.4); /* accent button glow */
 
   /* ---- Typography ------------------------------------------------- */
-  --font-size-2xs: 10px; /* micro labels (was 9–10.5) */
-  --font-size-xs:  11px; /* small labels (was 11–11.5) */
-  --font-size-sm:  12px;
-  --font-size-base:13px; /* default UI text (was 12.5–13.5) */
-  --font-size-md:  14px; /* (was 14–14.5) */
-  --font-size-lg:  15px;
-  --font-size-xl:  16px; /* (was 16–17) */
-  --font-size-2xl: 18px; /* (was 18–19) */
-  --font-size-3xl: 20px;
+  /* Font families: Inter for all UI text, Syne for display/headlines.
+     Both loaded via the Google Fonts <link> in each HTML head. */
+  --font-body:    'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: 'Syne', 'Inter', sans-serif;
 
-  --font-weight-normal:     400;
+  /* Type scale (SaaS-grade). --font-size-2xs kept for existing micro labels. */
+  --font-size-2xs: 10px;
+  --font-size-xs:  11px;
+  --font-size-sm:  13px;
+  --font-size-base:15px; /* default UI text */
+  --font-size-md:  17px;
+  --font-size-lg:  20px;
+  --font-size-xl:  24px;
+  --font-size-2xl: 32px;
+  --font-size-3xl: 42px;
+  --font-size-4xl: 56px;
+
+  --font-weight-regular:    400;
+  --font-weight-normal:     400; /* alias of regular (kept for existing consumers) */
   --font-weight-medium:     500;
   --font-weight-semibold:   600;
   --font-weight-bold:       700;
   --font-weight-extrabold:  800;
 
-  --line-height-tight:  1.2;
-  --line-height-normal: 1.5;
+  --line-height-tight:   1.15;
+  --line-height-snug:    1.3;
+  --line-height-normal:  1.5;
+  --line-height-relaxed: 1.65;
+
+  --letter-spacing-tight:  -0.02em;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide:   0.06em;
+  --letter-spacing-wider:  0.12em;
 }

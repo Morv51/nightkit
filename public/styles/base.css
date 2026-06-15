@@ -5,6 +5,18 @@
    Load AFTER tokens.css.
    ============================================================ */
 
+/* ---- Global base typography ------------------------------------- */
+/* The single default for all pages: Inter everywhere, never a system font.
+   Per-page <style> may override colour/background but inherits this type. */
+body {
+  font-family: var(--font-body);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 /* ---- Buttons ----------------------------------------------------- */
 .btn-primary {
   display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
