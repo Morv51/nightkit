@@ -52,6 +52,15 @@ export function selectVideoStyle(id) {
   }
 }
 
+// Video-Bereich zurücksetzen (Template-Wechsel / neue Vorlage): laufende
+// Preview-Animation stoppen und Ausgabe + Status leeren.
+export function resetVideo() {
+  if (state.animFrameId) { cancelAnimationFrame(state.animFrameId); state.animFrameId = null; }
+  if (els.previewWrap) els.previewWrap.style.display = "none";
+  if (els.videoStatus) els.videoStatus.textContent = "";
+  if (els.exportBtn) els.exportBtn.disabled = false;
+}
+
 export function toggleVideo() {
   state.videoPanelOpen = !state.videoPanelOpen;
   els.videoBody.classList.toggle("collapsed", !state.videoPanelOpen);

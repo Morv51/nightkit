@@ -29,6 +29,17 @@ export function initCaption() {
   if (regen) regen.addEventListener("click", (e) => { e.preventDefault(); generateCaption(); });
 }
 
+// Caption-Bereich zurücksetzen (Template-Wechsel / neue Vorlage): Box
+// ausblenden und generierten Text verwerfen.
+export function resetCaption() {
+  const box = $("captionBox");
+  if (box) { box.style.display = "none"; box.classList.remove("cap-busy"); }
+  const txt = $("captionText");
+  if (txt) txt.textContent = "";
+  const btn = $("btnCaption");
+  if (btn) { btn.disabled = false; btn.textContent = "Caption generieren"; }
+}
+
 function currentStyle() {
   const active = document.querySelector(".cap-style.active");
   return active ? active.dataset.style : "hype";

@@ -5,7 +5,10 @@ import { showErr, clearErr } from "./errors.js";
 import { addToHistory } from "./history.js";
 import { compositeLogo } from "./composite.js";
 import { resetCorrectState } from "./correct.js";
-import { setMaster } from "./formats.js";
+import { setMaster, resetFormatsState } from "./formats.js";
+import { resetVideo } from "./video.js";
+import { resetCaption } from "./caption.js";
+import { exitBeforeMode, setBeforeImage } from "./compare.js";
 import { toast } from "./toast.js";
 
 const POLL_INTERVAL_MS = 2000;
@@ -82,6 +85,8 @@ async function showResult(proxiedUrl) {
   resetCorrectState(); // neuer Flyer → Korrektur-Verlauf des alten verwerfen
   setMaster(displayUrl); // setzt Master + Anzeige, verwirft gecachte Formate
 
+  exitBeforeMode();          // immer im "Nachher"-Zustand (fertiger Flyer) starten
+  setBeforeImage();          // Template-Vorlage fürs Vorher/Nachher-Overlay setzen
   showStage("result"); // .result-split is a grid; triggers the entrance animations
   addToHistory(displayUrl);
 }
@@ -134,9 +139,22 @@ export async function generate() {
   }
 }
 
+// Vollständiger Reset zurück in den leeren Template-Vorschau-State. Genutzt
+// vom "Neues Template wählen"-Link UND vom Template-Wechsel nach einer
+// Generierung — so bleibt nichts vom alten Flyer hängen (Bild, Erfolgs-Badge,
+// Format-Häkchen, Video, Caption, Vorher/Nachher). Formularfelder und das
+// hochgeladene Logo bleiben bewusst erhalten.
 export function resetToPreview(e) {
   if (e && e.preventDefault) e.preventDefault();
-  resetCorrectState();
+  exitBeforeMode();      // Vorher/Nachher zurück auf den fertigen Flyer
+  resetCorrectState();   // Korrektur-Verlauf verwerfen
+  resetVideo();          // laufende Animation stoppen, Video-Bereich leeren
+  resetCaption();        // Caption-Box leeren
+  resetFormatsState();   // gecachte Formate + Kachel-Häkchen + Beta-Toggles weg
+  // Generiertes Bild aus State + Vorschau entfernen.
+  state.master = null; state.masterImg = null;
+  state.last = null;   state.lastImg = null;
+  if (els.resultImg) els.resultImg.removeAttribute("src");
   showStage("preview");
   import("./preview.js").then((m) => m.updateLivePreview());
 }

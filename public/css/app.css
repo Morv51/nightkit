@@ -206,7 +206,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 /* Vergleichshilfe: graues Tag am Flyer, wenn 1:1 per V4 erzeugt wurde */
 .fmt-via{position:absolute;bottom:10px;right:12px;background:rgba(0,0,0,.55);color:rgba(245,245,240,.55);font-size:10.5px;font-weight:500;padding:4px 10px;border-radius:100px;backdrop-filter:blur(4px)}
 .flyer-frame.correcting .fmt-via{display:none!important}
-.result-btns{display:flex;gap:8px;justify-content:center}
+.result-btns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
 .rbtn{
   height:34px;padding:0 14px;border-radius:8px;
   font-size:var(--font-size-sm);font-weight:var(--font-weight-semibold);font-family:inherit;letter-spacing:var(--letter-spacing-wide);cursor:pointer;transition:all .15s;
@@ -219,6 +219,19 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .copy-ok{background:rgba(124,227,139,.12)!important;border-color:rgba(124,227,139,.35)!important;color:#7CE38B!important}
 .newtpl-link{display:block;text-align:center;font-size:12px;color:var(--muted);text-decoration:none;padding:2px;transition:color .15s}
 .newtpl-link:hover{color:var(--accent)}
+
+/* ── Vorher/Nachher-Vergleich ── */
+/* Template-Overlay im Flyer-Rahmen; höhere Spezifität als ".flyer-frame img",
+   damit die absolute Positionierung greift. Crossfade über opacity (300ms). */
+.flyer-frame img.before-img{position:absolute;inset:0;width:100%;height:100%;max-height:100%;object-fit:cover;opacity:0;transition:opacity .3s ease;pointer-events:none;z-index:4;box-shadow:none}
+.result-split.before-mode .before-img{opacity:1}
+.result-split.before-mode .done-badge,
+.result-split.before-mode .fmt-via{display:none}
+.compare-btn.active{background:rgba(204,255,0,.12);border-color:rgba(204,255,0,.4);color:var(--accent)}
+/* Im Vorher-Modus alles außer dem Toggle ausgrauen + sperren. Die Container
+   bleiben hoverbar, damit der "Wechsle zurück"-Tooltip (title) erscheint. */
+.result-split.before-mode :is(.result-btns .rbtn:not(.compare-btn),.formats-block,.action-cards){opacity:.4}
+.result-split.before-mode :is(.result-btns .rbtn:not(.compare-btn),.result-btns .hint,.formats-row,.formats-block .hint,.action-cards button,.action-cards .pill,.action-cards a,.action-cards .hint){pointer-events:none}
 
 /* history (under the flyer) */
 .hist-wrap{margin-top:4px}

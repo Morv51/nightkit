@@ -3,6 +3,7 @@ import { $ } from "./dom.js";
 import { getTemplates } from "./api.js";
 import { updateLivePreview } from "./preview.js";
 import { applyLogoForTemplate } from "./logo.js";
+import { resetToPreview } from "./generator.js";
 
 // Template catalogue + fullscreen picker modal. The sidebar shows only the
 // current template as a small chip; choosing happens in the modal (search +
@@ -49,6 +50,10 @@ export function selectTemplate(file) {
   // the user has chosen a template).
   const pc = $("previewCol");
   if (pc) pc.classList.add("template-chosen");
+  // Vollständig in den leeren Vorschau-State zurück — entkoppelt davon, ob
+  // schon ein Flyer generiert wurde. Reset zuerst (verwirft das alte Ergebnis),
+  // dann das neue Template anwenden. Formularfelder bleiben erhalten.
+  resetToPreview();
   applyCurrentTemplate();
   closePicker();
 }

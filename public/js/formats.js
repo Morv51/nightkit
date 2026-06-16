@@ -50,7 +50,7 @@ const v4Mode = { feed: false, square: false };
 
 const variantOf = (tileId) => (v4Mode[tileId] ? tileId + "-v4" : tileId);
 
-const VIA_LABELS = { "square-v4": "1:1 via V4", "feed-v4": "4:5 via V4" };
+const VIA_LABELS = { "square-v4": "1:1 (Beta)", "feed-v4": "4:5 (Beta)" };
 
 function updateViaTag() {
   const tag = $("fmtViaTag");
@@ -155,6 +155,18 @@ function makeImg(url) {
   img.crossOrigin = "anonymous";
   img.src = url;
   return img;
+}
+
+// Vollständiger Reset der Format-Ableitungen (Template-Wechsel / neue Vorlage):
+// gecachte Formate, aktives Format, V4-Toggles und Kachel-Häkchen zurücksetzen.
+export function resetFormatsState() {
+  state.formats = {};
+  state.currentFormat = "story";
+  v4Mode.feed = false;
+  v4Mode.square = false;
+  loading.clear();
+  updateViaTag();
+  renderTiles();
 }
 
 // Neues Master setzen (nach Generierung, Korrektur oder Verlaufs-Auswahl):
@@ -287,8 +299,8 @@ export function renderTiles() {
       chip.className = "fmt-v4-chip" + (v4Mode[f.id] ? " active" : "");
       chip.setAttribute("role", "button");
       chip.tabIndex = 0;
-      chip.textContent = "V4 (Beta)";
-      chip.title = f.name + " per Ideogram V4 aus dem fertigen Flyer vollflächig neu layouten (Beta), statt per Reframe zu erweitern";
+      chip.textContent = "(Beta)";
+      chip.title = f.name + " als Beta-Variante aus dem fertigen Flyer vollflächig neu layouten, statt per Reframe zu erweitern";
       chip.addEventListener("click", (e) => {
         e.stopPropagation();
         v4Mode[f.id] = !v4Mode[f.id];

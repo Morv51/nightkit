@@ -206,6 +206,8 @@
         </div>
         <div class="flyer-frame" id="flyerFrame">
           <img id="resultImg" alt="Ergebnis">
+          <!-- Vorher/Nachher: leeres Ausgangs-Template, per opacity über den Flyer geblendet -->
+          <img id="beforeImg" class="before-img" alt="Vorher: leeres Template" aria-hidden="true">
           <div class="done-badge">✓ Fertig</div>
           <!-- Vergleichshilfe: zeigt an, wenn ein Format per V4 erzeugt wurde (Text setzt formats.js) -->
           <div class="fmt-via" id="fmtViaTag" style="display:none"></div>
@@ -220,6 +222,7 @@
           <button class="rbtn rbtn-ghost" id="copyBtn">⎘ Kopieren</button>
           <button class="rbtn rbtn-ghost" id="btnCorrect">✎ Korrigieren</button>
           <button type="button" class="hint" aria-label="Info" data-tip="Male über störende Stellen. Die KI entfernt sie und füllt den Hintergrund auf. Mit Texteingabe kannst du stattdessen etwas ersetzen lassen.">i</button>
+          <button class="rbtn rbtn-ghost compare-btn" id="btnCompare" type="button" aria-pressed="false" title="Zwischen leerem Template und fertigem Flyer wechseln">◑ Vorher</button>
         </div>
         <!-- Multi-Format-Export (Kacheln werden von js/formats.js gerendert) -->
         <div class="formats-block" id="formatsBlock">

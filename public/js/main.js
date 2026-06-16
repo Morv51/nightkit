@@ -8,6 +8,7 @@ import { initDatePicker } from "./datepicker.js";
 import { initCaption } from "./caption.js";
 import { initCorrect } from "./correct.js";
 import { initFormats } from "./formats.js";
+import { initCompare } from "./compare.js";
 import { initHints } from "./hints.js";
 
 function bindActions() {
@@ -30,6 +31,7 @@ async function init() {
   initCaption();
   initCorrect();
   initFormats();
+  initCompare();
   initHints();
   initPicker();
 
