@@ -143,8 +143,11 @@
     </div>
   </aside>
 
-  <!-- ── STAGE ── -->
-  <div class="stage">
+  <!-- ── STAGE (Zwei-Spalten: Hauptbühne links + Aktions-Sidebar rechts) ── -->
+  <div class="stage" id="stage">
+
+   <!-- ════ HAUPTBÜHNE ════ -->
+   <div class="stage-main">
 
     <!-- STATE A: sharp template preview -->
     <div id="statePreview" class="stage-empty">
@@ -192,10 +195,8 @@
       </div>
     </div>
 
-    <!-- STATE B: result — Progressive Disclosure (Flyer → Formate → Video → Caption) -->
-    <div id="stateResult" class="result-stack" style="display:none">
-
-      <!-- EBENE 1: Flyer + primäre Aktionen -->
+    <!-- STATE B: Flyer (+ Video auf der Bühne) + primäre Aktionen -->
+    <div id="stateResult" class="result-main" style="display:none">
       <div class="result-flyer">
         <!-- Korrektur-Toolbar: eigene Zeile ÜBER dem Flyer, verdeckt nie Bildinhalt -->
         <div class="correct-bar" id="correctBar">
@@ -208,6 +209,9 @@
           <img id="resultImg" alt="Ergebnis">
           <!-- Vorher/Nachher: leeres Ausgangs-Template, per opacity über den Flyer geblendet -->
           <img id="beforeImg" class="before-img" alt="Vorher: leeres Template" aria-hidden="true">
+          <!-- Video läuft direkt auf der Bühne (ersetzt den Flyer per Crossfade) -->
+          <canvas class="stage-video" id="stageVideo" aria-hidden="true"></canvas>
+          <button class="stage-video-back" id="videoBackBtn" type="button">✕ Zurück zum Flyer</button>
           <div class="done-badge">✓ Fertig</div>
           <!-- Vergleichshilfe: zeigt an, wenn ein Format als Beta-Variante erzeugt wurde (Text setzt formats.js) -->
           <div class="fmt-via" id="fmtViaTag" style="display:none"></div>
@@ -216,14 +220,13 @@
           <div class="correct-cursor" id="correctCursor"></div>
           <div class="correct-busy" id="correctBusy"><span class="cb-spin"></span></div>
         </div>
-        <!-- Primäre Aktionen: eine kompakte Zeile direkt unter dem Flyer -->
-        <div class="result-btns">
-          <button class="rbtn rbtn-ghost" id="btnDlPng">↓ PNG</button>
-          <button class="rbtn rbtn-ghost" id="btnDlJpg">↓ JPG</button>
-          <button class="rbtn rbtn-ghost" id="copyBtn">⎘ Kopieren</button>
-          <button class="rbtn rbtn-ghost" id="btnCorrect">✎ Korrigieren</button>
-          <button type="button" class="hint" aria-label="Info" data-tip="Male über störende Stellen. Die KI entfernt sie und füllt den Hintergrund auf. Mit Texteingabe kannst du stattdessen etwas ersetzen lassen.">i</button>
-          <button class="rbtn rbtn-ghost compare-btn" id="btnCompare" type="button" aria-pressed="false" title="Zwischen leerem Template und fertigem Flyer wechseln">◑ Vorher</button>
+        <!-- Primäre Aktionen: minimalistische Text-Links, durch · getrennt -->
+        <div class="action-links" id="actionLinks">
+          <button class="alink" id="btnDlPng" type="button">PNG</button>
+          <button class="alink" id="btnDlJpg" type="button">JPG</button>
+          <button class="alink" id="copyBtn" type="button">Kopieren</button>
+          <button class="alink" id="btnCorrect" type="button">Korrigieren</button>
+          <button class="alink compare-link" id="btnCompare" type="button" aria-pressed="false">◑ Vorher</button>
         </div>
         <div class="correct-panel" id="correctPanel">
           <div class="correct-hint" id="correctHint">Markiere was weg soll. Der Bereich wird sauber entfernt.</div>
@@ -231,73 +234,74 @@
         </div>
         <a class="newtpl-link prev-link" id="correctPrevLink" href="#" style="display:none">↩ Vorherige Version</a>
       </div>
-
-      <!-- EBENE 2: Formate (kompakt, immer sichtbar) -->
-      <div class="formats-block" id="formatsBlock">
-        <div class="formats-label">Formate <button type="button" class="hint" aria-label="Info" data-tip="Deine Grafik wird per KI passend auf andere Seitenverhältnisse erweitert, ganz ohne schwarze Ränder oder Beschneiden.">i</button></div>
-        <div class="formats-row" id="formatsRow"></div>
-        <div class="formats-hint">Weitere Formate werden per KI passend erweitert</div>
-      </div>
-
-      <!-- EBENE 3: Video Export (aufklappbar, standardmäßig zugeklappt) -->
-      <section class="disclosure" id="videoSection" data-store="nk_disc_video">
-        <div class="disclosure-head" id="videoHead" role="button" tabindex="0" aria-expanded="false" aria-controls="videoBody">
-          <span class="disclosure-title">Video Export</span>
-          <span class="disclosure-arrow" aria-hidden="true">▶</span>
-        </div>
-        <div class="disclosure-body" id="videoBody">
-          <div class="disclosure-inner">
-            <div class="card-help">Exportiere deinen Flyer als 10-Sek-Video</div>
-            <div class="style-row"></div>
-            <div class="card-actions">
-              <button class="rbtn rbtn-ghost" id="btnPv">▷ Preview</button>
-              <button class="rbtn rbtn-primary" id="exportBtn">↓ Video</button>
-              <span class="video-status" id="videoStatus"></span>
-            </div>
-            <div class="pv-canvas-wrap" id="previewWrap">
-              <canvas id="videoCanvas"></canvas>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- EBENE 4: Instagram Caption (aufklappbar, standardmäßig zugeklappt) -->
-      <section class="disclosure" id="captionSection" data-store="nk_disc_caption">
-        <div class="disclosure-head" id="captionHead" role="button" tabindex="0" aria-expanded="false" aria-controls="captionBody">
-          <span class="disclosure-title">✦ Instagram Caption</span>
-          <span class="disclosure-arrow" aria-hidden="true">▶</span>
-        </div>
-        <div class="disclosure-body" id="captionBody">
-          <div class="disclosure-inner">
-            <div class="card-help">Conversion-optimierte Caption mit Hashtags</div>
-            <div class="caption-styles" id="captionStyles">
-              <button class="pill cap-style active" data-style="hype" type="button">Hype</button>
-              <button class="pill cap-style" data-style="elegant" type="button">Elegant</button>
-              <button class="pill cap-style" data-style="casual" type="button">Casual</button>
-            </div>
-            <button class="rbtn rbtn-primary cap-gen" id="btnCaption">Caption generieren</button>
-            <div class="caption-box" id="captionBox" style="display:none">
-              <div class="cap-skeleton" id="captionSkeleton" aria-hidden="true">
-                <span></span><span></span><span></span><span></span>
-              </div>
-              <div class="caption-box-head">
-                <button class="cap-copy" id="captionCopy" type="button">⎘ Kopieren</button>
-              </div>
-              <div class="caption-text" id="captionText"></div>
-              <a class="cap-regen" id="captionRegen" href="#">↻ Neu generieren</a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Footer: neues Template + Verlauf -->
-      <a class="newtpl-link" id="btnReset" href="#">↻ Neues Template wählen</a>
-      <div class="hist-wrap" id="histWrap" style="display:none">
-        <div class="hist-lbl">Zuletzt</div>
-        <div class="hist-row" id="histRow"></div>
-      </div>
-
     </div>
+
+   </div><!-- /stage-main -->
+
+   <!-- ════ AKTIONS-SIDEBAR (rechts, sticky) ════ -->
+   <aside class="stage-side" id="stageSide">
+
+     <!-- Empty State: ruhiger Hinweis -->
+     <div class="side-empty" id="sideEmpty">Generiere zuerst deinen Flyer</div>
+
+     <!-- Aktionen (nach erfolgreicher Generierung) -->
+     <div class="side-actions" id="sideActions" style="display:none">
+
+       <!-- SEKTION: FORMATE -->
+       <div class="side-sec">
+         <div class="side-head">Exportieren</div>
+         <div class="formats-row" id="formatsRow"></div>
+         <div class="formats-hint">Weitere Formate werden per KI passend erweitert</div>
+       </div>
+
+       <div class="side-divider"></div>
+
+       <!-- SEKTION: VIDEO -->
+       <div class="side-sec">
+         <div class="side-head">Video Export</div>
+         <div class="side-sub">10-Sek. Loop für Reels &amp; Stories</div>
+         <div class="style-row"></div>
+         <div class="card-actions">
+           <button class="rbtn rbtn-ghost" id="btnPv">▷ Preview</button>
+           <button class="rbtn rbtn-primary" id="exportBtn">↓ Video</button>
+         </div>
+         <div class="video-status" id="videoStatus"></div>
+       </div>
+
+       <div class="side-divider"></div>
+
+       <!-- SEKTION: CAPTION -->
+       <div class="side-sec">
+         <div class="side-head">Instagram Caption</div>
+         <div class="side-sub">KI-generiert, postbereit</div>
+         <div class="caption-styles" id="captionStyles">
+           <button class="pill cap-style active" data-style="hype" type="button">Hype</button>
+           <button class="pill cap-style" data-style="elegant" type="button">Elegant</button>
+           <button class="pill cap-style" data-style="casual" type="button">Casual</button>
+         </div>
+         <button class="rbtn rbtn-primary cap-gen" id="btnCaption">Caption generieren</button>
+         <div class="caption-box" id="captionBox" style="display:none">
+           <div class="cap-skeleton" id="captionSkeleton" aria-hidden="true">
+             <span></span><span></span><span></span><span></span>
+           </div>
+           <div class="caption-box-head">
+             <button class="cap-copy" id="captionCopy" type="button">⎘ Kopieren</button>
+           </div>
+           <div class="caption-text" id="captionText"></div>
+           <a class="cap-regen" id="captionRegen" href="#">↻ Neu generieren</a>
+         </div>
+       </div>
+
+       <!-- Reset unten in der Sidebar -->
+       <a class="side-reset" id="btnReset" href="#">↺ Neues Template wählen</a>
+       <div class="hist-wrap" id="histWrap" style="display:none">
+         <div class="hist-lbl">Zuletzt</div>
+         <div class="hist-row" id="histRow"></div>
+       </div>
+
+     </div><!-- /side-actions -->
+
+   </aside><!-- /stage-side -->
 
   </div><!-- /stage -->
 

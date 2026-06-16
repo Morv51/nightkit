@@ -3,6 +3,7 @@ import { $, els, on } from "./dom.js";
 import { postRemove, friendlyMessage } from "./api.js";
 import { addToHistory } from "./history.js";
 import { setMaster, selectFormat } from "./formats.js";
+import { exitStageVideo } from "./video.js";
 import { toast } from "./toast.js";
 
 // Korrektur-Modus (Inpainting): der User malt mit einem Pinsel über Stellen
@@ -86,6 +87,7 @@ function moveCursor(e) {
 // ── Modus betreten / verlassen ───────────────────────────────────
 function enterMode() {
   if (busy || !state.last) return;
+  exitStageVideo(); // läuft gerade ein Bühnen-Video, erst zurück zum Flyer
   // Korrektur arbeitet immer auf dem 9:16-Master — falls gerade ein
   // abgeleitetes Format angezeigt wird, erst zurückschalten.
   if (state.currentFormat !== "story") selectFormat("story");

@@ -21,10 +21,11 @@ function flyerSize() {
   return { W: W - (W % 2), H: H - (H % 2) };
 }
 
-// Small live-preview size with the same aspect ratio as the flyer.
+// Bühnen-Preview-Größe (gleiches 9:16 wie der Flyer). Moderat hoch für eine
+// scharfe Vorschau auf der Hauptbühne, aber gedeckelt fürs flüssige rAF.
 function previewSize() {
   const { W, H } = flyerSize();
-  const ph = Math.min(320, H);
+  const ph = Math.min(640, H);
   return { W: Math.round((ph * W) / H), H: ph };
 }
 
@@ -52,33 +53,43 @@ export function selectVideoStyle(id) {
   }
 }
 
-// Video-Bereich zurücksetzen (Template-Wechsel / neue Vorlage): laufende
-// Preview-Animation stoppen und Ausgabe + Status leeren.
+// Video-Bereich zurücksetzen (Template-Wechsel / neue Vorlage): Bühnen-Video
+// verlassen, Status + Button zurück.
 export function resetVideo() {
-  if (state.animFrameId) { cancelAnimationFrame(state.animFrameId); state.animFrameId = null; }
-  if (els.previewWrap) els.previewWrap.style.display = "none";
+  exitStageVideo();
   if (els.videoStatus) els.videoStatus.textContent = "";
   if (els.exportBtn) els.exportBtn.disabled = false;
 }
 
+// Bühnen-Video verlassen → zurück zum Flyer (Crossfade per CSS-Klasse).
+export function exitStageVideo() {
+  if (state.animFrameId) { cancelAnimationFrame(state.animFrameId); state.animFrameId = null; }
+  const frame = document.getElementById("flyerFrame");
+  if (frame) frame.classList.remove("video-active");
+}
+
+// Video-Preview läuft DIREKT auf der Hauptbühne: der Flyer wird per Crossfade
+// (Klasse video-active am Flyer-Rahmen) durch das Canvas ersetzt, der "Zurück
+// zum Flyer"-Button erscheint. rAF-Loop = automatischer Loop.
 export function previewVideo() {
+  if (!state.masterImg || !els.stageVideo) return;
   if (state.animFrameId) cancelAnimationFrame(state.animFrameId);
-  els.previewWrap.style.display = "flex";
   const { W, H } = previewSize();
-  const canvas = els.videoCanvas;
+  const canvas = els.stageVideo;
   canvas.width = W;
   canvas.height = H;
+  const frame = document.getElementById("flyerFrame");
+  if (frame) frame.classList.add("video-active");
   const ctx = canvas.getContext("2d");
   const dur = 10000;
   const startT = Date.now();
 
-  function frame() {
+  function tick() {
     const t = ((Date.now() - startT) % dur) / dur;
-    const style = getStyle(state.currentVideoStyle);
-    style.draw(ctx, W, H, t, state.masterImg);
-    state.animFrameId = requestAnimationFrame(frame);
+    getStyle(state.currentVideoStyle).draw(ctx, W, H, t, state.masterImg);
+    state.animFrameId = requestAnimationFrame(tick);
   }
-  frame();
+  tick();
 }
 
 function ensureVideoEncoder() {
@@ -103,10 +114,10 @@ export async function exportVideo() {
   btn.disabled = true;
 
   const { W, H } = flyerSize();
-  const canvas = els.videoCanvas;
+  const canvas = els.stageVideo;
   canvas.width = W;
   canvas.height = H;
-  els.previewWrap.style.display = "flex";
+  document.getElementById("flyerFrame")?.classList.add("video-active"); // Encoding sichtbar auf der Bühne
   const ctx = canvas.getContext("2d");
 
   try {

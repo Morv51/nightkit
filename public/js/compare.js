@@ -25,8 +25,10 @@ export function setBeforeImage() {
 }
 
 function apply() {
-  const result = $("stateResult");
-  if (result) result.classList.toggle("before-mode", showingBefore);
+  // before-mode liegt auf der gesamten Bühne (Hauptbühne + Sidebar), damit
+  // im "Vorher"-Modus Aktionen UND Sidebar ausgegraut werden können.
+  const stage = $("stage");
+  if (stage) stage.classList.toggle("before-mode", showingBefore);
 
   const btn = $("btnCompare");
   if (btn) {
@@ -39,7 +41,7 @@ function apply() {
   // CSS pointer-events:none, der Hover fällt auf den (weiter hoverbaren)
   // Container — dort sitzt der Hinweis.
   const tip = showingBefore ? DISABLED_TIP : "";
-  const areas = [document.querySelector(".result-btns"), $("formatsBlock"), $("videoSection"), $("captionSection")];
+  const areas = [document.querySelector(".action-links"), $("stageSide")];
   for (const el of areas) {
     if (!el) continue;
     if (tip) el.setAttribute("title", tip);

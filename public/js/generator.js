@@ -9,7 +9,6 @@ import { setMaster, resetFormatsState } from "./formats.js";
 import { resetVideo } from "./video.js";
 import { resetCaption } from "./caption.js";
 import { exitBeforeMode, setBeforeImage } from "./compare.js";
-import { resetDisclosures } from "./disclosure.js";
 import { toast } from "./toast.js";
 
 const POLL_INTERVAL_MS = 2000;
@@ -43,9 +42,13 @@ function stopProgress() {
 // Switch the stage between its three states without destroying their content,
 // so a failed call can restore exactly what was there before.
 function showStage(which) {
+  const isResult = which === "result";
   els.statePreview.style.display = which === "preview" ? "flex" : "none";
   els.stateLoading.style.display = which === "loading" ? "flex" : "none";
-  els.stateResult.style.display  = which === "result"  ? "grid" : "none";
+  els.stateResult.style.display  = isResult ? "flex" : "none";
+  // Sidebar: Aktionen nur im Result-State, sonst der ruhige Empty-Hinweis.
+  if (els.sideActions) els.sideActions.style.display = isResult ? "flex" : "none";
+  if (els.sideEmpty)   els.sideEmpty.style.display   = isResult ? "none" : "flex";
 }
 
 function setGenButton(loading) {
@@ -88,9 +91,8 @@ async function showResult(proxiedUrl) {
 
   exitBeforeMode();          // immer im "Nachher"-Zustand (fertiger Flyer) starten
   setBeforeImage();          // Template-Vorlage fürs Vorher/Nachher-Overlay setzen
-  resetVideo();              // alte Video-Preview/Animation des Vorgängers stoppen
-  resetDisclosures();        // Video + Caption wieder zuklappen (frischer Flyer)
-  showStage("result"); // single-column grid; triggers the entrance animations
+  resetVideo();              // alte Bühnen-Video-Animation des Vorgängers stoppen
+  showStage("result"); // zeigt Flyer (Hauptbühne) + Aktionen (Sidebar)
   addToHistory(displayUrl);
 }
 
