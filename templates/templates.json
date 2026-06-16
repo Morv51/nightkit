@@ -20,5 +20,12 @@
   { "file": "christmas-party-2.jpeg", "name": "Christmas Party 2", "category": "Weihnachten" },
   { "file": "winter-party.jpeg", "name": "Winter Party", "category": "Winter" },
   { "file": "winter-party-2.jpeg", "name": "Winter Party 2", "category": "Winter" },
-  { "file": "winter-party-3.jpeg", "name": "Winter Party 3", "category": "Winter" }
+  { "file": "winter-party-3.jpeg", "name": "Winter Party 3", "category": "Winter" },
+  { "file": "dark-society.jpeg", "name": "Dark Society", "category": "House" },
+  { "file": "editorial-1.jpeg", "name": "Editorial 1", "category": "Editorial" },
+  { "file": "editorial-2.jpeg", "name": "Editorial 2", "category": "Editorial" },
+  { "file": "editorial-3.jpeg", "name": "Editorial 3", "category": "Editorial" },
+  { "file": "editorial-4.jpeg", "name": "Editorial 4", "category": "Editorial" },
+  { "file": "editorial-5.jpeg", "name": "Editorial 5", "category": "Editorial" },
+  { "file": "editorial-6.jpeg", "name": "Editorial 6", "category": "Editorial" }
 ]
