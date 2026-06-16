@@ -32,20 +32,18 @@ function apply() {
 
   const btn = $("btnCompare");
   if (btn) {
-    btn.textContent = showingBefore ? "◑ Nachher" : "◑ Vorher";
+    const lbl = btn.querySelector(".tool-lbl"); // nur das Label tauschen, Icon bleibt
+    if (lbl) lbl.textContent = showingBefore ? "Nachher" : "Vorher";
     btn.classList.toggle("active", showingBefore);
     btn.setAttribute("aria-pressed", String(showingBefore));
   }
 
-  // Tooltip auf den gesperrten Bereichen. Die inneren Bedienelemente sind per
-  // CSS pointer-events:none, der Hover fällt auf den (weiter hoverbaren)
-  // Container — dort sitzt der Hinweis.
-  const tip = showingBefore ? DISABLED_TIP : "";
-  const areas = [document.querySelector(".action-links"), $("stageSide")];
-  for (const el of areas) {
-    if (!el) continue;
-    if (tip) el.setAttribute("title", tip);
-    else el.removeAttribute("title");
+  // Tooltip auf der gesperrten Toolbar im Vorher-Modus: die Tools sind per CSS
+  // pointer-events:none, der Hover fällt auf die hoverbare Sidebar.
+  const side = $("stageSide");
+  if (side) {
+    if (showingBefore) side.setAttribute("title", DISABLED_TIP);
+    else side.removeAttribute("title");
   }
 }
 

@@ -116,7 +116,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 
 /* ── STAGE ── */
 /* Zwei-Spalten-Bühne: Hauptbühne (links) + Aktions-Sidebar (rechts) */
-.stage{background:var(--bg);height:100%;display:grid;grid-template-columns:minmax(0,1fr) clamp(300px,34%,400px);overflow:hidden}
+.stage{background:var(--bg);height:100%;display:grid;grid-template-columns:minmax(0,1fr) 280px;overflow:hidden}
 .stage-main{position:relative;min-height:0;overflow-y:auto;padding:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.06) transparent}
 .stage-side{min-height:0;height:100%;overflow-y:auto;display:flex;flex-direction:column;background:var(--color-surface);border-left:1px solid var(--color-border);padding:24px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.06) transparent}
 .stage::-webkit-scrollbar{width:5px}
@@ -207,12 +207,6 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 /* Vergleichshilfe: graues Tag am Flyer, wenn 1:1 per V4 erzeugt wurde */
 .fmt-via{position:absolute;bottom:10px;right:12px;background:rgba(0,0,0,.55);color:rgba(245,245,240,.55);font-size:10.5px;font-weight:500;padding:4px 10px;border-radius:100px;backdrop-filter:blur(4px)}
 .flyer-frame.correcting .fmt-via{display:none!important}
-/* primäre Aktionen als minimalistische Text-Links, durch · getrennt */
-.action-links{display:flex;flex-wrap:wrap;justify-content:center;align-items:center}
-.alink{background:none;border:none;font-family:inherit;font-size:var(--font-size-sm);font-weight:var(--font-weight-medium);color:var(--color-text-muted);cursor:pointer;padding:4px 0;transition:color .15s}
-.alink:hover{color:var(--color-accent)}
-.alink:not(:last-child)::after{content:'·';color:var(--color-text-dim);margin:0 9px;pointer-events:none}
-.alink.active{color:var(--color-accent)}
 .rbtn{
   height:34px;padding:0 14px;border-radius:8px;
   font-size:var(--font-size-sm);font-weight:var(--font-weight-semibold);font-family:inherit;letter-spacing:var(--letter-spacing-wide);cursor:pointer;transition:all .15s;
@@ -233,12 +227,10 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .stage.before-mode .before-img{opacity:1}
 .stage.before-mode .done-badge,
 .stage.before-mode .fmt-via{display:none}
-.compare-link.active{color:var(--color-accent)}
-/* Im Vorher-Modus alles außer dem Toggle ausgrauen + sperren. Container bleiben
-   hoverbar, damit der "Wechsle zurück"-Tooltip (title) erscheint. */
-.stage.before-mode :is(.action-links .alink:not(.compare-link),#sideActions){opacity:.4}
-.stage.before-mode .action-links .alink:not(.compare-link){pointer-events:none}
-.stage.before-mode #sideActions :is(button,a,.pill,.fmt-tile,.style-row,.caption-box){pointer-events:none}
+/* Im Vorher-Modus alles außer der Vorher/Nachher-Kachel ausgrauen + sperren.
+   Die Sidebar bleibt hoverbar, damit der "Wechsle zurück"-Tooltip erscheint. */
+.stage.before-mode .stage-side .tool:not(.compare-tool){opacity:.4;pointer-events:none}
+.stage.before-mode .tool-group[data-group="exportieren"]{opacity:.4;pointer-events:none}
 
 /* history (under the flyer) */
 .hist-wrap{margin-top:4px}
@@ -270,21 +262,21 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 
 .correct-panel{display:none;width:100%;max-width:440px;flex-direction:column;gap:8px}
 .result-flyer.correct-mode .correct-panel{display:flex}
-.result-flyer.correct-mode .action-links{display:none}
-/* Korrektur übernimmt den Flyer → Sidebar-Aktionen ausblenden. */
-.stage:has(.result-flyer.correct-mode) #sideActions{display:none}
+/* Toolbar bleibt im Korrektur-Modus aktiv; die "Korrigieren"-Kachel zeigt
+   "Fertig" (siehe :has()-Regel oben). */
 .correct-apply{width:100%;height:38px}
 .correct-apply:disabled{opacity:.45;cursor:not-allowed}
 .correct-hint{font-size:11.5px;line-height:1.35;color:rgba(245,245,240,.45);text-align:center;padding:0 4px}
 
 /* ── FORMATE (Multi-Format-Export, in der Sidebar) ── */
-.formats-row{display:flex;gap:8px}
-.fmt-tile{position:relative;flex:1;min-height:62px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:8px 4px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;font-family:inherit;color:var(--muted);transition:all .15s}
-.fmt-tile:hover{border-color:#555;color:var(--text)}
-.fmt-tile.active{border-color:var(--accent);background:rgba(204,255,0,.07);color:var(--text)}
-.fmt-shape{display:block;border:1.5px solid currentColor;border-radius:3px;opacity:.85}
-.fmt-name{font-size:10.5px;font-weight:600;line-height:1}
-.fmt-ratio{font-size:9px;opacity:.65;line-height:1}
+.formats-row{display:flex;gap:6px}
+/* kompakte Pills statt großer Kacheln */
+.fmt-tile{position:relative;flex:1;background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:7px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-family:inherit;color:var(--color-text-muted);transition:border-color .15s,color .15s}
+.fmt-tile:hover{border-color:var(--color-accent);color:var(--color-text)}
+.fmt-tile.active{border-color:var(--color-accent);background:rgba(204,255,0,.08);color:var(--color-text)}
+.fmt-shape{display:none}
+.fmt-name{font-size:var(--font-size-xs);font-weight:var(--font-weight-semibold);line-height:1.1}
+.fmt-ratio{font-size:var(--font-size-2xs);opacity:.6;line-height:1}
 .fmt-status{position:absolute;top:4px;right:6px;font-size:9.5px;color:var(--accent);line-height:1}
 .fmt-spin{display:block;width:9px;height:9px;border:1.5px solid rgba(204,255,0,.25);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
 /* tile shimmer while a (paid) format call runs */
@@ -306,15 +298,43 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .toast-act:hover{background:rgba(204,255,0,.2)}
 @keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
-/* ── Aktions-Sidebar (Sektionen + Video auf der Bühne) ── */
-.side-empty{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--color-text-dim);font-size:var(--font-size-sm);padding:24px}
-.side-actions{flex-direction:column}
-.side-sec{display:flex;flex-direction:column}
-.side-head{font-size:var(--font-size-xs);font-weight:var(--font-weight-semibold);letter-spacing:var(--letter-spacing-wider);text-transform:uppercase;color:var(--color-text-muted);margin-bottom:10px}
-.side-sub{font-size:var(--font-size-xs);color:var(--color-text-dim);margin:-4px 0 12px}
-.side-divider{border-top:1px solid var(--color-border);margin:20px 0}
-.side-reset{display:block;text-align:center;font-size:var(--font-size-xs);color:var(--color-text-dim);text-decoration:none;margin-top:20px;padding:4px;transition:color .15s}
-.side-reset:hover{color:var(--color-accent)}
+/* ── Toolbar-Sidebar (Final-Cut-Pro-Stil) ── */
+.tool-hint{display:none;font-size:var(--font-size-xs);color:var(--color-text-dim);text-align:center;margin-bottom:18px;line-height:1.4}
+.stage-side.locked .tool-hint{display:block}
+.tool-tabs{display:none} /* nur < 1024px sichtbar (Responsive-Block) */
+
+.tool-group-head{font-size:var(--font-size-xs);font-weight:var(--font-weight-semibold);letter-spacing:var(--letter-spacing-wider);text-transform:uppercase;color:var(--color-text-dim);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--color-border)}
+.tool-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tool-divider{border-top:1px solid var(--color-border);margin:20px 0}
+.tool-divider.thin{margin:14px 0}
+
+/* Tool-Kachel: Icon oben (24px), Label darunter */
+.tool{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:12px 8px;background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius-md);cursor:pointer;color:var(--color-text-muted);font-family:inherit;transition:border-color .15s,color .15s}
+.tool-ico{display:flex;align-items:center;justify-content:center;width:24px;height:24px;color:currentColor;transition:color .15s}
+.tool-ico svg{width:24px;height:24px;display:block}
+.tool-lbl{font-size:var(--font-size-xs);font-weight:var(--font-weight-medium);line-height:1.2;text-align:center}
+.tool:hover{border-color:var(--color-accent);color:var(--color-text)}
+.tool:hover .tool-ico{color:var(--color-accent)}
+.tool .lbl-active{display:none}
+
+/* Korrektur aktiv → Kachel hervorheben + "Fertig" zeigen */
+.stage:has(.result-flyer.correct-mode) #btnCorrect{border-color:var(--color-accent);color:var(--color-text)}
+.stage:has(.result-flyer.correct-mode) #btnCorrect .tool-ico,
+.stage:has(.result-flyer.correct-mode) #btnCorrect .lbl-active{color:var(--color-accent)}
+.stage:has(.result-flyer.correct-mode) #btnCorrect .lbl-default{display:none}
+.stage:has(.result-flyer.correct-mode) #btnCorrect .lbl-active{display:inline}
+/* Vorher/Nachher-Kachel aktiv */
+.compare-tool.active{border-color:var(--color-accent);color:var(--color-accent)}
+.compare-tool.active .tool-ico{color:var(--color-accent)}
+
+/* Sub-Überschriften (Formate / Video / Caption) */
+.sub-head{font-size:var(--font-size-xs);color:var(--color-text-dim);letter-spacing:var(--letter-spacing-wide);text-transform:uppercase;margin-bottom:8px}
+.vid-actions{display:flex;gap:8px}
+.vid-actions .rbtn{flex:1}
+.video-status{font-size:var(--font-size-xs);color:var(--color-text-muted);margin-top:8px}
+
+/* Empty-State: alle Tools gesperrt (ausgegraut, nicht klickbar) */
+.stage-side.locked :is(.tool,.formats-row,.style-row,.vid-actions,.caption-styles,.cap-gen,.caption-box){opacity:.3;pointer-events:none;cursor:not-allowed}
 /* Video läuft auf der Hauptbühne (Crossfade Flyer ⇄ Video-Canvas) */
 .stage-video{position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity .3s ease;pointer-events:none;z-index:5;border-radius:14px;background:#000}
 .flyer-frame.video-active .stage-video{opacity:1}
@@ -346,7 +366,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .cap-copy{background:rgba(255,255,255,.06);border:0.5px solid rgba(255,255,255,.12);border-radius:6px;color:var(--text);font-family:inherit;font-size:11.5px;font-weight:600;padding:5px 11px;cursor:pointer;transition:all .15s}
 .cap-copy:hover{border-color:var(--accent);color:var(--accent)}
 .cap-copy.copied{border-color:#7CE38B;color:#7CE38B}
-.caption-text{font-size:13px;line-height:1.65;color:var(--text);white-space:pre-wrap;word-break:break-word}
+.caption-text{font-size:13px;line-height:1.65;color:var(--text);white-space:pre-wrap;word-break:break-word;max-height:calc(1.65em * 4);overflow-y:auto}
 .cap-regen{display:inline-block;margin-top:12px;font-size:12px;color:var(--muted);text-decoration:none}
 .cap-regen:hover{color:var(--accent)}
 /* caption loading skeleton (shimmer lines while the caption is generated) */
@@ -376,17 +396,27 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .tip-item::before{content:"✓";position:absolute;left:0;top:1px;color:var(--accent);font-size:12px;font-weight:700}
 
 /* ── MOBILE ── */
+/* < 1024px: Zwei-Spalten-Bühne stapelt; Toolbar wird zur Tab-Leiste unter dem Flyer */
+@media(max-width:1024px){
+  .stage{display:block;height:auto;overflow:visible}
+  .stage-main{padding:18px;overflow:visible}
+  .flyer-frame img{max-height:62vh}
+  .result-main{max-height:none}
+  .stage-side{position:static;height:auto;max-height:none;overflow:visible;border-left:none;border-top:1px solid var(--color-border)}
+  .tool-tabs{display:flex;gap:4px;margin-bottom:16px;background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:4px}
+  .tool-tab{flex:1;background:none;border:none;border-radius:var(--radius-sm);color:var(--color-text-muted);font-family:inherit;font-size:var(--font-size-sm);font-weight:var(--font-weight-medium);padding:8px;cursor:pointer;transition:background .15s,color .15s}
+  .tool-tab.active{background:var(--color-accent);color:var(--color-accent-ink)}
+  .tool-group-head{display:none}
+  .tool-group{display:none}
+  .tool-group.active{display:block}
+  .tool-divider:not(.thin){display:none}
+}
 @media(max-width:900px){
   html,body{height:auto;overflow:auto}
   .app{grid-template-columns:1fr;height:auto}
   .col-left{border-right:none;border-bottom:var(--border-s);overflow:visible}
   .col-left-scroll{overflow:visible}
-  .stage{display:block;height:auto;overflow:visible}
-  .stage-main{padding:18px;overflow:visible}
-  .stage-side{position:static;height:auto;max-height:none;border-left:none;border-top:1px solid var(--color-border);overflow:visible}
   .preview-img{max-height:72vh}
-  .flyer-frame img{max-height:72vh}
-  .result-main{max-height:none}
   .picker-panel{padding:16px}
   .picker-grid{grid-template-columns:repeat(2,1fr);gap:12px}
 }

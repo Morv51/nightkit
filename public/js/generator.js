@@ -46,9 +46,12 @@ function showStage(which) {
   els.statePreview.style.display = which === "preview" ? "flex" : "none";
   els.stateLoading.style.display = which === "loading" ? "flex" : "none";
   els.stateResult.style.display  = isResult ? "flex" : "none";
-  // Sidebar: Aktionen nur im Result-State, sonst der ruhige Empty-Hinweis.
-  if (els.sideActions) els.sideActions.style.display = isResult ? "flex" : "none";
-  if (els.sideEmpty)   els.sideEmpty.style.display   = isResult ? "none" : "flex";
+  // Toolbar: im Empty-/Loading-State gesperrt (ausgegraut + Hinweiszeile).
+  if (els.stageSide) {
+    els.stageSide.classList.toggle("locked", !isResult);
+    if (isResult) els.stageSide.removeAttribute("title");
+    else els.stageSide.setAttribute("title", "Generiere zuerst deinen Flyer");
+  }
 }
 
 function setGenButton(loading) {

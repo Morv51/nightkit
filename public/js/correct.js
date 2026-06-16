@@ -267,7 +267,8 @@ export function initCorrect() {
   cursorEl = $("correctCursor");
   busyEl = $("correctBusy");
 
-  on($("btnCorrect"), "click", enterMode);
+  // Toolbar-Kachel toggelt: im aktiven Modus ("Fertig") schließt der Klick.
+  on($("btnCorrect"), "click", () => { if (busy) return; isActive() ? exitMode() : enterMode(); });
   on($("correctCancel"), "click", () => { if (!busy) exitMode(); });
   on($("correctUndo"), "click", () => { if (!busy) { strokes.pop(); drawing = null; redraw(); } });
   on($("correctClear"), "click", () => { if (!busy) { strokes = []; drawing = null; redraw(); } });
