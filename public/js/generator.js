@@ -9,6 +9,7 @@ import { setMaster, resetFormatsState } from "./formats.js";
 import { resetVideo } from "./video.js";
 import { resetCaption } from "./caption.js";
 import { exitBeforeMode, setBeforeImage } from "./compare.js";
+import { resetDisclosures } from "./disclosure.js";
 import { toast } from "./toast.js";
 
 const POLL_INTERVAL_MS = 2000;
@@ -87,7 +88,9 @@ async function showResult(proxiedUrl) {
 
   exitBeforeMode();          // immer im "Nachher"-Zustand (fertiger Flyer) starten
   setBeforeImage();          // Template-Vorlage fürs Vorher/Nachher-Overlay setzen
-  showStage("result"); // .result-split is a grid; triggers the entrance animations
+  resetVideo();              // alte Video-Preview/Animation des Vorgängers stoppen
+  resetDisclosures();        // Video + Caption wieder zuklappen (frischer Flyer)
+  showStage("result"); // single-column grid; triggers the entrance animations
   addToHistory(displayUrl);
 }
 

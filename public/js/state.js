@@ -13,7 +13,6 @@ export const state = {
   currentVideoStyle: "glitch",
   animFrameId: null,
   historyUrls: [],
-  videoPanelOpen: true,
 
   // templates
   templates: [],

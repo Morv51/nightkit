@@ -30,7 +30,7 @@ const IDS = [
   "previewImg", "previewStage", "resultImg",
   "logoPreview", "logoOverlay", "logoOverlayImg", "logoResize",
   "copyBtn", "histWrap", "histRow",
-  "videoChevron", "videoBody", "videoCanvas", "videoStatus", "previewWrap", "exportBtn",
+  "videoCanvas", "videoStatus", "previewWrap", "exportBtn",
   "genBtn", "genTxt", "errBox",
 ];
 

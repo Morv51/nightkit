@@ -192,10 +192,10 @@
       </div>
     </div>
 
-    <!-- STATE B: result (flyer + action cards) -->
-    <div id="stateResult" class="result-split" style="display:none">
+    <!-- STATE B: result — Progressive Disclosure (Flyer → Formate → Video → Caption) -->
+    <div id="stateResult" class="result-stack" style="display:none">
 
-      <!-- flyer (sticky) -->
+      <!-- EBENE 1: Flyer + primäre Aktionen -->
       <div class="result-flyer">
         <!-- Korrektur-Toolbar: eigene Zeile ÜBER dem Flyer, verdeckt nie Bildinhalt -->
         <div class="correct-bar" id="correctBar">
@@ -209,13 +209,14 @@
           <!-- Vorher/Nachher: leeres Ausgangs-Template, per opacity über den Flyer geblendet -->
           <img id="beforeImg" class="before-img" alt="Vorher: leeres Template" aria-hidden="true">
           <div class="done-badge">✓ Fertig</div>
-          <!-- Vergleichshilfe: zeigt an, wenn ein Format per V4 erzeugt wurde (Text setzt formats.js) -->
+          <!-- Vergleichshilfe: zeigt an, wenn ein Format als Beta-Variante erzeugt wurde (Text setzt formats.js) -->
           <div class="fmt-via" id="fmtViaTag" style="display:none"></div>
           <!-- Korrektur-Modus: Mal-Canvas über dem Flyer (native Auflösung, per CSS skaliert) -->
           <canvas class="correct-canvas" id="correctCanvas"></canvas>
           <div class="correct-cursor" id="correctCursor"></div>
           <div class="correct-busy" id="correctBusy"><span class="cb-spin"></span></div>
         </div>
+        <!-- Primäre Aktionen: eine kompakte Zeile direkt unter dem Flyer -->
         <div class="result-btns">
           <button class="rbtn rbtn-ghost" id="btnDlPng">↓ PNG</button>
           <button class="rbtn rbtn-ghost" id="btnDlJpg">↓ JPG</button>
@@ -224,64 +225,76 @@
           <button type="button" class="hint" aria-label="Info" data-tip="Male über störende Stellen. Die KI entfernt sie und füllt den Hintergrund auf. Mit Texteingabe kannst du stattdessen etwas ersetzen lassen.">i</button>
           <button class="rbtn rbtn-ghost compare-btn" id="btnCompare" type="button" aria-pressed="false" title="Zwischen leerem Template und fertigem Flyer wechseln">◑ Vorher</button>
         </div>
-        <!-- Multi-Format-Export (Kacheln werden von js/formats.js gerendert) -->
-        <div class="formats-block" id="formatsBlock">
-          <div class="formats-label">Formate <button type="button" class="hint" aria-label="Info" data-tip="Deine Grafik wird per KI passend auf andere Seitenverhältnisse erweitert, ganz ohne schwarze Ränder oder Beschneiden.">i</button></div>
-          <div class="formats-row" id="formatsRow"></div>
-          <div class="formats-hint">Weitere Formate werden per KI passend erweitert</div>
-        </div>
         <div class="correct-panel" id="correctPanel">
           <div class="correct-hint" id="correctHint">Markiere was weg soll. Der Bereich wird sauber entfernt.</div>
           <button class="rbtn rbtn-primary correct-apply" id="correctApply" type="button">Entfernen</button>
         </div>
         <a class="newtpl-link prev-link" id="correctPrevLink" href="#" style="display:none">↩ Vorherige Version</a>
-        <a class="newtpl-link" id="btnReset" href="#">↻ Neues Template wählen</a>
-        <div class="hist-wrap" id="histWrap" style="display:none">
-          <div class="hist-lbl">Zuletzt</div>
-          <div class="hist-row" id="histRow"></div>
-        </div>
       </div>
 
-      <!-- action cards -->
-      <div class="action-cards">
+      <!-- EBENE 2: Formate (kompakt, immer sichtbar) -->
+      <div class="formats-block" id="formatsBlock">
+        <div class="formats-label">Formate <button type="button" class="hint" aria-label="Info" data-tip="Deine Grafik wird per KI passend auf andere Seitenverhältnisse erweitert, ganz ohne schwarze Ränder oder Beschneiden.">i</button></div>
+        <div class="formats-row" id="formatsRow"></div>
+        <div class="formats-hint">Weitere Formate werden per KI passend erweitert</div>
+      </div>
 
-        <!-- Card 1: Video Export -->
-        <div class="action-card card-video">
-          <div class="card-label">Video Export <button type="button" class="hint" aria-label="Info" data-tip="Verwandelt deine fertige Grafik in ein 10-Sekunden-Video für Stories und Reels. Wähle einen Effekt, der zum Vibe passt.">i</button></div>
-          <div class="card-help">Exportiere deinen Flyer als 10-Sek-Video</div>
-          <div class="style-row"></div>
-          <div class="card-actions">
-            <button class="rbtn rbtn-ghost" id="btnPv">▷ Preview</button>
-            <button class="rbtn rbtn-primary" id="exportBtn">↓ Video</button>
-            <span class="video-status" id="videoStatus"></span>
-          </div>
-          <div class="pv-canvas-wrap" id="previewWrap">
-            <canvas id="videoCanvas"></canvas>
+      <!-- EBENE 3: Video Export (aufklappbar, standardmäßig zugeklappt) -->
+      <section class="disclosure" id="videoSection" data-store="nk_disc_video">
+        <div class="disclosure-head" id="videoHead" role="button" tabindex="0" aria-expanded="false" aria-controls="videoBody">
+          <span class="disclosure-title">Video Export</span>
+          <span class="disclosure-arrow" aria-hidden="true">▶</span>
+        </div>
+        <div class="disclosure-body" id="videoBody">
+          <div class="disclosure-inner">
+            <div class="card-help">Exportiere deinen Flyer als 10-Sek-Video</div>
+            <div class="style-row"></div>
+            <div class="card-actions">
+              <button class="rbtn rbtn-ghost" id="btnPv">▷ Preview</button>
+              <button class="rbtn rbtn-primary" id="exportBtn">↓ Video</button>
+              <span class="video-status" id="videoStatus"></span>
+            </div>
+            <div class="pv-canvas-wrap" id="previewWrap">
+              <canvas id="videoCanvas"></canvas>
+            </div>
           </div>
         </div>
+      </section>
 
-        <!-- Card 2: Instagram Caption -->
-        <div class="action-card card-caption">
-          <div class="card-label">Instagram Caption <button type="button" class="hint" aria-label="Info" data-tip="Erstellt einen fertigen Caption-Text mit Hashtags. Fülle das Vibe-Feld aus, damit die Caption konkret und glaubwürdig wird.">i</button></div>
-          <div class="card-help">Conversion-optimierte Caption mit Hashtags</div>
-          <div class="caption-styles" id="captionStyles">
-            <button class="pill cap-style active" data-style="hype" type="button">Hype</button>
-            <button class="pill cap-style" data-style="elegant" type="button">Elegant</button>
-            <button class="pill cap-style" data-style="casual" type="button">Casual</button>
-          </div>
-          <button class="rbtn rbtn-primary cap-gen" id="btnCaption">Caption generieren</button>
-          <div class="caption-box" id="captionBox" style="display:none">
-            <div class="cap-skeleton" id="captionSkeleton" aria-hidden="true">
-              <span></span><span></span><span></span><span></span>
+      <!-- EBENE 4: Instagram Caption (aufklappbar, standardmäßig zugeklappt) -->
+      <section class="disclosure" id="captionSection" data-store="nk_disc_caption">
+        <div class="disclosure-head" id="captionHead" role="button" tabindex="0" aria-expanded="false" aria-controls="captionBody">
+          <span class="disclosure-title">✦ Instagram Caption</span>
+          <span class="disclosure-arrow" aria-hidden="true">▶</span>
+        </div>
+        <div class="disclosure-body" id="captionBody">
+          <div class="disclosure-inner">
+            <div class="card-help">Conversion-optimierte Caption mit Hashtags</div>
+            <div class="caption-styles" id="captionStyles">
+              <button class="pill cap-style active" data-style="hype" type="button">Hype</button>
+              <button class="pill cap-style" data-style="elegant" type="button">Elegant</button>
+              <button class="pill cap-style" data-style="casual" type="button">Casual</button>
             </div>
-            <div class="caption-box-head">
-              <button class="cap-copy" id="captionCopy" type="button">⎘ Kopieren</button>
+            <button class="rbtn rbtn-primary cap-gen" id="btnCaption">Caption generieren</button>
+            <div class="caption-box" id="captionBox" style="display:none">
+              <div class="cap-skeleton" id="captionSkeleton" aria-hidden="true">
+                <span></span><span></span><span></span><span></span>
+              </div>
+              <div class="caption-box-head">
+                <button class="cap-copy" id="captionCopy" type="button">⎘ Kopieren</button>
+              </div>
+              <div class="caption-text" id="captionText"></div>
+              <a class="cap-regen" id="captionRegen" href="#">↻ Neu generieren</a>
             </div>
-            <div class="caption-text" id="captionText"></div>
-            <a class="cap-regen" id="captionRegen" href="#">↻ Neu generieren</a>
           </div>
         </div>
+      </section>
 
+      <!-- Footer: neues Template + Verlauf -->
+      <a class="newtpl-link" id="btnReset" href="#">↻ Neues Template wählen</a>
+      <div class="hist-wrap" id="histWrap" style="display:none">
+        <div class="hist-lbl">Zuletzt</div>
+        <div class="hist-row" id="histRow"></div>
       </div>
 
     </div>

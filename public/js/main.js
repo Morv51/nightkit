@@ -2,13 +2,14 @@ import { initDom, els, on } from "./dom.js";
 import { loadTemplates, renderPicker, applyCurrentTemplate, initPicker, maybeAutoOpenPicker } from "./templates.js";
 import { generate, resetToPreview } from "./generator.js";
 import { download, copyImage } from "./download.js";
-import { renderStyleButtons, toggleVideo, previewVideo, exportVideo } from "./video.js";
+import { renderStyleButtons, previewVideo, exportVideo } from "./video.js";
 import { initLogo } from "./logo.js";
 import { initDatePicker } from "./datepicker.js";
 import { initCaption } from "./caption.js";
 import { initCorrect } from "./correct.js";
 import { initFormats } from "./formats.js";
 import { initCompare } from "./compare.js";
+import { initDisclosure } from "./disclosure.js";
 import { initHints } from "./hints.js";
 
 function bindActions() {
@@ -17,7 +18,6 @@ function bindActions() {
   on(document.getElementById("btnDlJpg"),   "click", () => download("jpg"));
   on(els.copyBtn, "click", copyImage);
   on(document.getElementById("btnReset"),   "click", resetToPreview);
-  on(document.querySelector(".video-head"), "click", toggleVideo);
   on(document.getElementById("btnPv"),      "click", previewVideo);
   on(els.exportBtn, "click", exportVideo);
 }
@@ -32,6 +32,7 @@ async function init() {
   initCorrect();
   initFormats();
   initCompare();
+  initDisclosure();
   initHints();
   initPicker();
 

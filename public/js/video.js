@@ -61,12 +61,6 @@ export function resetVideo() {
   if (els.exportBtn) els.exportBtn.disabled = false;
 }
 
-export function toggleVideo() {
-  state.videoPanelOpen = !state.videoPanelOpen;
-  els.videoBody.classList.toggle("collapsed", !state.videoPanelOpen);
-  els.videoChevron.textContent = state.videoPanelOpen ? "▾" : "▸";
-}
-
 export function previewVideo() {
   if (state.animFrameId) cancelAnimationFrame(state.animFrameId);
   els.previewWrap.style.display = "flex";
