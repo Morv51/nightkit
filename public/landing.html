@@ -33,12 +33,17 @@ img{display:block;max-width:100%}
 .ac{color:var(--accent)}
 
 /* background collage */
-/* Hero-Hintergrund: fast schwarz + sehr dezente, dunkle Flyer-Collage als
-   Textur (gallery-Bilder, von JS gefüllt), darüber ein gerichteter Gradient,
-   sodass links der Text gut lesbar ist und rechts das iPhone durchkommt. */
-.hero-collage{position:absolute;inset:-6%;z-index:0;display:flex;flex-wrap:wrap;overflow:hidden;opacity:.05;filter:blur(2px);pointer-events:none;transform:rotate(-4deg) scale(1.18)}
-.hero-collage img{width:20%;aspect-ratio:9/16;object-fit:cover;display:block}
-.hero-gradient{position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(to right,rgba(10,10,10,.97) 0%,rgba(10,10,10,.7) 50%,rgba(10,10,10,.3) 100%)}
+/* Hero-Hintergrund als echtes <img>, auf den Hero begrenzt.
+   object-position X = horizontaler Fokus: höherer Wert zeigt mehr vom rechten
+   Bildteil (Tool-Mockup). Startwerte — pro Breakpoint unten leicht justierbar. */
+.hero-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:70% center;z-index:0} /* Standard-Desktop: 70% */
+.hero-overlay{position:absolute;inset:0;z-index:1;background:linear-gradient(to right,rgba(0,0,0,.85) 0%,rgba(0,0,0,.55) 45%,rgba(0,0,0,.15) 100%)}
+@media(min-width:1600px){ .hero-bg{object-position:65% center} } /* sehr breite Screens */
+@media(max-width:1024px){ .hero-bg{object-position:60% center} } /* Tablet */
+@media(max-width:640px){ /* Mobile: Fokus weiter rechts + stärkeres Overlay für Lesbarkeit */
+  .hero-bg{object-position:75% center}
+  .hero-overlay{background:linear-gradient(to right,rgba(0,0,0,.9) 0%,rgba(0,0,0,.78) 55%,rgba(0,0,0,.5) 100%)}
+}
 
 /* header */
 .hdr{position:absolute;top:0;left:0;z-index:20;padding:22px 56px;display:flex;align-items:center}
@@ -47,52 +52,29 @@ img{display:block;max-width:100%}
 .logo-ic svg{width:15px;height:15px}
 .logo-tx{font-weight:800;font-size:20px;letter-spacing:.3px}
 
-/* hero layout (zweispaltig: Text links, CSS-iPhone rechts) */
-.hero-screen{position:relative;overflow:hidden;min-height:100vh;display:flex;flex-direction:column;background:var(--color-bg)}
-.hero-wrap{position:relative;z-index:2;flex:1;display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:40px;width:100%;max-width:1340px;margin:0 auto;padding:104px 56px 36px}
-.hero-text{max-width:600px}
-.hero-phone{display:flex;align-items:center;justify-content:center}
+/* hero layout */
+.hero-screen{position:relative;overflow:hidden;min-height:100vh;display:flex;flex-direction:column}
+.hero-wrap{position:relative;z-index:2;flex:1;display:flex;align-items:center;width:100%;max-width:1340px;margin:0 auto;padding:104px 56px 36px}
+.hero{max-width:680px}
 .badge{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);border-radius:100px;padding:7px 15px;font-size:11px;font-weight:600;letter-spacing:.07em;color:var(--color-text);margin-bottom:28px}
 .badge .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
 .h1{font-family:var(--font-display);font-size:var(--font-size-4xl);line-height:var(--line-height-tight);font-weight:var(--font-weight-bold);letter-spacing:var(--letter-spacing-tight);margin-bottom:22px}
-.h1-type{display:block;color:var(--color-accent);min-height:1.14em}
-.h1-static{display:block;color:var(--color-text)}
-.tw-cursor{display:inline-block;color:var(--color-accent);opacity:0;font-weight:var(--font-weight-bold)}
-.tw-cursor.blink{animation:twBlink 1s steps(1) infinite}
-@keyframes twBlink{0%{opacity:1}50%{opacity:0}100%{opacity:1}}
-.sub{font-size:var(--font-size-md);color:var(--color-text-muted);margin-bottom:26px;line-height:var(--line-height-relaxed);max-width:520px}
-.feat-row{display:flex;flex-direction:column;gap:9px;margin-bottom:32px;align-items:flex-start}
-.feat{font-size:14px;color:var(--color-text-muted)}
-.cta{display:flex;flex-wrap:wrap;gap:12px}
+.h1 .h1-line{display:block}
+.sub{font-size:var(--font-size-md);color:var(--muted);margin-bottom:28px;line-height:var(--line-height-relaxed);max-width:540px}
+.feat-row{display:flex;flex-direction:column;gap:11px;margin-bottom:32px;align-items:flex-start}
+.feat{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--color-text)}
+.feat .fi{color:var(--accent);font-size:15px;line-height:1}
+.cta{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:36px}
 .btn-primary{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#0a0a0a;font-weight:700;font-size:15px;font-family:inherit;padding:15px 26px;border-radius:100px;border:none;cursor:pointer;transition:transform .15s,box-shadow .15s}
 .btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px 34px rgba(204,255,0,.32)}
 .btn-ghost{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.05);color:var(--color-text);font-weight:600;font-size:15px;font-family:inherit;padding:15px 26px;border-radius:100px;border:1px solid rgba(255,255,255,.25);cursor:pointer;transition:border-color .15s,background .15s}
 .btn-ghost:hover{border-color:rgba(255,255,255,.5);background:rgba(255,255,255,.09)}
-
-/* CSS-iPhone 15 Pro (komplett ohne Bild; Grautöne sind Gerätefarben) */
-.iphone-frame{position:relative;width:260px;height:530px;background:linear-gradient(145deg,#2a2a2a 0%,#1a1a1a 50%,#2d2d2d 100%);border-radius:44px;box-shadow:0 0 0 1px rgba(255,255,255,.08),0 0 0 2px rgba(0,0,0,.8),0 30px 80px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.12);will-change:transform;transform:perspective(1000px) rotateY(-8deg) rotateX(3deg)}
-.iphone-frame::before{content:'';position:absolute;left:-2px;top:128px;width:3px;height:26px;background:#333;border-radius:2px;box-shadow:0 38px 0 #333}
-.iphone-frame::after{content:'';position:absolute;right:-2px;top:150px;width:3px;height:46px;background:#333;border-radius:2px}
-.iphone-screen{position:absolute;inset:12px;border-radius:36px;overflow:hidden;background:#000}
-.iphone-flyer{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity .4s ease}
-.dynamic-island{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:80px;height:22px;background:#000;border-radius:20px;z-index:10}
-.iphone-statusbar{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0;z-index:10;pointer-events:none}
-.sb-time{color:var(--color-text);opacity:.8;font-size:11px;font-weight:600}
-.sb-icons{display:flex;align-items:center;gap:5px}
-.sb-signal{width:16px;height:10px;border-radius:1.5px;background:rgba(255,255,255,.85)}
-.sb-wifi{width:14px;height:10px;border-radius:2px;background:rgba(255,255,255,.85)}
-.sb-batt{position:relative;width:22px;height:11px;border:1.2px solid rgba(255,255,255,.85);border-radius:3px}
-.sb-batt::after{content:'';position:absolute;left:1.5px;top:1.5px;bottom:1.5px;right:5px;background:rgba(255,255,255,.85);border-radius:1px}
-.sb-batt::before{content:'';position:absolute;right:-3px;top:3px;width:2px;height:5px;background:rgba(255,255,255,.85);border-radius:0 1px 1px 0}
-.iphone-indicator{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:100px;height:4px;background:rgba(255,255,255,.3);border-radius:2px;z-index:10}
-.iphone-glare{position:absolute;inset:-4px;border-radius:46px;background:linear-gradient(135deg,rgba(255,255,255,.06) 0%,transparent 50%);pointer-events:none;z-index:11;transition:opacity .2s ease}
-
-/* gestaffelter Seiteneintritt (einmalig beim Laden) */
-@keyframes heroIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-.hero-text .badge{opacity:0;animation:heroIn .5s ease-out .2s forwards}
-.h1-static{opacity:0;animation:heroIn .5s ease-out .3s forwards}
-.hero-text .sub,.hero-text .feat-row{opacity:0;animation:heroIn .5s ease-out .5s forwards}
-.hero-text .cta{opacity:0;animation:heroIn .5s ease-out .7s forwards}
+.proof{display:flex;align-items:center;gap:14px}
+.avatars{display:flex}
+.avatar{width:36px;height:36px;border-radius:50%;border:2px solid #0a0a0a;margin-left:-11px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--color-text)}
+.avatar:first-child{margin-left:0}
+.proof-text{font-size:12px;color:var(--muted);line-height:1.4}
+.stars{color:var(--accent);letter-spacing:2px;font-size:12px}
 
 /* stats bar */
 .stats{background:#0d0d0d;border-top:1px solid var(--color-border);border-bottom:1px solid var(--color-border);padding:50px 40px}
@@ -162,16 +144,6 @@ img{display:block;max-width:100%}
   .vis-right .row-visual{order:-1}
   .ds-sec{padding:64px 22px}
   .ds-btn{padding:16px 36px;font-size:16px}
-}
-
-/* Hero auf Mobile: eine Spalte, iPhone über dem Text */
-@media(max-width:768px){
-  .hero-wrap{grid-template-columns:1fr;gap:24px}
-  .hero-phone{order:-1;transform:scale(.75)}
-  .hero-text{max-width:none;text-align:center}
-  .feat-row{align-items:center}
-  .cta{justify-content:center}
-  .hero-collage{display:none}
 }
 
 /* ── DEMO MODAL ── */
@@ -355,39 +327,32 @@ img{display:block;max-width:100%}
   </a>
 </header>
 
-<section class="hero-screen" id="heroScreen">
-<div class="hero-collage" id="heroCollage" aria-hidden="true"></div>
-<div class="hero-gradient"></div>
+<section class="hero-screen">
+<img class="hero-bg" src="/assets/landing-bg.png" alt="">
+<div class="hero-overlay"></div>
 <main class="hero-wrap">
-  <div class="hero-text">
+  <div class="hero">
     <div class="badge"><span class="dot"></span> FÜR CLUBS &amp; BARS – SOFORT NUTZBAR</div>
-    <h1 class="h1">
-      <span class="h1-type"><span id="twText"></span><span class="tw-cursor" id="twCursor">|</span></span>
-      <span class="h1-static">IN SEKUNDEN.</span>
-    </h1>
-    <p class="sub">Erstelle Grafiken, Videos und Captions für deine Events – vom Flyer-Design bis zur fertigen Caption, alles in einem Tool.</p>
+    <h1 class="h1"><span class="h1-line">EVENT-GRAFIKEN</span><span class="h1-line ac">IN SEKUNDEN.</span></h1>
+    <p class="sub">Erstelle Grafiken, Videos und Captions für deine Events.<br>Vom Flyer-Design bis zur Caption, <span class="ac">alles in einem Tool.</span></p>
     <div class="feat-row">
-      <span class="feat">✓&nbsp;&nbsp;In 30 Sekunden erstellt</span>
-      <span class="feat">✓&nbsp;&nbsp;Keine Designkenntnisse nötig</span>
-      <span class="feat">✓&nbsp;&nbsp;Direkt für Instagram &amp; Social Media optimiert</span>
+      <span class="feat"><span class="fi">✓</span> In 30 Sekunden erstellt</span>
+      <span class="feat"><span class="fi">✓</span> Keine Designkenntnisse nötig</span>
+      <span class="feat"><span class="fi">✓</span> Direkt für Instagram &amp; Social Media optimiert</span>
     </div>
     <div class="cta">
       <a class="btn-primary" href="/login.html">Jetzt loslegen →</a>
       <button class="btn-ghost" type="button" id="demoOpen">▷ Demo ansehen</button>
     </div>
-  </div>
-  <div class="hero-phone">
-    <div class="iphone-frame" id="iphone" style="opacity:0">
-      <div class="iphone-screen">
-        <img class="iphone-flyer" id="iphoneFlyer" src="/gallery/gallery-1.jpeg" alt="">
-        <div class="iphone-statusbar">
-          <span class="sb-time">9:41</span>
-          <span class="sb-icons"><span class="sb-signal"></span><span class="sb-wifi"></span><span class="sb-batt"></span></span>
-        </div>
-        <div class="dynamic-island"></div>
-        <div class="iphone-indicator"></div>
+    <div class="proof">
+      <div class="avatars">
+        <div class="avatar" style="background:#e8506e">A</div>
+        <div class="avatar" style="background:#5b7cfa">M</div>
+        <div class="avatar" style="background:#f2a73b">K</div>
+        <div class="avatar" style="background:#33b07a">S</div>
+        <div class="avatar" style="background:#9b5de5">L</div>
       </div>
-      <div class="iphone-glare" id="iphoneGlare"></div>
+      <div class="proof-text"><span class="stars">★★★★★</span><br>Über 2.500+ Grafiken diesen Monat erstellt</div>
     </div>
   </div>
 </main>
@@ -689,145 +654,6 @@ img{display:block;max-width:100%}
   if (d2) d2.addEventListener('click', function(){
     var b = document.getElementById('demoOpen');
     if (b) b.click();
-  });
-})();
-</script>
-
-<script>
-/* Hero: Typewriter, CSS-iPhone-Flyer-Crossfade, Parallax — alles vanilla JS, keine Library. */
-(function(){
-  var GALLERY = [
-    '/gallery/gallery-1.jpeg','/gallery/gallery-2.jpeg','/gallery/gallery-3.jpeg',
-    '/gallery/gallery-4.jpeg','/gallery/gallery-5.jpeg','/gallery/gallery-6.jpeg',
-    '/gallery/gallery-7.jpeg'
-  ];
-  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  function clamp(v, lo, hi){ return v < lo ? lo : (v > hi ? hi : v); }
-
-  // Galerie vorladen (nahtlose Crossfades)
-  GALLERY.forEach(function(src){ var im = new Image(); im.src = src; });
-
-  // ── dezente Hintergrund-Collage (25 Kacheln) ──
-  var collage = document.getElementById('heroCollage');
-  if (collage) {
-    var ch = '';
-    for (var i = 0; i < 25; i++) ch += '<img src="' + GALLERY[i % GALLERY.length] + '" alt="" loading="lazy">';
-    collage.innerHTML = ch;
-  }
-
-  // ── Typewriter ──
-  var WORDS = ['COCKTAIL PARTY','TECHNO NIGHT','HALLOWEEN BASH','SUMMER PARTY','RNB CLASSICS','OPEN AIR EVENT','BIRTHDAY BASH'];
-  var twText = document.getElementById('twText');
-  var twCursor = document.getElementById('twCursor');
-  var wIdx = 0, cIdx = 0, deleting = false, twPaused = false, twTimer = null;
-
-  function twTick() {
-    if (twPaused) return;
-    twCursor.classList.remove('blink'); // während aktivem Tippen/Löschen ist der Cursor aus
-    var word = WORDS[wIdx];
-    if (!deleting) {
-      cIdx++; if (cIdx >= word.length) cIdx = word.length;
-      twText.textContent = word.slice(0, cIdx);
-      if (cIdx === word.length) {
-        twCursor.classList.add('blink');
-        twTimer = setTimeout(function(){ deleting = true; twTick(); }, 1400);
-        return;
-      }
-      twTimer = setTimeout(twTick, 75);
-    } else {
-      cIdx--; if (cIdx <= 0) cIdx = 0;
-      twText.textContent = word.slice(0, cIdx);
-      if (cIdx === 0) {
-        deleting = false;
-        wIdx = (wIdx + 1) % WORDS.length;
-        twCursor.classList.add('blink');
-        twTimer = setTimeout(twTick, 250);
-        return;
-      }
-      twTimer = setTimeout(twTick, 35);
-    }
-  }
-
-  if (twText && twCursor) {
-    if (reduceMotion) {
-      twText.textContent = WORDS[0];
-      twCursor.classList.add('blink');
-    } else {
-      twCursor.classList.add('blink');     // blinkt schon vor dem ersten Zeichen
-      setTimeout(twTick, 400);              // Start passend zum gestaffelten Eintritt
-    }
-  }
-
-  // ── iPhone: gestaffelter Eintritt + Parallax ──
-  var iphone = document.getElementById('iphone');
-  var glare = document.getElementById('iphoneGlare');
-  var heroScreen = document.getElementById('heroScreen');
-  var BASE = 'perspective(1000px) rotateY(-8deg) rotateX(3deg)';
-
-  function onMove(e) {
-    var r = heroScreen.getBoundingClientRect();
-    var dx = e.clientX - (r.left + r.width / 2);
-    var dy = e.clientY - (r.top + r.height / 2);
-    var ry = -8 + clamp(dx * 0.008, -6, 6);
-    var rx = 3 - clamp(dy * 0.005, -4, 4);
-    iphone.style.transform = 'perspective(1000px) rotateY(' + ry + 'deg) rotateX(' + rx + 'deg)';
-    if (glare) {
-      glare.style.transform = 'translate(' + (-dx * 0.02) + 'px,' + (-dy * 0.02) + 'px)';
-      var dist = Math.min(1, Math.sqrt(dx * dx + dy * dy) / (r.width / 2));
-      glare.style.opacity = (0.5 + dist * 0.5).toFixed(2);
-    }
-  }
-  function onLeave() {
-    iphone.style.transition = 'transform .6s ease-out';
-    iphone.style.transform = BASE;
-    if (glare) { glare.style.transform = 'translate(0,0)'; glare.style.opacity = '0.5'; }
-    setTimeout(function(){ iphone.style.transition = 'transform .1s ease-out'; }, 600);
-  }
-
-  if (iphone) {
-    if (glare) glare.style.opacity = '0.5';
-    if (reduceMotion) {
-      iphone.style.opacity = '1';
-      iphone.style.transform = BASE;
-    } else {
-      iphone.style.transform = BASE + ' translateX(30px)';
-      iphone.style.transition = 'opacity .7s ease-out, transform .7s ease-out';
-      setTimeout(function(){ iphone.style.opacity = '1'; iphone.style.transform = BASE; }, 100);
-      setTimeout(function(){
-        iphone.style.transition = 'transform .1s ease-out';
-        if (!('ontouchstart' in window) && heroScreen) {
-          heroScreen.addEventListener('mousemove', onMove);
-          heroScreen.addEventListener('mouseleave', onLeave);
-        }
-      }, 850);
-    }
-  }
-
-  // ── Flyer-Crossfade im iPhone-Screen ──
-  var flyer = document.getElementById('iphoneFlyer');
-  var fIdx = 0, fPaused = false;
-  function nextFlyer() {
-    if (fPaused || !flyer) return;
-    flyer.style.opacity = '0';
-    setTimeout(function(){
-      fIdx = (fIdx + 1) % GALLERY.length;
-      flyer.src = GALLERY[fIdx];
-      flyer.style.opacity = '1';
-    }, 400);
-  }
-  if (flyer && !reduceMotion) {
-    setTimeout(function(){ setInterval(nextFlyer, 4000); }, 1000);
-  }
-
-  // ── Tab-Wechsel: Typewriter + Flyer-Wechsel anhalten ──
-  document.addEventListener('visibilitychange', function(){
-    if (document.hidden) {
-      twPaused = true; fPaused = true;
-      if (twTimer) { clearTimeout(twTimer); twTimer = null; }
-    } else {
-      fPaused = false;
-      if (twPaused) { twPaused = false; if (twText && twCursor && !reduceMotion) twTick(); }
-    }
   });
 })();
 </script>
