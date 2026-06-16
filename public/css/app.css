@@ -260,12 +260,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .result-flyer.correct-mode .correct-bar{display:flex}
 .flyer-frame.correcting .done-badge{display:none}
 
-.correct-panel{display:none;width:100%;max-width:440px;flex-direction:column;gap:8px}
-.result-flyer.correct-mode .correct-panel{display:flex}
-/* Toolbar bleibt im Korrektur-Modus aktiv; die "Korrigieren"-Kachel zeigt
-   "Fertig" (siehe :has()-Regel oben). */
-.correct-apply{width:100%;height:38px}
-.correct-apply:disabled{opacity:.45;cursor:not-allowed}
+/* Deaktivierte Buttons (z.B. "Entfernen" während des LaMa-Calls) ausgrauen. */
+.rbtn:disabled{opacity:.45;cursor:not-allowed}
 .correct-hint{font-size:11.5px;line-height:1.35;color:rgba(245,245,240,.45);text-align:center;padding:0 4px}
 
 /* ── FORMATE (Multi-Format-Export, in der Sidebar) ── */
@@ -315,14 +311,17 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .tool-lbl{font-size:var(--font-size-xs);font-weight:var(--font-weight-medium);line-height:1.2;text-align:center}
 .tool:hover{border-color:var(--color-accent);color:var(--color-text)}
 .tool:hover .tool-ico{color:var(--color-accent)}
-.tool .lbl-active{display:none}
-
-/* Korrektur aktiv → Kachel hervorheben + "Fertig" zeigen */
-.stage:has(.result-flyer.correct-mode) #btnCorrect{border-color:var(--color-accent);color:var(--color-text)}
-.stage:has(.result-flyer.correct-mode) #btnCorrect .tool-ico,
-.stage:has(.result-flyer.correct-mode) #btnCorrect .lbl-active{color:var(--color-accent)}
-.stage:has(.result-flyer.correct-mode) #btnCorrect .lbl-default{display:none}
-.stage:has(.result-flyer.correct-mode) #btnCorrect .lbl-active{display:inline}
+/* Korrektur-Modus: Controls ersetzen in der Toolbar die normalen Gruppen/Tabs */
+#toolCorrect{display:none}
+.stage:has(.result-flyer.correct-mode) #toolCorrect{display:flex;flex-direction:column;gap:10px}
+.stage:has(.result-flyer.correct-mode) :is(.tool-hint,.tool-tabs,.tool-group,.tool-divider){display:none}
+.cc-label{font-size:var(--font-size-xs);font-weight:var(--font-weight-semibold);letter-spacing:var(--letter-spacing-wider);text-transform:uppercase;color:var(--color-text-dim);margin-bottom:-2px}
+.tool-correct .cbar-size{width:100%}
+.cc-row{display:flex;gap:8px}
+.cc-row .rbtn{flex:1;height:38px}
+.cc-cancel{background:var(--color-surface-2);border:1px solid var(--color-danger);color:var(--color-danger)}
+.cc-cancel:hover{background:rgba(255,90,90,.12)}
+.cc-hint{font-size:var(--font-size-xs);color:var(--color-text-dim);text-align:center;line-height:1.4}
 /* Vorher/Nachher-Kachel aktiv */
 .compare-tool.active{border-color:var(--color-accent);color:var(--color-accent)}
 .compare-tool.active .tool-ico{color:var(--color-accent)}
