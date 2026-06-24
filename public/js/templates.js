@@ -107,6 +107,56 @@ function filterPicker() {
   }
 }
 
+// ── Inline-Galerie (Empty State) ─────────────────────────────────
+// Füllt den leeren Bühnenbereich mit echten Template-Thumbnails. Ein Klick
+// nutzt dieselbe Auswahl-Logik wie der Modal-Picker (selectTemplate), wodurch
+// die scharfe Vorschau erscheint und das Sidebar-Template-Feld gesetzt wird.
+let galleryCategory = "Alle";
+
+export function renderGallery() {
+  const grid = $("tgGrid"), cats = $("tgCats"), count = $("tgCount");
+  if (!grid) return;
+  if (count) count.textContent = state.templates.length ? state.templates.length + " Vorlagen" : "";
+
+  if (cats) {
+    cats.innerHTML = "";
+    for (const c of ["Alle", ...state.categories]) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "tg-cat" + (c === galleryCategory ? " active" : "");
+      b.dataset.cat = c;
+      b.textContent = c;
+      cats.appendChild(b);
+    }
+  }
+
+  grid.innerHTML = "";
+  const frag = document.createDocumentFragment();
+  state.templates.forEach((t, i) => {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "tg-card";
+    card.dataset.file = t.file;
+    card.dataset.cat = t.category;
+    card.style.animationDelay = Math.min(i * 25, 450) + "ms"; // schneller Stagger
+    const img = document.createElement("img");
+    img.src = t.src;
+    img.alt = t.name || "";
+    img.loading = "lazy";
+    card.appendChild(img);
+    card.addEventListener("click", () => selectTemplate(t.file));
+    frag.appendChild(card);
+  });
+  grid.appendChild(frag);
+  filterGallery();
+}
+
+function filterGallery() {
+  for (const card of document.querySelectorAll(".tg-card")) {
+    card.style.display = (galleryCategory === "Alle" || card.dataset.cat === galleryCategory) ? "" : "none";
+  }
+}
+
 export function openPicker() {
   const modal = $("pickerModal");
   if (!modal) return;
@@ -132,8 +182,6 @@ export function initPicker() {
   if (bd) bd.addEventListener("click", closePicker);
   const sw = $("tplSwitch");
   if (sw) sw.addEventListener("click", openPicker);
-  const ph = $("tplPlaceholder");
-  if (ph) ph.addEventListener("click", openPicker);
 
   const search = $("pickerSearch");
   if (search) search.addEventListener("input", filterPicker);
@@ -146,6 +194,18 @@ export function initPicker() {
       activeCategory = b.dataset.cat;
       for (const p of cats.querySelectorAll(".pk-cat")) p.classList.toggle("active", p === b);
       filterPicker();
+    });
+  }
+
+  // Filter-Pills der Inline-Galerie (Empty State)
+  const tgCats = $("tgCats");
+  if (tgCats) {
+    tgCats.addEventListener("click", (e) => {
+      const b = e.target.closest(".tg-cat");
+      if (!b) return;
+      galleryCategory = b.dataset.cat;
+      for (const p of tgCats.querySelectorAll(".tg-cat")) p.classList.toggle("active", p === b);
+      filterGallery();
     });
   }
 

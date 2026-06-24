@@ -130,7 +130,7 @@
         </div>
         <div class="field">
           <label>Vibe / Beschreibung <button type="button" class="hint" aria-label="Info" data-tip="Je konkreter, desto besser die Caption. Nenne Specials wie freien Eintritt, Open Air, Musikrichtung oder Aktionen. Allgemeine Floskeln bringen wenig.">i</button></label>
-          <textarea id="fVibe" class="vibe-input" rows="3" placeholder="z. B. Open Air, House und Deep House, freier Eintritt bis 23 Uhr, ein Shot aufs Haus"></textarea>
+          <textarea id="fVibe" class="vibe-input" rows="2" placeholder="z. B. Open Air, House, freier Eintritt bis 23 Uhr, ein Shot aufs Haus"></textarea>
         </div>
         <div class="field">
           <label>Logo <button type="button" class="hint" aria-label="Info" data-tip="Am besten ein PNG mit transparentem Hintergrund. Nach dem Upload kannst du das Logo direkt auf der Grafik positionieren.">i</button></label>
@@ -155,29 +155,22 @@
    <!-- ════ HAUPTBÜHNE ════ -->
    <div class="stage-main">
 
-    <!-- STATE A: sharp template preview -->
+    <!-- STATE A: Template-Galerie (leerer Zustand) + scharfe Vorschau nach Auswahl -->
     <div id="statePreview" class="stage-empty">
+
+      <!-- Inline-Galerie: füllt den Bereich, solange kein Template gewählt ist -->
+      <div class="tpl-gallery" id="tplGallery">
+        <div class="tg-head">
+          <h2 class="tg-title">Wähle ein Template</h2>
+          <span class="tg-count" id="tgCount"></span>
+        </div>
+        <div class="tg-cats" id="tgCats"></div>
+        <div class="tg-grid" id="tgGrid"></div>
+        <div class="tg-foot">Tipp: Headline kurz halten · Logo als PNG mit transparentem Hintergrund · konkrete Specials im Vibe-Feld nennen</div>
+      </div>
+
+      <!-- Scharfe Vorschau (zentriert): erscheint nach der Auswahl / beim Logo-Platzieren -->
       <div class="preview-col" id="previewCol">
-        <!-- Premium-Platzhalter: öffnet die Template-Galerie. Die scharfe
-             Template-Vorschau erscheint erst, wenn ein Logo platziert wird. -->
-        <button class="tpl-placeholder" id="tplPlaceholder" type="button">
-          <span class="tplph-glow"></span>
-          <span class="tplph-inner">
-            <span class="tplph-icon">
-              <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="8" height="8" rx="2.2" fill="currentColor"/><rect x="13" y="3" width="8" height="8" rx="2.2" fill="currentColor" opacity=".55"/><rect x="3" y="13" width="8" height="8" rx="2.2" fill="currentColor" opacity=".55"/><rect x="13" y="13" width="8" height="8" rx="2.2" fill="currentColor" opacity=".3"/></svg>
-            </span>
-            <span class="tplph-title">Deine Grafik beginnt hier</span>
-            <span class="tplph-sub">Wähle ein Template als Ausgangspunkt, fülle links die Event-Daten aus und generiere deine Grafik.</span>
-            <span class="tplph-cta">Template wählen →</span>
-            <span class="tplph-count" id="tplphCount"></span>
-            <span class="tplph-tips">
-              <span class="tplph-tip">Headline kurz halten — wenige starke Worte</span>
-              <span class="tplph-tip">Logo als PNG mit transparentem Hintergrund</span>
-              <span class="tplph-tip">Im Vibe-Feld konkrete Specials nennen</span>
-              <span class="tplph-tip">„DJ" nur davor, wenn es auf der Grafik steht</span>
-            </span>
-          </span>
-        </button>
         <div class="preview-stage" id="previewStage">
           <img id="previewImg" class="preview-img" alt="Template-Vorschau">
           <div class="logo-overlay" id="logoOverlay">

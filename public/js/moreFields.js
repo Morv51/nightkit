@@ -46,8 +46,10 @@ export function initMoreFields() {
     });
   }
 
-  // Startzustand: gespeicherte Wahl, aber immer offen, wenn schon etwas drinsteht.
-  let open = sessionStorage.getItem(KEY) === "1";
+  // Startzustand: standardmäßig AUFGEKLAPPT; eine gespeicherte Wahl hat Vorrang,
+  // und sobald ein optionales Feld befüllt ist, bleibt der Bereich offen.
+  const stored = sessionStorage.getItem(KEY);
+  let open = stored === null ? true : stored === "1";
   if (hasOptionalValue()) open = true;
   setOpen(open, false);
 

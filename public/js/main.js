@@ -1,5 +1,5 @@
 import { initDom, els, on } from "./dom.js";
-import { loadTemplates, renderPicker, applyCurrentTemplate, initPicker, maybeAutoOpenPicker } from "./templates.js";
+import { loadTemplates, renderPicker, renderGallery, applyCurrentTemplate, initPicker } from "./templates.js";
 import { generate } from "./generator.js";
 import { download, copyImage } from "./download.js";
 import { renderStyleButtons, previewVideo, exportVideo, exitStageVideo } from "./video.js";
@@ -60,8 +60,8 @@ async function init() {
     console.error("Templates konnten nicht geladen werden:", e);
   }
   renderPicker();
+  renderGallery();
   applyCurrentTemplate();
-  maybeAutoOpenPicker();
 }
 
 if (document.readyState === "loading") {
