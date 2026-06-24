@@ -164,20 +164,22 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .tg-cat.active{background:var(--color-accent);border-color:var(--color-accent);color:var(--color-accent-ink);font-weight:var(--font-weight-semibold)}
 
 /* Raster: 6 Spalten (breit), gap space-4, kleinere Kacheln; lazy befüllt */
-.tg-grid{flex:1;min-height:0;overflow-y:auto;display:grid;grid-template-columns:repeat(6,1fr);gap:var(--space-4);align-content:start;padding-right:4px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.06) transparent}
+/* Gleichmäßiges Raster: so viele 9:16-Spalten wie passen (ca. 6–7 auf breit) */
+.tg-grid{flex:1;min-height:0;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));grid-auto-rows:max-content;gap:var(--space-4);align-content:start;padding-right:4px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.06) transparent}
 .tg-grid::-webkit-scrollbar{width:5px}
 .tg-grid::-webkit-scrollbar-thumb{background:rgba(255,255,255,.06);border-radius:3px}
-.tg-card{position:relative;aspect-ratio:9/16;border:1px solid var(--color-border);border-radius:var(--radius-md);overflow:hidden;background:var(--color-surface-2);padding:0;cursor:pointer;opacity:0;transform:translateY(10px);animation:galCardIn .4s ease forwards;transition:border-color .2s,transform .2s,box-shadow .2s}
-.tg-card img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .3s ease}
+/* Jede Kachel = EXAKT ein Template in fester 9:16-Box. Die Höhe entsteht aus
+   einem In-Flow-Spacer (::before, padding-bottom 16/9) — das bemisst die
+   Grid-Zeile korrekt und ist unabhängig vom Bild/Ladezustand (kein Kollabieren/
+   Stapeln). Das Bild liegt ABSOLUT in der Box und wird sauber auf 9:16 beschnitten. */
+.tg-card{position:relative;border:1px solid var(--color-border);border-radius:var(--radius-md);overflow:hidden;background:var(--color-surface-2);cursor:pointer;opacity:0;animation:galCardIn .4s ease forwards;transition:border-color .2s,transform .2s,box-shadow .2s}
+.tg-card::before{content:'';display:block;width:100%;aspect-ratio:9/16}
+.tg-card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;opacity:0;transition:opacity .3s ease}
 .tg-card.loaded img{opacity:1}
 /* Skeleton-Shimmer pro Kachel, bis das Bild geladen ist */
 .tg-card:not(.loaded)::after{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent 20%,rgba(255,255,255,.05) 50%,transparent 80%);transform:translateX(-100%);animation:shimmer 1.4s ease-in-out infinite;pointer-events:none}
 .tg-card:hover{border-color:var(--color-accent);transform:scale(1.03);box-shadow:0 0 0 1px rgba(204,255,0,.4),0 10px 28px rgba(204,255,0,.16);z-index:1}
-@keyframes galCardIn{to{opacity:1;transform:none}}
-@media(max-width:1200px){.tg-grid{grid-template-columns:repeat(5,1fr)}}
-@media(max-width:1000px){.tg-grid{grid-template-columns:repeat(4,1fr)}}
-@media(max-width:680px){.tg-grid{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:460px){.tg-grid{grid-template-columns:repeat(2,1fr)}}
+@keyframes galCardIn{from{opacity:0}to{opacity:1}}
 
 /* Leerer Suchtreffer */
 .tg-empty{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--color-text-muted);font-size:var(--font-size-sm);padding:var(--space-6)}
