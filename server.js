@@ -362,6 +362,7 @@ router.get("/api/templates", (_req, res) => {
     file: t.file,
     name: t.name,
     category: t.category,
+    featured: t.featured,
     src: `/templates/${t.file}`,
   }));
   sendJson(res, 200, { templates: list, categories: templates.categories() });

@@ -158,14 +158,20 @@
     <!-- STATE A: Template-Galerie (leerer Zustand) + scharfe Vorschau nach Auswahl -->
     <div id="statePreview" class="stage-empty">
 
-      <!-- Inline-Galerie: füllt den Bereich, solange kein Template gewählt ist -->
+      <!-- Inline-Galerie: füllt den Bereich, solange kein Template gewählt ist.
+           Skalierbar: kuratierte "Beliebt"-Auswahl + Kategorien + Suche + Lazy-Load. -->
       <div class="tpl-gallery" id="tplGallery">
         <div class="tg-head">
           <h2 class="tg-title">Wähle ein Template</h2>
           <span class="tg-count" id="tgCount"></span>
         </div>
+        <div class="tg-search">
+          <svg class="tg-search-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="search" id="tgSearch" placeholder="Template suchen, z. B. Techno, VIP, Halloween" autocomplete="off">
+        </div>
         <div class="tg-cats" id="tgCats"></div>
         <div class="tg-grid" id="tgGrid"></div>
+        <div class="tg-empty" id="tgEmpty" hidden>Keine Templates gefunden – passe deine Suche an.</div>
         <div class="tg-foot">Tipp: Headline kurz halten · Logo als PNG mit transparentem Hintergrund · konkrete Specials im Vibe-Feld nennen</div>
       </div>
 

@@ -108,19 +108,101 @@ function filterPicker() {
 }
 
 // ── Inline-Galerie (Empty State) ─────────────────────────────────
-// Füllt den leeren Bühnenbereich mit echten Template-Thumbnails. Ein Klick
-// nutzt dieselbe Auswahl-Logik wie der Modal-Picker (selectTemplate), wodurch
-// die scharfe Vorschau erscheint und das Sidebar-Template-Feld gesetzt wird.
-let galleryCategory = "Alle";
+// Skalierbar bei großen Bibliotheken: kuratierte "Beliebt"-Startauswahl,
+// Kategorie-Filter, Live-Suche und Lazy-Loading (Batches + IntersectionObserver).
+// Ein Klick nutzt dieselbe Auswahl-Logik wie der Modal-Picker (selectTemplate).
+const GALLERY_BATCH = 18;       // Templates pro Lade-Schritt
+const FEATURED_FALLBACK = 12;   // erste N, falls kein Template "featured" gesetzt ist
+let galleryCategory = "Beliebt";
+let gallerySearch = "";
+let galleryList = [];           // aktuell gefilterte Liste
+let galleryShown = 0;           // bereits gerenderte Anzahl
+let galleryObserver = null;
+
+function galleryFeatured() {
+  const feat = state.templates.filter((t) => t.featured);
+  return feat.length ? feat : state.templates.slice(0, FEATURED_FALLBACK);
+}
+
+// Aktuelle Trefferliste: Suche hat Vorrang (Name + Kategorie), sonst der
+// gewählte Filter ("Beliebt" = kuratiert, "Alle" = komplett, sonst Kategorie).
+function galleryFiltered() {
+  const q = gallerySearch.trim().toLowerCase();
+  if (q) {
+    return state.templates.filter((t) =>
+      (t.name || "").toLowerCase().includes(q) || (t.category || "").toLowerCase().includes(q));
+  }
+  if (galleryCategory === "Beliebt") return galleryFeatured();
+  if (galleryCategory === "Alle") return state.templates;
+  return state.templates.filter((t) => t.category === galleryCategory);
+}
+
+function galleryCard(t, i) {
+  const card = document.createElement("button");
+  card.type = "button";
+  card.className = "tg-card";
+  card.dataset.file = t.file;
+  card.style.animationDelay = Math.min(i * 18, 280) + "ms"; // schneller Stagger
+  const img = document.createElement("img");
+  img.alt = t.name || "";
+  img.loading = "lazy"; // wichtig bei großen Bibliotheken — nur Sichtbares laden
+  const done = () => card.classList.add("loaded"); // entfernt das Skeleton-Shimmer
+  img.addEventListener("load", done, { once: true });
+  img.addEventListener("error", done, { once: true });
+  img.src = t.src;
+  if (img.complete && img.naturalWidth) done();
+  card.appendChild(img);
+  card.addEventListener("click", () => selectTemplate(t.file));
+  return card;
+}
+
+function galleryRenderNext() {
+  const grid = $("tgGrid");
+  if (!grid) return;
+  const slice = galleryList.slice(galleryShown, galleryShown + GALLERY_BATCH);
+  const frag = document.createDocumentFragment();
+  slice.forEach((t, i) => frag.appendChild(galleryCard(t, galleryShown + i)));
+  grid.appendChild(frag);
+  galleryShown += slice.length;
+  galleryObserve();
+}
+
+// IntersectionObserver am letzten gerenderten Element: lädt beim Heranscrollen
+// die nächste Charge nach. Wird bei jedem Filter-/Suchwechsel zurückgesetzt.
+function galleryObserve() {
+  if (galleryObserver) { galleryObserver.disconnect(); galleryObserver = null; }
+  if (galleryShown >= galleryList.length) return; // alles gerendert
+  const grid = $("tgGrid");
+  const last = grid && grid.lastElementChild;
+  if (!last || typeof IntersectionObserver === "undefined") return;
+  galleryObserver = new IntersectionObserver((entries) => {
+    if (entries.some((e) => e.isIntersecting)) {
+      galleryObserver.disconnect(); galleryObserver = null;
+      galleryRenderNext();
+    }
+  }, { root: grid, rootMargin: "300px" });
+  galleryObserver.observe(last);
+}
+
+// Filter/Suche anwenden: Liste neu bestimmen, Lazy-Counter zurück, erste Charge.
+function galleryApply() {
+  galleryList = galleryFiltered();
+  galleryShown = 0;
+  if (galleryObserver) { galleryObserver.disconnect(); galleryObserver = null; }
+  const grid = $("tgGrid"), empty = $("tgEmpty");
+  if (grid) { grid.scrollTop = 0; grid.innerHTML = ""; grid.style.display = galleryList.length ? "" : "none"; }
+  if (empty) empty.hidden = galleryList.length > 0;
+  galleryRenderNext();
+}
 
 export function renderGallery() {
-  const grid = $("tgGrid"), cats = $("tgCats"), count = $("tgCount");
-  if (!grid) return;
+  if (!$("tgGrid")) return;
+  const count = $("tgCount");
   if (count) count.textContent = state.templates.length ? state.templates.length + " Vorlagen" : "";
-
+  const cats = $("tgCats");
   if (cats) {
     cats.innerHTML = "";
-    for (const c of ["Alle", ...state.categories]) {
+    for (const c of ["Beliebt", "Alle", ...state.categories]) {
       const b = document.createElement("button");
       b.type = "button";
       b.className = "tg-cat" + (c === galleryCategory ? " active" : "");
@@ -129,31 +211,32 @@ export function renderGallery() {
       cats.appendChild(b);
     }
   }
-
-  grid.innerHTML = "";
-  const frag = document.createDocumentFragment();
-  state.templates.forEach((t, i) => {
-    const card = document.createElement("button");
-    card.type = "button";
-    card.className = "tg-card";
-    card.dataset.file = t.file;
-    card.dataset.cat = t.category;
-    card.style.animationDelay = Math.min(i * 25, 450) + "ms"; // schneller Stagger
-    const img = document.createElement("img");
-    img.src = t.src;
-    img.alt = t.name || "";
-    img.loading = "lazy";
-    card.appendChild(img);
-    card.addEventListener("click", () => selectTemplate(t.file));
-    frag.appendChild(card);
-  });
-  grid.appendChild(frag);
-  filterGallery();
+  galleryApply();
 }
 
-function filterGallery() {
-  for (const card of document.querySelectorAll(".tg-card")) {
-    card.style.display = (galleryCategory === "Alle" || card.dataset.cat === galleryCategory) ? "" : "none";
+// Suche + Filter-Pills verdrahten (aus initPicker aufgerufen).
+export function bindGalleryControls() {
+  const search = $("tgSearch");
+  if (search) search.addEventListener("input", () => { gallerySearch = search.value; galleryApply(); });
+  // Lazy-Load-Fallback: zusätzlich zum IntersectionObserver auch auf Scroll
+  // nahe dem Ende nachladen (robust, falls IO mal nicht greift).
+  const grid = $("tgGrid");
+  if (grid) grid.addEventListener("scroll", () => {
+    if (galleryShown < galleryList.length && grid.scrollTop + grid.clientHeight >= grid.scrollHeight - 400) {
+      galleryRenderNext();
+    }
+  });
+  const cats = $("tgCats");
+  if (cats) {
+    cats.addEventListener("click", (e) => {
+      const b = e.target.closest(".tg-cat");
+      if (!b) return;
+      galleryCategory = b.dataset.cat;
+      gallerySearch = "";
+      const s = $("tgSearch"); if (s) s.value = ""; // Kategorie-Klick setzt die Suche zurück
+      for (const p of cats.querySelectorAll(".tg-cat")) p.classList.toggle("active", p === b);
+      galleryApply();
+    });
   }
 }
 
@@ -197,17 +280,8 @@ export function initPicker() {
     });
   }
 
-  // Filter-Pills der Inline-Galerie (Empty State)
-  const tgCats = $("tgCats");
-  if (tgCats) {
-    tgCats.addEventListener("click", (e) => {
-      const b = e.target.closest(".tg-cat");
-      if (!b) return;
-      galleryCategory = b.dataset.cat;
-      for (const p of tgCats.querySelectorAll(".tg-cat")) p.classList.toggle("active", p === b);
-      filterGallery();
-    });
-  }
+  // Suche + Filter-Pills der Inline-Galerie (Empty State)
+  bindGalleryControls();
 
   document.addEventListener("keydown", (e) => {
     const modal = $("pickerModal");

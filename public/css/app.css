@@ -142,23 +142,47 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
    Auswahl erscheint die zentrierte scharfe Vorschau (Logo-Platzierung). */
 .stage-empty{min-height:0;flex:1;align-self:stretch;width:100%;display:flex;flex-direction:column;padding:0}
 
-/* Template-Galerie: Header + (optionale) Filter-Pills + scrollbares Raster */
+/* Template-Galerie: Header + Suche + Filter-Pills + scrollbares, lazy Raster */
 .tpl-gallery{flex:1;min-height:0;width:100%;display:flex;flex-direction:column;gap:var(--space-3)}
 .tg-head{display:flex;align-items:baseline;justify-content:space-between;gap:var(--space-3);flex-shrink:0}
-.tg-title{font-family:var(--font-display);font-size:var(--font-size-xl);font-weight:var(--font-weight-bold);letter-spacing:var(--letter-spacing-tight);color:var(--color-text)}
+.tg-title{font-family:var(--font-display);font-size:var(--font-size-lg);font-weight:var(--font-weight-bold);letter-spacing:var(--letter-spacing-tight);color:var(--color-text)}
 .tg-count{font-size:var(--font-size-xs);color:var(--color-text-dim);white-space:nowrap}
-.tg-cats{display:flex;gap:var(--space-2);overflow-x:auto;flex-shrink:0;padding-bottom:2px;scrollbar-width:none}
+
+/* Suchleiste (volle Breite, Lupen-Icon links, Fokus-Glow wie die Inputs) */
+.tg-search{position:relative;flex-shrink:0}
+.tg-search-ic{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--color-text-dim);pointer-events:none}
+.tg-search input{width:100%;height:38px;padding:0 12px 0 36px;background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius-sm);color:var(--color-text);font-family:inherit;font-size:var(--font-size-sm);outline:none;transition:border-color .15s,box-shadow .15s}
+.tg-search input:focus{border-color:var(--color-accent);box-shadow:0 0 0 3px rgba(204,255,0,.12)}
+.tg-search input::placeholder{color:var(--color-text-dim)}
+.tg-search input::-webkit-search-cancel-button{filter:invert(.55)}
+
+/* Filter-Pills: horizontal scrollbar, dezenter Rand-Fade als Scroll-Hinweis */
+.tg-cats{display:flex;gap:var(--space-2);overflow-x:auto;flex-shrink:0;padding-bottom:2px;scrollbar-width:none;-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 22px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 22px),transparent)}
 .tg-cats::-webkit-scrollbar{display:none}
 .tg-cat{flex:0 0 auto;background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius-pill);color:var(--color-text-muted);font-family:inherit;font-size:var(--font-size-xs);font-weight:var(--font-weight-medium);padding:var(--space-1) var(--space-3);cursor:pointer;white-space:nowrap;transition:border-color .15s,color .15s,background .15s}
 .tg-cat:hover{border-color:var(--color-border-strong);color:var(--color-text)}
 .tg-cat.active{background:var(--color-accent);border-color:var(--color-accent);color:var(--color-accent-ink);font-weight:var(--font-weight-semibold)}
-.tg-grid{flex:1;min-height:0;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--space-3);align-content:start;padding-right:4px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.06) transparent}
+
+/* Raster: 6 Spalten (breit), gap space-4, kleinere Kacheln; lazy befüllt */
+.tg-grid{flex:1;min-height:0;overflow-y:auto;display:grid;grid-template-columns:repeat(6,1fr);gap:var(--space-4);align-content:start;padding-right:4px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.06) transparent}
 .tg-grid::-webkit-scrollbar{width:5px}
 .tg-grid::-webkit-scrollbar-thumb{background:rgba(255,255,255,.06);border-radius:3px}
 .tg-card{position:relative;aspect-ratio:9/16;border:1px solid var(--color-border);border-radius:var(--radius-md);overflow:hidden;background:var(--color-surface-2);padding:0;cursor:pointer;opacity:0;transform:translateY(10px);animation:galCardIn .4s ease forwards;transition:border-color .2s,transform .2s,box-shadow .2s}
-.tg-card img{width:100%;height:100%;object-fit:cover;display:block}
+.tg-card img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .3s ease}
+.tg-card.loaded img{opacity:1}
+/* Skeleton-Shimmer pro Kachel, bis das Bild geladen ist */
+.tg-card:not(.loaded)::after{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent 20%,rgba(255,255,255,.05) 50%,transparent 80%);transform:translateX(-100%);animation:shimmer 1.4s ease-in-out infinite;pointer-events:none}
 .tg-card:hover{border-color:var(--color-accent);transform:scale(1.03);box-shadow:0 0 0 1px rgba(204,255,0,.4),0 10px 28px rgba(204,255,0,.16);z-index:1}
 @keyframes galCardIn{to{opacity:1;transform:none}}
+@media(max-width:1200px){.tg-grid{grid-template-columns:repeat(5,1fr)}}
+@media(max-width:1000px){.tg-grid{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:680px){.tg-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:460px){.tg-grid{grid-template-columns:repeat(2,1fr)}}
+
+/* Leerer Suchtreffer */
+.tg-empty{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--color-text-muted);font-size:var(--font-size-sm);padding:var(--space-6)}
+.tg-empty[hidden]{display:none}
+
 .tg-foot{flex-shrink:0;font-size:var(--font-size-xs);color:var(--color-text-dim);text-align:center;line-height:var(--line-height-snug)}
 
 /* Scharfe Vorschau (zentriert) — nur nach Auswahl / beim Logo-Platzieren */
