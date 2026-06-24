@@ -383,8 +383,16 @@ router.post("/api/convert", async (req, res) => {
   }
 });
 
+// HEADLINE + WEBSITE are the always-caps slots. Force them to uppercase for
+// block templates (default), but leave the user's casing for script templates
+// (manifest "uppercase": false) so Ideogram applies the cursive/decorative font.
+const upcase = (s) => (typeof s === "string" ? s.toUpperCase() : s);
+
 async function runIdeogramJob(jobId, ev, file) {
-  const prompt = buildPrompt(ev);
+  const evForPrompt = templates.uppercaseFor(file)
+    ? { ...ev, name: upcase(ev.name), contact: upcase(ev.contact) }
+    : ev;
+  const prompt = buildPrompt(evForPrompt);
   console.log(`Job ${jobId} template=${file} prompt:\n${prompt}`);
 
   let imgBuffer;

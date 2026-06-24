@@ -39,8 +39,8 @@
   { "file": "audio-interface-1.jpeg", "name": "Audio Interface 1", "category": "Audio Interface" },
   { "file": "audio-interface-2.jpeg", "name": "Audio Interface 2", "category": "Audio Interface" },
   { "file": "audio-interface-3.jpeg", "name": "Audio Interface 3", "category": "Audio Interface" },
-  { "file": "oldmoney-1.jpeg", "name": "Old Money 1", "category": "Old Money" },
-  { "file": "oldmoney-2.jpeg", "name": "Old Money 2", "category": "Old Money" },
-  { "file": "oldmoney-3.jpeg", "name": "Old Money 3", "category": "Old Money" },
-  { "file": "oldmoney-4.jpeg", "name": "Old Money 4", "category": "Old Money" }
+  { "file": "oldmoney-1.jpeg", "name": "Old Money 1", "category": "Old Money", "uppercase": false },
+  { "file": "oldmoney-2.jpeg", "name": "Old Money 2", "category": "Old Money", "uppercase": false },
+  { "file": "oldmoney-3.jpeg", "name": "Old Money 3", "category": "Old Money", "uppercase": false },
+  { "file": "oldmoney-4.jpeg", "name": "Old Money 4", "category": "Old Money", "uppercase": false }
 ]
