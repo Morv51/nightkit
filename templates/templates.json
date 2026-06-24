@@ -42,5 +42,20 @@
   { "file": "oldmoney-1.jpeg", "name": "Old Money 1", "category": "Old Money", "uppercase": false, "featured": true },
   { "file": "oldmoney-2.jpeg", "name": "Old Money 2", "category": "Old Money", "uppercase": false },
   { "file": "oldmoney-3.jpeg", "name": "Old Money 3", "category": "Old Money", "uppercase": false },
-  { "file": "oldmoney-4.jpeg", "name": "Old Money 4", "category": "Old Money", "uppercase": false }
+  { "file": "oldmoney-4.jpeg", "name": "Old Money 4", "category": "Old Money", "uppercase": false },
+  { "file": "flower-style-red.jpeg", "name": "Flower Style Rot", "category": "Flower Style" },
+  { "file": "flower-style-grass.jpeg", "name": "Flower Style Gras", "category": "Flower Style" },
+  { "file": "flower-style-ivy.jpeg", "name": "Flower Style Efeu", "category": "Flower Style" },
+  { "file": "rnb-gold.jpeg", "name": "RnB Gold", "category": "R&B" },
+  { "file": "rnb-mono.jpeg", "name": "RnB Mono", "category": "R&B" },
+  { "file": "rnb-pink.jpeg", "name": "RnB Pink", "category": "R&B" },
+  { "file": "rnb-red.jpeg", "name": "RnB Rot", "category": "R&B" },
+  { "file": "rnb-fur.jpeg", "name": "RnB Fur", "category": "R&B" },
+  { "file": "rnb-duo.jpeg", "name": "RnB Duo", "category": "R&B" },
+  { "file": "grunge-smiley-lime.jpeg", "name": "Grunge Smiley Lime", "category": "Grunge" },
+  { "file": "grunge-smiley-orange.jpeg", "name": "Grunge Smiley Orange", "category": "Grunge" },
+  { "file": "grunge-smiley-pixel.jpeg", "name": "Grunge Smiley Pixel", "category": "Grunge" },
+  { "file": "grunge-foil.jpeg", "name": "Grunge Foil", "category": "Grunge" },
+  { "file": "grunge-tape.jpeg", "name": "Grunge Tape", "category": "Grunge" },
+  { "file": "grunge-raw.jpeg", "name": "Grunge Raw", "category": "Grunge" }
 ]
