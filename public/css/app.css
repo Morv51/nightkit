@@ -91,6 +91,14 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .row{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .row .field{margin-bottom:0}
 
+/* Einklappbarer Optional-Bereich ("Weitere Details") — klickbare Trennzeile */
+.more-toggle{display:flex;align-items:center;gap:var(--space-2);width:100%;margin-top:var(--space-3);padding:var(--space-3) 0 var(--space-2);background:none;border:none;border-top:0.5px solid rgba(255,255,255,.07);color:var(--color-text-muted);font-family:inherit;font-size:var(--font-size-sm);font-weight:var(--font-weight-semibold);letter-spacing:var(--letter-spacing-wider);text-transform:uppercase;cursor:pointer;transition:color .15s}
+.more-toggle:hover{color:var(--color-text)}
+.more-toggle-ic{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;font-size:15px;line-height:1;color:var(--color-text-dim);transition:transform .3s ease,color .15s}
+.more-toggle[aria-expanded="true"] .more-toggle-ic{transform:rotate(45deg);color:var(--color-accent)}
+.more-fields{max-height:0;overflow:hidden;transition:max-height .3s ease}
+.more-fields .field:first-child{margin-top:var(--space-1)}
+
 .vibe-input{width:100%;padding:8px 10px;background:rgba(255,255,255,.05);border:0.5px solid rgba(255,255,255,.1);border-radius:8px;color:var(--text);font-size:var(--font-size-base);font-family:inherit;line-height:1.45;resize:none;outline:none;transition:border-color .15s}
 .vibe-input:focus{border-color:rgba(204,255,0,.45)}
 .vibe-input::placeholder{color:rgba(245,245,240,.2)}
@@ -118,9 +126,17 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 /* Zwei-Spalten-Bühne: Hauptbühne (links) + Aktions-Sidebar (rechts) */
 .stage{background:var(--bg);height:100%;display:grid;grid-template-columns:minmax(0,1fr) 280px;overflow:hidden}
 .stage-main{position:relative;min-height:0;overflow-y:auto;padding:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.06) transparent}
-.stage-side{min-height:0;height:100%;overflow-y:auto;display:flex;flex-direction:column;background:var(--color-surface);border-left:1px solid var(--color-border);padding:24px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.06) transparent}
+.stage-side{min-height:0;height:100%;max-height:100%;overflow-y:auto;display:flex;flex-direction:column;background:var(--color-surface);border-left:1px solid var(--color-border);padding:var(--space-4);scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.06) transparent}
 .stage::-webkit-scrollbar{width:5px}
 .stage::-webkit-scrollbar-thumb{background:rgba(255,255,255,.06);border-radius:3px}
+
+/* Zustandsabhängiges Layout: im Empty-/Loading-State (Toolbar = .locked) wird
+   die Toolbar ausgeblendet und die Bühne nutzt die volle Breite. Im
+   generierten Zustand erscheint die Toolbar mit sanftem Fade-in. */
+.stage:has(.stage-side.locked){grid-template-columns:minmax(0,1fr)}
+.stage-side.locked{display:none}
+@keyframes toolbarIn{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:none}}
+.stage-side:not(.locked){animation:toolbarIn .4s ease both}
 
 /* STATE A — sharp, undimmed template preview */
 .stage-empty{min-height:100%;display:flex;align-items:center;justify-content:center;padding:6px 0}
@@ -299,15 +315,15 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .stage-side.locked .tool-hint{display:block}
 .tool-tabs{display:none} /* nur < 1024px sichtbar (Responsive-Block) */
 
-.tool-group-head{font-size:var(--font-size-xs);font-weight:var(--font-weight-semibold);letter-spacing:var(--letter-spacing-wider);text-transform:uppercase;color:var(--color-text-dim);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--color-border)}
-.tool-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.tool-divider{border-top:1px solid var(--color-border);margin:20px 0}
-.tool-divider.thin{margin:14px 0}
+.tool-group-head{font-size:var(--font-size-xs);font-weight:var(--font-weight-semibold);letter-spacing:var(--letter-spacing-wider);text-transform:uppercase;color:var(--color-text-dim);margin-bottom:var(--space-2);padding-bottom:var(--space-1);border-bottom:1px solid var(--color-border)}
+.tool-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2)}
+.tool-divider{border-top:1px solid var(--color-border);margin:var(--space-3) 0}
+.tool-divider.thin{margin:var(--space-2) 0}
 
 /* Tool-Kachel: Icon oben (24px), Label darunter */
-.tool{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:12px 8px;background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius-md);cursor:pointer;color:var(--color-text-muted);font-family:inherit;transition:border-color .15s,color .15s}
-.tool-ico{display:flex;align-items:center;justify-content:center;width:24px;height:24px;color:currentColor;transition:color .15s}
-.tool-ico svg{width:24px;height:24px;display:block}
+.tool{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--space-1);padding:var(--space-2);background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius-md);cursor:pointer;color:var(--color-text-muted);font-family:inherit;transition:border-color .15s,color .15s}
+.tool-ico{display:flex;align-items:center;justify-content:center;width:20px;height:20px;color:currentColor;transition:color .15s}
+.tool-ico svg{width:20px;height:20px;display:block}
 .tool-lbl{font-size:var(--font-size-xs);font-weight:var(--font-weight-medium);line-height:1.2;text-align:center}
 .tool:hover{border-color:var(--color-accent);color:var(--color-text)}
 .tool:hover .tool-ico{color:var(--color-accent)}
@@ -327,10 +343,10 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .compare-tool.active .tool-ico{color:var(--color-accent)}
 
 /* Sub-Überschriften (Formate / Video / Caption) */
-.sub-head{font-size:var(--font-size-xs);color:var(--color-text-dim);letter-spacing:var(--letter-spacing-wide);text-transform:uppercase;margin-bottom:8px}
-.vid-actions{display:flex;gap:8px}
+.sub-head{font-size:var(--font-size-xs);color:var(--color-text-dim);letter-spacing:var(--letter-spacing-wide);text-transform:uppercase;margin-bottom:var(--space-2)}
+.vid-actions{display:flex;gap:var(--space-2)}
 .vid-actions .rbtn{flex:1}
-.video-status{font-size:var(--font-size-xs);color:var(--color-text-muted);margin-top:8px}
+.video-status{font-size:var(--font-size-xs);color:var(--color-text-muted);margin-top:var(--space-2)}
 
 /* Empty-State: alle Tools gesperrt (ausgegraut, nicht klickbar) */
 .stage-side.locked :is(.tool,.formats-row,.style-row,.vid-actions,.caption-styles,.cap-gen,.caption-box){opacity:.3;pointer-events:none;cursor:not-allowed}
@@ -344,11 +360,15 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .card-help{font-size:13px;color:var(--muted);line-height:1.45;margin-bottom:16px}
 
 /* pill chips (video + caption style selectors) */
-.style-row,.caption-styles{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.style-row,.caption-styles{display:flex;flex-wrap:wrap;gap:var(--space-2);margin-bottom:var(--space-3)}
+/* Video-Effekte: einzeilige, horizontal scrollbare Pill-Reihe statt Umbruch */
+.style-row{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.style-row::-webkit-scrollbar{display:none}
+.style-row .pill{flex:0 0 auto}
 .pill{
   background:#1a1a1a;border:1px solid #333;border-radius:100px;
-  color:rgba(245,245,240,.55);font-family:inherit;font-size:12.5px;font-weight:500;
-  padding:7px 16px;cursor:pointer;transition:all .15s;
+  color:rgba(245,245,240,.55);font-family:inherit;font-size:var(--font-size-sm);font-weight:500;
+  padding:var(--space-1) var(--space-3);cursor:pointer;transition:all .15s;
 }
 .pill:hover{border-color:#555;color:var(--text)}
 .pill.active{background:var(--accent);border-color:var(--accent);color:#0c0c0c;font-weight:600}
@@ -360,7 +380,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 
 /* caption result (inside the caption card) */
 .cap-gen{width:100%}
-.caption-box{margin-top:16px;background:var(--card-inset);border:1px solid #222;border-radius:8px;padding:16px}
+.caption-box{margin-top:var(--space-3);background:var(--card-inset);border:1px solid #222;border-radius:8px;padding:var(--space-3)}
 .caption-box-head{display:flex;justify-content:flex-end;margin-bottom:8px}
 .cap-copy{background:rgba(255,255,255,.06);border:0.5px solid rgba(255,255,255,.12);border-radius:6px;color:var(--text);font-family:inherit;font-size:11.5px;font-weight:600;padding:5px 11px;cursor:pointer;transition:all .15s}
 .cap-copy:hover{border-color:var(--accent);color:var(--accent)}
@@ -387,12 +407,10 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .tip-arrow{position:absolute;left:var(--arrow-x,50%);bottom:-4.5px;width:8px;height:8px;background:#1a1a1a;border-right:1px solid #333;border-bottom:1px solid #333;transform:translateX(-50%) rotate(45deg)}
 .tip-box.below .tip-arrow{bottom:auto;top:-4.5px;transform:translateX(-50%) rotate(225deg)}
 
-/* Best-Practice-Box (nur im Leerzustand) */
-.tips-card{width:100%;max-width:440px;background:#111111;border:1px solid #222;border-radius:12px;padding:20px;text-align:left}
-.tips-label{color:var(--accent);font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px}
-.tip-item{position:relative;padding-left:20px;color:#bbb;font-size:13.5px;line-height:1.5;margin-bottom:9px}
-.tip-item:last-child{margin-bottom:0}
-.tip-item::before{content:"✓";position:absolute;left:0;top:1px;color:var(--accent);font-size:12px;font-weight:700}
+/* Tipps — direkt in der Empty-State-Karte unter dem CTA, kompakte Häkchen-Liste */
+.tplph-tips{display:flex;flex-direction:column;gap:var(--space-2);width:100%;margin-top:var(--space-3);padding-top:var(--space-4);border-top:1px solid var(--color-border);text-align:left}
+.tplph-tip{position:relative;padding-left:var(--space-5);font-size:var(--font-size-sm);color:var(--color-text-muted);line-height:var(--line-height-snug)}
+.tplph-tip::before{content:"✓";position:absolute;left:0;top:0;color:var(--color-accent);font-weight:var(--font-weight-bold)}
 
 /* ── MOBILE ── */
 /* < 1024px: Zwei-Spalten-Bühne stapelt; Toolbar wird zur Tab-Leiste unter dem Flyer */

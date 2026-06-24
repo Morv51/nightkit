@@ -10,6 +10,7 @@ import { initCorrect } from "./correct.js";
 import { initFormats } from "./formats.js";
 import { initCompare } from "./compare.js";
 import { initHints } from "./hints.js";
+import { initMoreFields } from "./moreFields.js";
 
 function bindActions() {
   on(els.genBtn, "click", generate);
@@ -50,6 +51,7 @@ async function init() {
   initCompare();
   initTabs();
   initHints();
+  initMoreFields();
   initPicker();
 
   try {
