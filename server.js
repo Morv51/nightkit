@@ -4,6 +4,7 @@ const http = require("http");
 const path = require("path");
 
 const { buildPrompt }       = require("./lib/prompt");
+const { titleCaseSmart }    = require("./lib/casing");
 const ideogram              = require("./lib/ideogram");
 const replicate             = require("./lib/replicate");
 const fal                   = require("./lib/fal");
@@ -383,16 +384,32 @@ router.post("/api/convert", async (req, res) => {
   }
 });
 
-// HEADLINE + WEBSITE are the always-caps slots. Force them to uppercase for
-// block templates (default), but leave the user's casing for script templates
-// (manifest "uppercase": false) so Ideogram applies the cursive/decorative font.
 const upcase = (s) => (typeof s === "string" ? s.toUpperCase() : s);
 
+// Schreibweise serverseitig passend zum Template normalisieren, damit der Nutzer
+// sich nicht um Groß-/Kleinschreibung kümmern muss.
+function normalizeCasing(ev, file) {
+  if (templates.uppercaseFor(file)) {
+    // Block-Template (default): immer-große Slots HEADLINE + WEBSITE in
+    // Versalien — exakt wie bisher, kein Regressionsrisiko.
+    return { ...ev, name: upcase(ev.name), contact: upcase(ev.contact) };
+  }
+  // Script-Template: relevante Textfelder smart zu Title-Case (Akronyme wie RNB
+  // und Eigenschreibweisen wie McMarv bleiben erhalten), damit die geschwungene
+  // Schrift greift — auch wenn der Nutzer alles groß eintippt. Website (URL) und
+  // Datum/Uhrzeit bleiben unangetastet.
+  return {
+    ...ev,
+    name:     titleCaseSmart(ev.name),
+    prefix:   titleCaseSmart(ev.prefix),
+    club:     titleCaseSmart(ev.club),
+    location: titleCaseSmart(ev.location),
+    dj:       titleCaseSmart(ev.dj),
+  };
+}
+
 async function runIdeogramJob(jobId, ev, file) {
-  const evForPrompt = templates.uppercaseFor(file)
-    ? { ...ev, name: upcase(ev.name), contact: upcase(ev.contact) }
-    : ev;
-  const prompt = buildPrompt(evForPrompt);
+  const prompt = buildPrompt(normalizeCasing(ev, file));
   console.log(`Job ${jobId} template=${file} prompt:\n${prompt}`);
 
   let imgBuffer;
