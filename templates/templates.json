@@ -57,5 +57,9 @@
   { "file": "grunge-10.jpeg", "name": "Grunge 10", "category": "Grunge" },
   { "file": "grunge-11.jpeg", "name": "Grunge 11", "category": "Grunge" },
   { "file": "grunge-12.jpeg", "name": "Grunge 12", "category": "Grunge" },
-  { "file": "grunge-13.jpeg", "name": "Grunge 13", "category": "Grunge" }
+  { "file": "grunge-13.jpeg", "name": "Grunge 13", "category": "Grunge" },
+  { "file": "neon-1.jpeg", "name": "Neon 1", "category": "Neon", "featured": true },
+  { "file": "neon-2.jpeg", "name": "Neon 2", "category": "Neon" },
+  { "file": "neon-3.jpeg", "name": "Neon 3", "category": "Neon" },
+  { "file": "chrome-1.jpeg", "name": "Chrome 1", "category": "Chrome", "featured": true }
 ]
