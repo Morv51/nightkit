@@ -2,7 +2,6 @@
 
 const http = require("http");
 const path = require("path");
-const crypto = require("crypto");
 
 const { buildPrompt }       = require("./lib/prompt");
 const { titleCaseSmart }    = require("./lib/casing");
@@ -410,18 +409,6 @@ function normalizeCasing(ev, file) {
   };
 }
 
-// Generierung über Ideogram V4 Remix: das gewählte Template ist die ECHTE
-// Basis (image_weight bindet Design/Farben/Typo), buildPrompt liefert nur die
-// Texte. Das löst den Bug des maskenlosen /v1/edit-Pfads, der die Vorlage
-// ignorierte und frei generierte. 1440x2560 ist exakt 9:16 (= V3 aspect_ratio
-// 9x16), ein erprobter Wert aus dem remix-v4-Resolution-Enum.
-// JUSTIERBAR: image_weight höher → näher an der Vorlage (Design treuer),
-// niedriger → mehr Freiheit beim Text. REVERSIBEL: für den alten Pfad in
-// runIdeogramJob einfach ideogram.remixV4(...) wieder durch ideogram.edit(...)
-// ersetzen — die edit-Funktion bleibt unverändert in lib/ideogram.js.
-const GENERATE_RESOLUTION   = "1440x2560"; // exakt 9:16
-const GENERATE_IMAGE_WEIGHT = 90;          // 1–100, hoch = nah an der Vorlage
-
 async function runIdeogramJob(jobId, ev, file) {
   const prompt = buildPrompt(normalizeCasing(ev, file));
   console.log(`Job ${jobId} template=${file} prompt:\n${prompt}`);
@@ -433,32 +420,14 @@ async function runIdeogramJob(jobId, ev, file) {
     throw new Error("Template not found: " + e.message);
   }
 
-  // DIAGNOSE: belegt, dass das ausgewählte Template wirklich als Basis-Bytes in
-  // den Call geht (sha über die geladenen Bytes → ausschließen, dass ein
-  // falsches/leeres Bild übergeben wird). Ohne gültige Bytes wird NICHT
-  // generiert — loadBuffer wirft oben, ideogram.edit lehnt leere Buffer ab.
-  if (!imgBuffer || !imgBuffer.length) {
-    throw new Error(`Base image empty for template ${file} — abort (kein Free-Generate)`);
-  }
-  const sha = crypto.createHash("sha256").update(imgBuffer).digest("hex").slice(0, 12);
-  const imageType = /\.png$/i.test(file) ? "image/png" : "image/jpeg";
-  console.log(`[generate-diag] job=${jobId} template=${file} baseImage=${imgBuffer.length}B sha256=${sha} type=${imageType} endpoint=remix-v4 imageWeight=${GENERATE_IMAGE_WEIGHT}`);
-
-  // V4 Remix mit dem Template als Basis (siehe Konstanten oben). buildPrompt
-  // bleibt unverändert und wird als text_prompt übergeben; remix-v4 hat kein
-  // magic_prompt-Feld → OFF ist implizit. Für Rückbau: ideogram.edit(...).
-  const { url } = await ideogram.remixV4({
+  const { url } = await ideogram.edit({
     apiKey: IDEOGRAM_KEY,
-    textPrompt: prompt,
+    prompt,
     imageBuffer: imgBuffer,
-    imageType,
-    resolution: GENERATE_RESOLUTION,
-    imageWeight: GENERATE_IMAGE_WEIGHT,
-    renderingSpeed: "QUALITY",
   });
 
   jobs.set(jobId, { status: "done", url });
-  console.log(`Job ${jobId} done → ${url}`);
+  console.log(`Job ${jobId} done`);
 }
 
 const server = http.createServer(async (req, res) => {
