@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Template Studio · NightKit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles/tokens.css">
+  <link rel="stylesheet" href="/styles/base.css">
+  <link rel="stylesheet" href="/css/app.css">
+  <link rel="stylesheet" href="/admin/studio.css">
+</head>
+<body class="studio-body">
+
+  <!-- ── Code-Gate (Passwort 99) ───────────────────────────────── -->
+  <div class="studio-gate" id="gate">
+    <form class="gate-card" id="gateForm" autocomplete="off">
+      <div class="gate-brand">✶ NightKit</div>
+      <h1 class="gate-title">Template Studio</h1>
+      <p class="gate-sub">Interner Admin-Bereich · Code erforderlich</p>
+      <input class="gate-input" id="gateCode" type="password" inputmode="numeric"
+             autocomplete="off" placeholder="Code" aria-label="Admin-Code">
+      <button class="rbtn rbtn-primary gate-btn" type="submit">Entsperren</button>
+      <div class="gate-err" id="gateErr" hidden></div>
+    </form>
+  </div>
+
+  <!-- ── Studio (nach Entsperren) ──────────────────────────────── -->
+  <div class="studio-app" id="studio" hidden>
+    <header class="studio-top">
+      <div class="studio-brand">✶ NightKit <span>Template Studio</span></div>
+      <div class="studio-tabs" id="tabs">
+        <button class="studio-tab active" type="button" data-tab="mode1">Flyer → Template</button>
+        <button class="studio-tab" type="button" data-tab="mode2">Moodboard → Generieren</button>
+      </div>
+      <button class="rbtn rbtn-ghost studio-lock" id="lockBtn" type="button" title="Sperren">⊘ Sperren</button>
+    </header>
+
+    <main class="studio-main">
+      <!-- Modus 1: Flyer → Template -->
+      <section class="studio-panel active" id="panel-mode1" data-tab="mode1">
+        <div class="studio-grid">
+          <!-- Steuerung -->
+          <div class="studio-col">
+            <div class="st-card">
+              <div class="st-head">1 · Flyer</div>
+              <label class="st-drop" id="m1Drop">
+                <input type="file" id="m1File" accept="image/png,image/jpeg,image/webp" hidden>
+                <span id="m1DropLabel">Fertigen Flyer hochladen — PNG/JPG/WebP, ≤10&nbsp;MB</span>
+              </label>
+            </div>
+
+            <div class="st-card">
+              <div class="st-head">2 · Analyse</div>
+              <div class="st-row">
+                <select class="st-select" id="m1Model" aria-label="Vision-Modell">
+                  <option value="haiku">Haiku · schnell</option>
+                  <option value="sonnet">Sonnet · genauer</option>
+                </select>
+                <button class="rbtn rbtn-ghost" id="m1Analyze" type="button">Textzonen erkennen</button>
+              </div>
+            </div>
+
+            <div class="st-card" id="m1ZonesCard" hidden>
+              <div class="st-head">3 · Textzonen → Rollen</div>
+              <div class="zone-list" id="m1Zones"></div>
+            </div>
+
+            <div class="st-card">
+              <div class="st-head">
+                4 · Prompt
+                <button class="st-mini" id="m1Rebuild" type="button" hidden>aus Rollen neu bauen</button>
+              </div>
+              <textarea class="st-prompt" id="m1Prompt" rows="9"
+                placeholder="Erst Textzonen erkennen — oder den Prompt direkt selbst schreiben …"></textarea>
+            </div>
+
+            <button class="rbtn rbtn-primary st-go" id="m1Insert" type="button">✦ Platzhalter einsetzen</button>
+          </div>
+
+          <!-- Ergebnis -->
+          <div class="studio-col">
+            <div class="st-stage" id="m1Stage">
+              <div class="st-stage-empty" id="m1Empty">Flyer hochladen, um zu starten</div>
+              <img class="st-result" id="m1Result" alt="" hidden>
+              <div class="st-busy" id="m1Busy" hidden><span class="cb-spin"></span><span id="m1BusyMsg">…</span></div>
+            </div>
+            <div class="st-actions" id="m1Actions" hidden>
+              <button class="rbtn rbtn-ghost" id="m1Clean" type="button">🩹 Bereinigen</button>
+              <button class="rbtn rbtn-ghost" id="m1Correct" type="button">✎ Korrigieren</button>
+              <button class="rbtn rbtn-ghost" id="m1ExportPng" type="button">⬇ PNG</button>
+              <button class="rbtn rbtn-ghost" id="m1ExportJpg" type="button">⬇ JPG</button>
+              <button class="rbtn rbtn-ghost" id="m1Save" type="button">💾 Speichern</button>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- Modus 2: Moodboard → Generieren -->
+      <section class="studio-panel" id="panel-mode2" data-tab="mode2" hidden>
+        <div class="studio-grid">
+          <!-- Steuerung -->
+          <div class="studio-col">
+            <div class="st-card">
+              <div class="st-head">1 · Moodboard</div>
+              <label class="st-drop" id="m2Drop">
+                <input type="file" id="m2File" accept="image/png,image/jpeg,image/webp" hidden>
+                <span id="m2DropLabel">Moodboard hochladen — PNG/JPG/WebP, ≤10&nbsp;MB</span>
+              </label>
+              <img class="st-thumb" id="m2Thumb" alt="" hidden>
+            </div>
+
+            <div class="st-card">
+              <div class="st-head">2 · Analyse</div>
+              <div class="st-row">
+                <select class="st-select" id="m2Model" aria-label="Vision-Modell">
+                  <option value="haiku">Haiku · schnell</option>
+                  <option value="sonnet">Sonnet · genauer</option>
+                </select>
+                <button class="rbtn rbtn-ghost" id="m2Analyze" type="button">Analysieren</button>
+              </div>
+              <div class="st-slider-row">
+                <label for="m2Style">Stilbindung: <span id="m2StyleVal">mittel</span></label>
+                <input type="range" id="m2Style" class="st-slider" min="0" max="1" step="0.01" value="0.5">
+              </div>
+            </div>
+
+            <div class="st-card">
+              <div class="st-head">
+                3 · Prompt
+                <button class="st-mini" id="m2Rebuild" type="button" hidden>aus DNA neu bauen</button>
+              </div>
+              <textarea class="st-prompt" id="m2Prompt" rows="11"
+                placeholder="Erst analysieren — oder den Prompt direkt selbst schreiben …"></textarea>
+            </div>
+
+            <button class="rbtn rbtn-primary st-go" id="m2Generate" type="button">✦ Generieren</button>
+          </div>
+
+          <!-- Ergebnis -->
+          <div class="studio-col">
+            <div class="st-stage" id="m2Stage">
+              <div class="st-stage-empty" id="m2Empty">Ergebnis erscheint hier</div>
+              <img class="st-result" id="m2Result" alt="" hidden>
+              <div class="st-busy" id="m2Busy" hidden><span class="cb-spin"></span><span id="m2BusyMsg">…</span></div>
+            </div>
+            <div class="st-actions" id="m2Actions" hidden>
+              <button class="rbtn rbtn-ghost" id="m2Clean" type="button">🩹 Bereinigen</button>
+              <button class="rbtn rbtn-ghost" id="m2Correct" type="button">✎ Korrigieren</button>
+              <button class="rbtn rbtn-ghost" id="m2ExportPng" type="button">⬇ PNG</button>
+              <button class="rbtn rbtn-ghost" id="m2ExportJpg" type="button">⬇ JPG</button>
+              <button class="rbtn rbtn-ghost" id="m2Save" type="button">💾 Speichern</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="/admin/studio.js"></script>
+</body>
+</html>

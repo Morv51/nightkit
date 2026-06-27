@@ -36,6 +36,10 @@ const staticFiles = createStatic({
 
 const router = createRouter();
 
+// Admin-only "Template Studio" (additiv, isoliert) — mountet eigene /admin/*
+// Routen. Verändert keine bestehende Route/Funktion. Siehe lib/studio/.
+require("./lib/studio/routes").register(router);
+
 router.post("/api/generate", async (req, res) => {
   if (!IDEOGRAM_KEY) return sendError(res, 500, "IDEOGRAM_API_KEY not configured");
 
