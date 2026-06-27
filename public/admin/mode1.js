@@ -6,12 +6,6 @@
 import { post } from "./studioApi.js";
 import { fileToDataUrl, downloadDataUrl, toJpeg, notify, wireDropzone, wirePaste } from "./studioUi.js";
 import { createBrushTool, correctImage, saveTemplate } from "./studioBrush.js";
-import { buildZoneMask, compositeRegions } from "./studioMask.js";
-
-// Ideogram-V3-Edit-Maskenkonvention: SCHWARZ = editieren (laut Doku). Falls das
-// Ergebnis zeigt, dass nichts ersetzt wird, hier auf false kippen. Der Composite
-// macht eine falsche Polarität ungefährlich (schlimmstenfalls: keine Änderung).
-const MASK_EDIT_BLACK = true;
 
 const $ = (id) => document.getElementById(id);
 
@@ -27,8 +21,6 @@ const state = {
   pendingOriginal: null, normDims: null, normResult: null, normPending: false,
   // Font-Referenzen (Index in state.zones, -1 = automatisch)
   infoRefIdx: -1, headlineRefIdx: -1,
-  // bereits via Add-Schritt ergänzte Rollen (für Soll-Abgleich)
-  addedRoles: [],
 };
 
 const TARGET = 9 / 16; // 0.5625
@@ -175,19 +167,11 @@ function renderZones() {
 
 // Soll-Abgleich: welche Pflicht-Platzhalter sind noch keiner Zone zugewiesen?
 // Die werden beim Bauen aktiv ergänzt — hier sichtbar gemacht.
-function missingRoles() {
-  const covered = new Set([
-    ...state.zones.map((z) => z.role).filter((r) => MANDATORY.includes(r)),
-    ...state.addedRoles,
-  ]);
-  return MANDATORY.filter((r) => !covered.has(r));
-}
-
 function updateMissing() {
-  populateAddRoles();
   const el = $("m1Missing");
   if (!el) return;
-  const missing = missingRoles();
+  const assigned = new Set(state.zones.map((z) => z.role).filter((r) => MANDATORY.includes(r)));
+  const missing = MANDATORY.filter((r) => !assigned.has(r));
   el.innerHTML = "";
   if (!state.zones.length) { el.hidden = true; return; }
   el.hidden = false;
@@ -197,7 +181,7 @@ function updateMissing() {
   }
   const head = document.createElement("span");
   head.className = "miss-head";
-  head.textContent = `fehlt — gezielt ergänzen (${missing.length}):`;
+  head.textContent = `wird ergänzt (${missing.length}):`;
   el.appendChild(head);
   for (const r of missing) {
     const chip = document.createElement("span");
@@ -237,92 +221,6 @@ function refFromIdx(idx) {
   return z ? { text: z.text, font: z.font } : null;
 }
 
-// Add-Schritt: Dropdown mit den noch fehlenden Platzhaltern befüllen.
-function populateAddRoles() {
-  const sel = $("m1AddRole"), box = $("m1AddPh");
-  if (!sel || !box) return;
-  const missing = missingRoles();
-  sel.innerHTML = "";
-  if (!missing.length) {
-    const o = document.createElement("option");
-    o.value = ""; o.textContent = "(alle vorhanden)";
-    sel.appendChild(o);
-  } else {
-    for (const r of missing) {
-      const o = document.createElement("option");
-      o.value = r; o.textContent = r;
-      sel.appendChild(o);
-    }
-  }
-  box.hidden = state.zones.length === 0;
-}
-
-// Zielbox aufs Ergebnis ziehen → maskierter Add-Edit nur dort + Composite.
-function startPlaceBox() {
-  const role = $("m1AddRole").value;
-  if (!role) return notify("Erst einen Platzhalter wählen", "error");
-  if (!state.current) return notify("Kein Bild zum Ergänzen", "error");
-
-  const stage = $("m1Stage");
-  let ov = $("m1PlaceOverlay");
-  if (!ov) {
-    ov = document.createElement("div");
-    ov.id = "m1PlaceOverlay"; ov.className = "place-overlay";
-    ov.innerHTML = '<div class="place-rect" id="m1PlaceRect"></div>';
-    stage.appendChild(ov);
-  }
-  const rect = $("m1PlaceRect");
-  ov.style.display = "block"; rect.style.display = "none";
-  notify("Rechteck aufs Bild ziehen (wo der Text hin soll)", "info");
-
-  let start = null, cur = null;
-  const toLocal = (e) => {
-    const r = ov.getBoundingClientRect();
-    return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height];
-  };
-  const draw = (a, b) => {
-    const x = Math.min(a[0], b[0]), y = Math.min(a[1], b[1]);
-    const w = Math.abs(a[0] - b[0]), h = Math.abs(a[1] - b[1]);
-    rect.style.left = x * 100 + "%"; rect.style.top = y * 100 + "%";
-    rect.style.width = w * 100 + "%"; rect.style.height = h * 100 + "%";
-    return [x, y, w, h];
-  };
-  const onDown = (e) => { start = toLocal(e); rect.style.display = "block"; draw(start, start); try { ov.setPointerCapture(e.pointerId); } catch {} };
-  const onMove = (e) => { if (start) cur = draw(start, toLocal(e)); };
-  const onUp = async () => {
-    ov.removeEventListener("pointerdown", onDown);
-    ov.removeEventListener("pointermove", onMove);
-    ov.removeEventListener("pointerup", onUp);
-    ov.style.display = "none";
-    if (!start || !cur || cur[2] < 0.02 || cur[3] < 0.02) { return notify("Box zu klein — abgebrochen", "error"); }
-    await addPlaceholder(role, cur);
-  };
-  ov.addEventListener("pointerdown", onDown);
-  ov.addEventListener("pointermove", onMove);
-  ov.addEventListener("pointerup", onUp);
-}
-
-async function addPlaceholder(role, bbox) {
-  setBusy(true, `Setze „${role}" ein …`);
-  try {
-    const { prompt } = await post("/admin/build-add-prompt", {
-      role, infoRef: refFromIdx(state.infoRefIdx), headlineRef: refFromIdx(state.headlineRefIdx),
-    });
-    const mask = await buildZoneMask(state.current, [bbox], { editBlack: MASK_EDIT_BLACK });
-    const r = await post("/admin/edit-masked", { image: state.current, mask, prompt });
-    const composited = await compositeRegions(state.current, r.image, [bbox]);
-    state.current = composited;
-    showImage(composited);
-    if (!state.addedRoles.includes(role)) state.addedRoles.push(role);
-    updateMissing();
-    notify(`„${role}" ergänzt`, "success");
-  } catch (e) {
-    notify(e.message, "error");
-  } finally {
-    setBusy(false);
-  }
-}
-
 async function analyze() {
   if (!state.current) return notify("Erst einen Flyer hochladen", "error");
   if (state.normPending) return notify("Erst auf 9:16 erweitern und übernehmen (Schritt 1a)", "error");
@@ -345,7 +243,6 @@ async function analyze() {
     }));
     state.infoRefIdx = -1;
     state.headlineRefIdx = -1;
-    state.addedRoles = [];
     renderZones();
     populateFontRefs();
     $("m1Prompt").value = prompt || "";
@@ -399,45 +296,28 @@ async function buildRemoveMask(dataUrl, zones) {
 async function insertPlaceholders() {
   if (!state.current) return notify("Kein Flyer geladen", "error");
   if (state.normPending) return notify("Erst auf 9:16 erweitern (Schritt 1a)", "error");
+  const prompt = $("m1Prompt").value.trim();
+  if (!prompt) return notify("Prompt ist leer — erst Textzonen erkennen", "error");
 
   const removeZones = state.zones.filter((z) => z.role === "ENTFERNEN" && z.bbox);
-  const replaceZones = state.zones.filter((z) => MANDATORY.includes(z.role) && z.bbox);
-  if (!removeZones.length && !replaceZones.length) {
-    return notify("Keine Textzonen mit Position zum Bearbeiten", "error");
-  }
-
   const btn = $("m1Insert");
   btn.disabled = true;
   try {
     let img = state.current;
-
-    // 1) ENTFERNEN-Zonen via LaMa rausnehmen (maskiert, Credits/Logos).
+    // 1) Als ENTFERNEN markierte Zonen aktiv via LaMa rauslöschen (Credits/Logos).
     if (removeZones.length) {
       setBusy(true, `Entferne ${removeZones.length} markierte Zone(n) …`);
       const mask = await buildRemoveMask(img, removeZones);
       const r = await post("/admin/remove", { image: img, mask });
-      img = r.image; state.current = img; showImage(img);
+      img = r.image;
+      state.current = img;
+      showImage(img);
     }
-
-    // 2) Ersetzen — NUR die Textzonen maskiert editieren, dann pixelgenau zurück
-    //    aufs Original komponieren. Gesichter/Komposition/Hintergrund bleiben.
-    if (replaceZones.length) {
-      setBusy(true, `Ersetze ${replaceZones.length} Text(e) — nur die Textzonen …`);
-      const bboxes = replaceZones.map((z) => z.bbox);
-      const mask = await buildZoneMask(img, bboxes, { editBlack: MASK_EDIT_BLACK });
-      const prompt = $("m1Prompt").value.trim();
-      if (!prompt) return notify("Prompt ist leer — erst Textzonen erkennen", "error");
-      const r = await post("/admin/edit-masked", { image: img, mask, prompt });
-      const composited = await compositeRegions(img, r.image, bboxes);
-      img = composited; state.current = img; showImage(img);
-    }
-
-    const assigned = new Set(state.zones.map((z) => z.role));
-    const missing = MANDATORY.filter((r) => !assigned.has(r)).length;
-    notify(
-      `Texte ersetzt — Bild bleibt erhalten.${missing ? ` ${missing} Platzhalter fehlen noch — gezielt mit „Platzhalter einsetzen" ergänzen.` : ""}`,
-      "success"
-    );
+    // 2) Texte ersetzen + fehlende Pflicht-Platzhalter ergänzen (edit-Flow).
+    setBusy(true, "Setze Platzhalter ein + ergänze fehlende …");
+    const r2 = await post("/admin/edit", { image: img, prompt });
+    showImage(r2.image);
+    notify("Template gebaut — bei Bedarf mit Korrigieren/Bereinigen nachjustieren", "success");
   } catch (e) {
     notify(e.message, "error");
   } finally {
@@ -465,9 +345,6 @@ export function initMode1() {
   // Font-Referenz: Auswahl einer erkannten Zone als Stil-Anker → Prompt neu bauen.
   $("m1RefInfo").addEventListener("change", (e) => { state.infoRefIdx = Number(e.target.value); rebuildPrompt(); });
   $("m1RefHead").addEventListener("change", (e) => { state.headlineRefIdx = Number(e.target.value); rebuildPrompt(); });
-
-  // Platzhalter gezielt ergänzen (Zielbox ziehen).
-  $("m1AddPlace").addEventListener("click", startPlaceBox);
 
   // Bereinigen (LaMa-Brush) + Korrigieren (re-edit) auf dem aktuellen Bild.
   const brush = createBrushTool({
