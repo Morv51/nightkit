@@ -3,7 +3,7 @@
 // Prompt → Ideogram-V3-Generierung mit Moodboard als Style-Reference.
 
 import { post } from "./studioApi.js";
-import { fileToDataUrl, downloadDataUrl, toJpeg, notify } from "./studioUi.js";
+import { fileToDataUrl, downloadDataUrl, toJpeg, notify, wireDropzone, wirePaste } from "./studioUi.js";
 import { createBrushTool, correctImage, saveTemplate } from "./studioBrush.js";
 
 const $ = (id) => document.getElementById(id);
@@ -104,6 +104,9 @@ export function initMode2() {
   const file = $("m2File");
   $("m2Drop").addEventListener("click", () => file.click());
   file.addEventListener("change", () => file.files[0] && onFile(file.files[0]));
+  // Upload ohne Dialog: Drag&Drop + Paste (Klick bleibt Fallback).
+  wireDropzone($("m2Drop"), onFile);
+  wirePaste($("panel-mode2"), onFile);
 
   $("m2Analyze").addEventListener("click", analyze);
   $("m2Rebuild").addEventListener("click", rebuildPrompt);

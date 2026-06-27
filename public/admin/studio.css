@@ -194,6 +194,12 @@
   transition: border-color 0.15s, color 0.15s;
 }
 .st-drop:hover { border-color: var(--color-accent, #ccff00); color: var(--color-text, #fff); }
+.st-drop.dragover {
+  border-color: var(--color-accent, #ccff00);
+  border-style: solid;
+  background: rgba(204, 255, 0, 0.08);
+  color: var(--color-text, #fff);
+}
 .st-thumb {
   width: 100%;
   max-height: 220px;
@@ -319,12 +325,24 @@
   border-radius: 8px; padding: 6px 10px;
 }
 .zone-role {
-  flex: 0 0 130px;
+  flex: 0 0 140px;
   height: 32px; padding: 0 8px;
   background: var(--color-surface-2, #1a1a1a); color: var(--color-text, #fff);
   border: 1px solid var(--color-border, #222); border-radius: 8px;
   font: inherit; font-size: 12px;
 }
+.zone-row.zone-remove .zone-text { opacity: 0.5; text-decoration: line-through; }
+.zone-row.zone-remove .zone-role { border-color: #ff6b6b; color: #ff9b9b; }
+
+/* Soll-Abgleich: fehlende Pflicht-Platzhalter */
+.miss-box { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.miss-head { font-size: 11px; color: var(--muted, rgba(245,245,240,0.6)); }
+.miss-chip {
+  font-size: 11px; padding: 2px 8px; border-radius: 999px;
+  background: rgba(204,255,0,0.10); color: var(--color-accent, #ccff00);
+  border: 1px solid rgba(204,255,0,0.30);
+}
+.miss-ok { font-size: 12px; color: var(--color-accent, #ccff00); }
 
 @media (max-width: 860px) {
   .studio-grid { grid-template-columns: 1fr; }

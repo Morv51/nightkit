@@ -4,13 +4,16 @@
 // unsere Platzhalter (Design/Typo bleiben).
 
 import { post } from "./studioApi.js";
-import { fileToDataUrl, downloadDataUrl, toJpeg, notify } from "./studioUi.js";
+import { fileToDataUrl, downloadDataUrl, toJpeg, notify, wireDropzone, wirePaste } from "./studioUi.js";
 import { createBrushTool, correctImage, saveTemplate } from "./studioBrush.js";
 
 const $ = (id) => document.getElementById(id);
 
-const ROLES = ["HEADLINE", "SUBLINE", "DATUM", "UHRZEIT", "LOCATION",
-  "DJ NAME 1", "DJ NAME 2", "DJ NAME 3", "CLUBNAME", "WEBSITE", "OTHER"];
+// Pflicht-Platzhalter (Soll-Liste) — ein Template muss sie alle enthalten.
+const MANDATORY = ["HEADLINE", "SUBLINE", "DATUM", "UHRZEIT", "LOCATION",
+  "DJ NAME 1", "DJ NAME 2", "DJ NAME 3", "CLUBNAME", "WEBSITE"];
+// Dropdown je Zone: Pflichtrollen + "ENTFERNEN" (markiert die Zone fürs LaMa-Removal).
+const ROLES = [...MANDATORY, "ENTFERNEN"];
 
 const state = {
   current: null, zones: [],
@@ -145,16 +148,45 @@ function renderZones() {
     sel.className = "zone-role";
     for (const r of ROLES) {
       const o = document.createElement("option");
-      o.value = r; o.textContent = r;
-      if (r === (z.role || "OTHER")) o.selected = true;
+      o.value = r; o.textContent = r === "ENTFERNEN" ? "✕ ENTFERNEN" : r;
+      if (r === z.role) o.selected = true;
       sel.appendChild(o);
     }
-    sel.addEventListener("change", () => { state.zones[i].role = sel.value; });
+    const markRemove = () => row.classList.toggle("zone-remove", sel.value === "ENTFERNEN");
+    sel.addEventListener("change", () => { state.zones[i].role = sel.value; markRemove(); updateMissing(); });
+    markRemove();
     row.appendChild(text);
     row.appendChild(sel);
     wrap.appendChild(row);
   });
   $("m1ZonesCard").hidden = state.zones.length === 0;
+  updateMissing();
+}
+
+// Soll-Abgleich: welche Pflicht-Platzhalter sind noch keiner Zone zugewiesen?
+// Die werden beim Bauen aktiv ergänzt — hier sichtbar gemacht.
+function updateMissing() {
+  const el = $("m1Missing");
+  if (!el) return;
+  const assigned = new Set(state.zones.map((z) => z.role).filter((r) => MANDATORY.includes(r)));
+  const missing = MANDATORY.filter((r) => !assigned.has(r));
+  el.innerHTML = "";
+  if (!state.zones.length) { el.hidden = true; return; }
+  el.hidden = false;
+  if (!missing.length) {
+    el.innerHTML = '<span class="miss-ok">✓ alle Pflicht-Platzhalter abgedeckt</span>';
+    return;
+  }
+  const head = document.createElement("span");
+  head.className = "miss-head";
+  head.textContent = `wird ergänzt (${missing.length}):`;
+  el.appendChild(head);
+  for (const r of missing) {
+    const chip = document.createElement("span");
+    chip.className = "miss-chip";
+    chip.textContent = r;
+    el.appendChild(chip);
+  }
 }
 
 async function analyze() {
@@ -169,7 +201,13 @@ async function analyze() {
       image: state.current,
       model: $("m1Model").value,
     });
-    state.zones = (zones || []).map((z) => ({ text: z.text || "", role: z.role || "OTHER" }));
+    // bbox behalten (für ENTFERNEN-Maske). Nicht-Pflichtrollen (z. B. OTHER,
+    // Credits) als ENTFERNEN vorbelegen — der Nutzer kann das ändern.
+    state.zones = (zones || []).map((z) => ({
+      text: z.text || "",
+      role: MANDATORY.includes(z.role) ? z.role : "ENTFERNEN",
+      bbox: Array.isArray(z.bbox) && z.bbox.length === 4 ? z.bbox : null,
+    }));
     renderZones();
     $("m1Prompt").value = prompt || "";
     $("m1Rebuild").hidden = false;
@@ -193,17 +231,53 @@ async function rebuildPrompt() {
   }
 }
 
+// LaMa-Maske aus den bboxes der ENTFERNEN-Zonen (WEISS = entfernen). bbox ist
+// normiert [x,y,w,h]; leichte Polsterung für saubere Abdeckung.
+async function buildRemoveMask(dataUrl, zones) {
+  const { w, h } = await imgSize(dataUrl);
+  const c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  const ctx = c.getContext("2d");
+  ctx.fillStyle = "#000000"; ctx.fillRect(0, 0, w, h); // behalten
+  ctx.fillStyle = "#FFFFFF"; // entfernen
+  const pad = 0.012;
+  for (const z of zones) {
+    if (!z.bbox) continue;
+    const [bx, by, bw, bh] = z.bbox;
+    const x = Math.max(0, bx - pad) * w;
+    const y = Math.max(0, by - pad) * h;
+    const rw = Math.min(1, bw + 2 * pad) * w;
+    const rh = Math.min(1, bh + 2 * pad) * h;
+    ctx.fillRect(x, y, rw, rh);
+  }
+  return c.toDataURL("image/png");
+}
+
 async function insertPlaceholders() {
   if (!state.current) return notify("Kein Flyer geladen", "error");
+  if (state.normPending) return notify("Erst auf 9:16 erweitern (Schritt 1a)", "error");
   const prompt = $("m1Prompt").value.trim();
   if (!prompt) return notify("Prompt ist leer — erst Textzonen erkennen", "error");
+
+  const removeZones = state.zones.filter((z) => z.role === "ENTFERNEN" && z.bbox);
   const btn = $("m1Insert");
   btn.disabled = true;
-  setBusy(true, "Setze Platzhalter ein …");
   try {
-    const { image } = await post("/admin/edit", { image: state.current, prompt });
-    showImage(image);
-    notify("Platzhalter eingesetzt", "success");
+    let img = state.current;
+    // 1) Als ENTFERNEN markierte Zonen aktiv via LaMa rauslöschen (Credits/Logos).
+    if (removeZones.length) {
+      setBusy(true, `Entferne ${removeZones.length} markierte Zone(n) …`);
+      const mask = await buildRemoveMask(img, removeZones);
+      const r = await post("/admin/remove", { image: img, mask });
+      img = r.image;
+      state.current = img;
+      showImage(img);
+    }
+    // 2) Texte ersetzen + fehlende Pflicht-Platzhalter ergänzen (edit-Flow).
+    setBusy(true, "Setze Platzhalter ein + ergänze fehlende …");
+    const r2 = await post("/admin/edit", { image: img, prompt });
+    showImage(r2.image);
+    notify("Template gebaut — bei Bedarf mit Korrigieren/Bereinigen nachjustieren", "success");
   } catch (e) {
     notify(e.message, "error");
   } finally {
@@ -216,6 +290,9 @@ export function initMode1() {
   const file = $("m1File");
   $("m1Drop").addEventListener("click", () => file.click());
   file.addEventListener("change", () => file.files[0] && onFile(file.files[0]));
+  // Upload ohne Dialog: Drag&Drop + Paste (Klick bleibt Fallback).
+  wireDropzone($("m1Drop"), onFile);
+  wirePaste($("panel-mode1"), onFile);
 
   // Schritt 1a: 9:16-Normalisierung
   $("m1NormRun").addEventListener("click", normRun);

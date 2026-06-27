@@ -48,7 +48,7 @@
               <div class="st-head">1 · Flyer</div>
               <label class="st-drop" id="m1Drop">
                 <input type="file" id="m1File" accept="image/png,image/jpeg,image/webp" hidden>
-                <span id="m1DropLabel">Fertigen Flyer hochladen — PNG/JPG/WebP, ≤10&nbsp;MB</span>
+                <span id="m1DropLabel">Flyer hierher ziehen, einfügen (⌘/Ctrl+V) oder klicken — PNG/JPG/WebP, ≤10&nbsp;MB</span>
               </label>
             </div>
 
@@ -85,6 +85,8 @@
             <div class="st-card" id="m1ZonesCard" hidden>
               <div class="st-head">3 · Textzonen → Rollen</div>
               <div class="zone-list" id="m1Zones"></div>
+              <div class="miss-box" id="m1Missing" hidden></div>
+              <div class="st-mini-note">„ENTFERNEN" löscht die Zone (Credits/Logos/Wasserzeichen) via Bereinigen. Fehlende Pflicht-Platzhalter werden beim Bauen stilkohärent ergänzt.</div>
             </div>
 
             <div class="st-card">
@@ -96,7 +98,8 @@
                 placeholder="Erst Textzonen erkennen — oder den Prompt direkt selbst schreiben …"></textarea>
             </div>
 
-            <button class="rbtn rbtn-primary st-go" id="m1Insert" type="button">✦ Platzhalter einsetzen</button>
+            <button class="rbtn rbtn-primary st-go" id="m1Insert" type="button">✦ Template bauen</button>
+            <div class="st-mini-note">8–10 Textfelder auf einmal sind fehleranfällig — danach gezielt mit <b>Korrigieren</b> (Text/Layout) und <b>Bereinigen</b> (Reste wegradieren) nachjustieren.</div>
           </div>
 
           <!-- Ergebnis -->
@@ -125,7 +128,7 @@
               <div class="st-head">1 · Moodboard</div>
               <label class="st-drop" id="m2Drop">
                 <input type="file" id="m2File" accept="image/png,image/jpeg,image/webp" hidden>
-                <span id="m2DropLabel">Moodboard hochladen — PNG/JPG/WebP, ≤10&nbsp;MB</span>
+                <span id="m2DropLabel">Moodboard hierher ziehen, einfügen (⌘/Ctrl+V) oder klicken — PNG/JPG/WebP, ≤10&nbsp;MB</span>
               </label>
               <img class="st-thumb" id="m2Thumb" alt="" hidden>
             </div>

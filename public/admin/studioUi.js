@@ -43,6 +43,38 @@ export function toJpeg(dataUrl, quality = 0.95) {
   });
 }
 
+// Drag-and-Drop auf eine Dropzone: Highlight beim Drüberziehen, Datei an den
+// Handler. Der Klick-Dialog (Label) bleibt als Fallback unberührt.
+export function wireDropzone(el, handler) {
+  if (!el) return;
+  const over = (e) => { e.preventDefault(); el.classList.add("dragover"); };
+  const leave = (e) => { e.preventDefault(); el.classList.remove("dragover"); };
+  el.addEventListener("dragenter", over);
+  el.addEventListener("dragover", over);
+  el.addEventListener("dragleave", leave);
+  el.addEventListener("drop", (e) => {
+    e.preventDefault();
+    el.classList.remove("dragover");
+    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) handler(f);
+  });
+}
+
+// Paste (Cmd/Ctrl+V) eines Bildes aus der Zwischenablage — nur wenn das
+// zugehörige Panel gerade sichtbar ist (aktiver Tab).
+export function wirePaste(panelEl, handler) {
+  document.addEventListener("paste", (e) => {
+    if (!panelEl || panelEl.hidden) return;
+    const items = (e.clipboardData && e.clipboardData.items) || [];
+    for (const it of items) {
+      if (it.type && it.type.indexOf("image/") === 0) {
+        const f = it.getAsFile();
+        if (f) { e.preventDefault(); handler(f); return; }
+      }
+    }
+  });
+}
+
 let toastTimer;
 export function notify(msg, type = "info") {
   let el = document.getElementById("studioToast");
