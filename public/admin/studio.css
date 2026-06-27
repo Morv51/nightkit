@@ -344,6 +344,13 @@
 }
 .miss-ok { font-size: 12px; color: var(--color-accent, #ccff00); }
 
+/* Font-Referenz */
+.font-ref { display: flex; flex-direction: column; gap: 6px; padding-top: 8px; border-top: 1px solid var(--color-border, #222); }
+.ref-head { font-size: 11px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--muted, rgba(245,245,240,0.55)); }
+.ref-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted, rgba(245,245,240,0.7)); }
+.ref-row span { flex: 0 0 96px; }
+.ref-row select { flex: 1; min-width: 0; }
+
 @media (max-width: 860px) {
   .studio-grid { grid-template-columns: 1fr; }
 }
