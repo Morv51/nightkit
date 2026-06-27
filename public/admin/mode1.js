@@ -19,8 +19,6 @@ const state = {
   current: null, zones: [],
   // Schritt 1a (9:16-Normalisierung)
   pendingOriginal: null, normDims: null, normResult: null, normPending: false,
-  // Font-Referenzen (Index in state.zones, -1 = automatisch)
-  infoRefIdx: -1, headlineRefIdx: -1,
 };
 
 const TARGET = 9 / 16; // 0.5625
@@ -191,36 +189,6 @@ function updateMissing() {
   }
 }
 
-// Font-Referenz-Dropdowns mit den erkannten Zonen befüllen (Stil-Anker).
-function fillRefSelect(sel, savedIdx) {
-  if (!sel) return;
-  sel.innerHTML = "";
-  const auto = document.createElement("option");
-  auto.value = "-1"; auto.textContent = "automatisch";
-  sel.appendChild(auto);
-  state.zones.forEach((z, i) => {
-    const o = document.createElement("option");
-    o.value = String(i);
-    const hint = z.font ? " · " + [z.font.style, z.font.casing].filter(Boolean).join("/") : "";
-    o.textContent = (z.text || "(leer)").slice(0, 26) + hint;
-    sel.appendChild(o);
-  });
-  sel.value = String(savedIdx);
-}
-
-function populateFontRefs() {
-  const box = $("m1FontRef");
-  if (!box) return;
-  fillRefSelect($("m1RefInfo"), state.infoRefIdx);
-  fillRefSelect($("m1RefHead"), state.headlineRefIdx);
-  box.hidden = state.zones.length === 0;
-}
-
-function refFromIdx(idx) {
-  const z = idx >= 0 ? state.zones[idx] : null;
-  return z ? { text: z.text, font: z.font } : null;
-}
-
 async function analyze() {
   if (!state.current) return notify("Erst einen Flyer hochladen", "error");
   if (state.normPending) return notify("Erst auf 9:16 erweitern und übernehmen (Schritt 1a)", "error");
@@ -233,18 +201,14 @@ async function analyze() {
       image: state.current,
       model: $("m1Model").value,
     });
-    // bbox + font behalten (für ENTFERNEN-Maske bzw. Font-Referenz). Nicht-
-    // Pflichtrollen (OTHER, Credits) als ENTFERNEN vorbelegen — änderbar.
+    // bbox behalten (für ENTFERNEN-Maske). Nicht-Pflichtrollen (OTHER, Credits)
+    // als ENTFERNEN vorbelegen — der Nutzer kann das ändern.
     state.zones = (zones || []).map((z) => ({
       text: z.text || "",
       role: MANDATORY.includes(z.role) ? z.role : "ENTFERNEN",
       bbox: Array.isArray(z.bbox) && z.bbox.length === 4 ? z.bbox : null,
-      font: z.font && typeof z.font === "object" ? z.font : null,
     }));
-    state.infoRefIdx = -1;
-    state.headlineRefIdx = -1;
     renderZones();
-    populateFontRefs();
     $("m1Prompt").value = prompt || "";
     $("m1Rebuild").hidden = false;
     notify(`${state.zones.length} Textzonen erkannt`, "success");
@@ -259,13 +223,9 @@ async function analyze() {
 async function rebuildPrompt() {
   if (!state.zones.length) return;
   try {
-    const { prompt } = await post("/admin/build-placeholder-prompt", {
-      zones: state.zones,
-      infoRef: refFromIdx(state.infoRefIdx),
-      headlineRef: refFromIdx(state.headlineRefIdx),
-    });
+    const { prompt } = await post("/admin/build-placeholder-prompt", { zones: state.zones });
     $("m1Prompt").value = prompt;
-    notify("Prompt neu gebaut (Rollen + Font-Referenz)", "success");
+    notify("Prompt aus Rollen neu gebaut", "success");
   } catch (e) {
     notify(e.message, "error");
   }
@@ -341,10 +301,6 @@ export function initMode1() {
   $("m1Analyze").addEventListener("click", analyze);
   $("m1Rebuild").addEventListener("click", rebuildPrompt);
   $("m1Insert").addEventListener("click", insertPlaceholders);
-
-  // Font-Referenz: Auswahl einer erkannten Zone als Stil-Anker → Prompt neu bauen.
-  $("m1RefInfo").addEventListener("change", (e) => { state.infoRefIdx = Number(e.target.value); rebuildPrompt(); });
-  $("m1RefHead").addEventListener("change", (e) => { state.headlineRefIdx = Number(e.target.value); rebuildPrompt(); });
 
   // Bereinigen (LaMa-Brush) + Korrigieren (re-edit) auf dem aktuellen Bild.
   const brush = createBrushTool({
