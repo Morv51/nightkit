@@ -52,6 +52,25 @@
               </label>
             </div>
 
+            <!-- Schritt 1a: Format-Normalisierung auf 9:16 (nur wenn nötig) -->
+            <div class="st-card" id="m1NormCard" hidden>
+              <div class="st-head">1a · Auf 9:16 erweitern <span class="st-note" id="m1NormInfo"></span></div>
+              <div class="norm-grid">
+                <figure class="norm-fig"><img id="m1NormBefore" alt=""><figcaption>Vorher</figcaption></figure>
+                <figure class="norm-fig"><img id="m1NormAfter" alt=""><figcaption>Nachher · 9:16</figcaption></figure>
+              </div>
+              <div class="norm-dir" id="m1NormDir">
+                <label><input type="radio" name="m1NormDir" value="symmetric" checked> symmetrisch</label>
+                <label><input type="radio" name="m1NormDir" value="top"> nur oben</label>
+                <label><input type="radio" name="m1NormDir" value="bottom"> nur unten</label>
+              </div>
+              <div class="st-row">
+                <button class="rbtn rbtn-ghost" id="m1NormRun" type="button">Auf 9:16 erweitern</button>
+                <button class="rbtn rbtn-primary" id="m1NormApply" type="button" disabled>✓ Übernehmen</button>
+              </div>
+              <div class="st-mini-note">Verlustfreie Erweiterung per Outpaint (kein Beschnitt). Die neuen Flächen sind danach normal bereinigbar.</div>
+            </div>
+
             <div class="st-card">
               <div class="st-head">2 · Analyse</div>
               <div class="st-row">

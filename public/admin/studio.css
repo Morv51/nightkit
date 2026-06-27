@@ -292,6 +292,21 @@
 }
 .studio-brush-bar .sbb-size input { accent-color: var(--color-accent, #ccff00); }
 
+/* Modus 1 · Schritt 1a: 9:16-Normalisierung */
+.st-note { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--muted, rgba(245,245,240,0.5)); }
+.norm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.norm-fig { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.norm-fig img {
+  width: 100%; aspect-ratio: 9/16; object-fit: contain;
+  background: var(--card-inset, #0d0d0d);
+  border: 1px solid var(--color-border, #222); border-radius: 8px;
+}
+.norm-fig figcaption { font-size: 11px; text-align: center; color: var(--muted, rgba(245,245,240,0.5)); }
+.norm-dir { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--muted, rgba(245,245,240,0.7)); }
+.norm-dir label { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+.norm-dir input { accent-color: var(--color-accent, #ccff00); }
+.st-mini-note { font-size: 11px; color: var(--muted, rgba(245,245,240,0.42)); line-height: 1.4; }
+
 /* Modus 1: Zonen → Rollen */
 .zone-list { display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow: auto; }
 .zone-row { display: flex; align-items: center; gap: 8px; }

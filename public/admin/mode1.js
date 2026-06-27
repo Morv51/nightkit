@@ -12,7 +12,46 @@ const $ = (id) => document.getElementById(id);
 const ROLES = ["HEADLINE", "SUBLINE", "DATUM", "UHRZEIT", "LOCATION",
   "DJ NAME 1", "DJ NAME 2", "DJ NAME 3", "CLUBNAME", "WEBSITE", "OTHER"];
 
-const state = { current: null, zones: [] };
+const state = {
+  current: null, zones: [],
+  // Schritt 1a (9:16-Normalisierung)
+  pendingOriginal: null, normDims: null, normResult: null, normPending: false,
+};
+
+const TARGET = 9 / 16; // 0.5625
+
+// Maße eines data-URL-Bildes lesen.
+function imgSize(dataUrl) {
+  return new Promise((res, rej) => {
+    const i = new Image();
+    i.onload = () => res({ w: i.naturalWidth, h: i.naturalHeight });
+    i.onerror = () => rej(new Error("Bild konnte nicht gelesen werden"));
+    i.src = dataUrl;
+  });
+}
+
+// Schon 9:16 (mit kleiner Toleranz)? → keine Normalisierung nötig.
+function isNineSixteen(w, h) {
+  return Math.abs((w / h) / TARGET - 1) <= 0.02; // ≤2% Abweichung
+}
+
+// Pixel-Erweiterung je Seite, um VERLUSTFREI auf 9:16 zu kommen (kein Crop).
+function computeExpand(w, h, direction) {
+  const r = w / h;
+  if (r > TARGET) {
+    // zu kurz → Höhe ergänzen (Richtung wählbar)
+    const extra = Math.round(w * 16 / 9) - h;
+    let top = 0, bottom = 0;
+    if (direction === "top") top = extra;
+    else if (direction === "bottom") bottom = extra;
+    else { top = Math.floor(extra / 2); bottom = extra - top; }
+    return { top, bottom, left: 0, right: 0, vertical: true };
+  }
+  // zu hoch/schmal → Breite ergänzen (symmetrisch)
+  const extra = Math.round(h * 9 / 16) - w;
+  const left = Math.floor(extra / 2);
+  return { top: 0, bottom: 0, left, right: extra - left, vertical: false };
+}
 
 function setBusy(on, msg) {
   $("m1Busy").hidden = !on;
@@ -32,10 +71,64 @@ async function onFile(file) {
   try {
     const dataUrl = await fileToDataUrl(file);
     $("m1DropLabel").textContent = file.name;
-    showImage(dataUrl); // Flyer ist der Startpunkt im Ergebnis
+    const { w, h } = await imgSize(dataUrl);
+
+    if (isNineSixteen(w, h)) {
+      // Bereits 9:16 → Schritt 1a überspringen, direkt weiter.
+      state.normPending = false;
+      $("m1NormCard").hidden = true;
+      showImage(dataUrl);
+      return;
+    }
+
+    // Abweichend → Schritt 1a zeigen; Flow ist bis zur Bestätigung blockiert.
+    state.pendingOriginal = dataUrl;
+    state.normDims = { w, h };
+    state.normResult = null;
+    state.normPending = true;
+    const e = computeExpand(w, h, "symmetric");
+    $("m1NormDir").style.display = e.vertical ? "" : "none"; // Richtung nur bei Höhen-Erweiterung
+    $("m1NormBefore").src = dataUrl;
+    $("m1NormAfter").removeAttribute("src");
+    $("m1NormApply").disabled = true;
+    $("m1NormInfo").textContent = `aktuell ${w}×${h} — nicht 9:16`;
+    $("m1NormCard").hidden = false;
+    showImage(dataUrl); // Original schon sichtbar in der Bühne
+    notify("Flyer ist nicht 9:16 — erst auf 9:16 erweitern (Schritt 1a)", "info");
   } catch (e) {
     notify(e.message, "error");
   }
+}
+
+async function normRun() {
+  if (!state.pendingOriginal) return;
+  const dir = (document.querySelector('input[name="m1NormDir"]:checked') || {}).value || "symmetric";
+  const e = computeExpand(state.normDims.w, state.normDims.h, dir);
+  $("m1NormRun").disabled = true;
+  setBusy(true, "Erweitere verlustfrei auf 9:16 …");
+  try {
+    const { image } = await post("/admin/normalize", {
+      image: state.pendingOriginal, top: e.top, bottom: e.bottom, left: e.left, right: e.right,
+    });
+    state.normResult = image;
+    $("m1NormAfter").src = image;
+    $("m1NormApply").disabled = false;
+    notify("9:16-Version erstellt — prüfen und übernehmen", "success");
+  } catch (err) {
+    notify(err.message, "error");
+  } finally {
+    setBusy(false);
+    $("m1NormRun").disabled = false;
+  }
+}
+
+function normApply() {
+  if (!state.normResult) return notify("Erst auf 9:16 erweitern", "error");
+  state.current = state.normResult;
+  state.normPending = false;
+  $("m1NormCard").hidden = true;
+  showImage(state.normResult);
+  notify("9:16 übernommen — weiter mit der Analyse", "success");
 }
 
 function renderZones() {
@@ -66,6 +159,7 @@ function renderZones() {
 
 async function analyze() {
   if (!state.current) return notify("Erst einen Flyer hochladen", "error");
+  if (state.normPending) return notify("Erst auf 9:16 erweitern und übernehmen (Schritt 1a)", "error");
   const btn = $("m1Analyze");
   btn.disabled = true;
   setBusy(true, "Erkenne Textzonen …");
@@ -122,6 +216,10 @@ export function initMode1() {
   const file = $("m1File");
   $("m1Drop").addEventListener("click", () => file.click());
   file.addEventListener("change", () => file.files[0] && onFile(file.files[0]));
+
+  // Schritt 1a: 9:16-Normalisierung
+  $("m1NormRun").addEventListener("click", normRun);
+  $("m1NormApply").addEventListener("click", normApply);
 
   $("m1Analyze").addEventListener("click", analyze);
   $("m1Rebuild").addEventListener("click", rebuildPrompt);
