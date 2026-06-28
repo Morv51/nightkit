@@ -19,12 +19,25 @@ function setBusy(on, msg) {
   if (msg) $("m2BusyMsg").textContent = msg;
 }
 
+// Persistente Fehleranzeige in der Bühne (verschwindet nicht wie ein Toast) —
+// damit ein GPT-/Ideogram-Fehler IMMER sichtbar bleibt.
+function showError(msg) {
+  const el = $("m2Error");
+  if (el) { el.textContent = "⚠ " + msg; el.hidden = false; }
+  $("m2Empty").hidden = true;
+}
+function hideError() {
+  const el = $("m2Error");
+  if (el) el.hidden = true;
+}
+
 function showResult(dataUrl) {
   state.result = dataUrl;
   const img = $("m2Result");
   img.src = dataUrl;
   img.hidden = false;
   $("m2Empty").hidden = true;
+  hideError();
   $("m2Actions").hidden = false;
   if (compare) compare.reset();
 }
@@ -102,10 +115,12 @@ async function generate() {
   const engine = (($("m2Engine") && $("m2Engine").value) === "ideogram") ? "ideogram" : "openai";
   if (compare) compare.reset();
 
+  hideError();
   genAbort = new AbortController();
   genTimedOut = false;
-  // Client-Sicherheitsnetz etwas über dem Server-Timeout (90 s) → nie ewiges Laden.
-  const timer = setTimeout(() => { genTimedOut = true; genAbort.abort(); }, 95000);
+  // Client-Sicherheitsnetz über dem Server-Timeout (OpenAI 90 s + ggf. FAL-Outpaint)
+  // → es lädt nie ewig.
+  const timer = setTimeout(() => { genTimedOut = true; genAbort.abort(); }, 170000);
   setGenerating(true);
   try {
     // KEIN Moodboard-Bild mitsenden — reine Text-zu-Bild-Generierung.
@@ -114,13 +129,15 @@ async function generate() {
     $("m2Compare").hidden = false; // Moodboard ⇄ Ergebnis vergleichbar
     notify(`Flyer generiert (${engineLabel()})`, "success");
   } catch (e) {
-    if (genAbort && genAbort.signal.aborted) {
-      notify(genTimedOut
-        ? "Zeitüberschreitung — nach 95 s abgebrochen. Bitte erneut versuchen."
-        : "Generierung abgebrochen", "info");
+    if (genAbort && genAbort.signal.aborted && !genTimedOut) {
+      notify("Generierung abgebrochen", "info"); // bewusst vom Nutzer abgebrochen
     } else {
-      // e.message trägt die Klartext-Server-/OpenAI-Meldung ("Generierung fehlgeschlagen: …").
-      notify(e.message, "error");
+      // Fehler/Timeout: IMMER sichtbar — als Toast UND persistent in der Bühne.
+      const msg = genTimedOut
+        ? "Zeitüberschreitung — nach 170 s abgebrochen. Bitte erneut versuchen."
+        : e.message; // trägt die Klartext-Server-/OpenAI-Meldung ("Generierung fehlgeschlagen: …")
+      notify(msg, "error");
+      showError(msg);
     }
   } finally {
     clearTimeout(timer);
