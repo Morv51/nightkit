@@ -12,8 +12,9 @@ const $ = (id) => document.getElementById(id);
 // Pflicht-Platzhalter (Soll-Liste) — ein Template soll sie alle enthalten.
 const MANDATORY = ["HEADLINE", "SUBLINE", "DATUM", "UHRZEIT", "LOCATION",
   "DJ NAME 1", "DJ NAME 2", "DJ NAME 3", "CLUBNAME", "WEBSITE"];
-// Dropdown je Zone: Pflichtrollen + "ENTFERNEN" (Text in den REMOVE-Abschnitt).
-const ROLES = [...MANDATORY, "ENTFERNEN"];
+// Dropdown je Zone: Pflichtrollen + "ENTFERNEN" (→ REMOVE-Abschnitt) +
+// "BEHALTEN" (→ KEEP-Abschnitt, Text bleibt unverändert erhalten).
+const ROLES = [...MANDATORY, "ENTFERNEN", "BEHALTEN"];
 
 const state = {
   current: null,   // hochgeladener Flyer (data-URL) — nur als Vision-Eingabe + Vorschau
@@ -64,13 +65,17 @@ function renderZones() {
     sel.className = "zone-role";
     for (const r of ROLES) {
       const o = document.createElement("option");
-      o.value = r; o.textContent = r === "ENTFERNEN" ? "✕ ENTFERNEN" : r;
+      o.value = r;
+      o.textContent = r === "ENTFERNEN" ? "✕ ENTFERNEN" : r === "BEHALTEN" ? "✓ BEHALTEN" : r;
       if (r === z.role) o.selected = true;
       sel.appendChild(o);
     }
-    const markRemove = () => row.classList.toggle("zone-remove", sel.value === "ENTFERNEN");
-    sel.addEventListener("change", () => { state.zones[i].role = sel.value; markRemove(); updateMissing(); scheduleRebuild(); });
-    markRemove();
+    const markState = () => {
+      row.classList.toggle("zone-remove", sel.value === "ENTFERNEN");
+      row.classList.toggle("zone-keep", sel.value === "BEHALTEN");
+    };
+    sel.addEventListener("change", () => { state.zones[i].role = sel.value; markState(); updateMissing(); scheduleRebuild(); });
+    markState();
     row.appendChild(text);
     row.appendChild(sel);
     wrap.appendChild(row);
