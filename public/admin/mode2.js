@@ -69,6 +69,8 @@ async function analyze() {
       refType: state.refType,
       model: $("m2Model").value,
     });
+    // NEUER Stil-Anker → alles Alte verwerfen: Varianten-Liste leeren UND die
+    // manuellen Varianten-Eingaben zurücksetzen (kein alter Wert sickert durch).
     state.dna = dna;
     if (refType) state.refType = refType;
     $("m2Prompt").value = prompt || "";
@@ -76,6 +78,7 @@ async function analyze() {
     $("m2Rebuild").hidden = false;
     showAnchor(dna);
     clearVariants();
+    resetVariantInputs();
     notify("Analyse fertig — Prompt bereit zum Kopieren", "success");
   } catch (e) {
     notify(e.message, "error");
@@ -130,6 +133,15 @@ function clearVariants() {
   $("m2VariantList").innerHTML = "";
   state.varCount = 0;
   $("m2CopyAll").hidden = true;
+}
+
+// Manuelle Varianten-Eingaben leeren — beim Anker-Wechsel, damit keine alten
+// Werte aus einem früheren Stil-Anker durchsickern.
+function resetVariantInputs() {
+  ["m2VarColor", "m2VarImagery", "m2VarMood", "m2VarColors"].forEach((id) => {
+    const el = $(id);
+    if (el) el.value = "";
+  });
 }
 
 function addVariant(label, variant, precomputedPrompt) {
@@ -202,7 +214,7 @@ async function autoVariants() {
   setBusy(true, `Erzeuge ${count} Varianten …`);
   try {
     const { variants } = await post("/admin/auto-variants", {
-      dna: state.dna, refType: state.refType, count,
+      dna: state.dna, refType: state.refType, count, model: $("m2Model").value,
     });
     clearVariants();
     (variants || []).forEach((vrt) => addVariant(vrt.label, null, vrt.prompt));
