@@ -91,16 +91,23 @@
           </div>
         </div>
       </section>
-      <!-- Modus 2: Moodboard → Prompt (reiner PROMPT-Generator, wie Modus 1) -->
+      <!-- Modus 2: Referenz(en) → Prompt (reiner PROMPT-Generator, wie Modus 1) -->
       <section class="studio-panel" id="panel-mode2" data-tab="mode2" hidden>
         <div class="studio-single">
           <div class="st-card">
-            <div class="st-head">1 · Moodboard</div>
+            <div class="st-head">1 · Referenzen</div>
             <label class="st-drop" id="m2Drop">
-              <input type="file" id="m2File" accept="image/png,image/jpeg,image/webp" hidden>
-              <span id="m2DropLabel">Moodboard hierher ziehen, einfügen (⌘/Ctrl+V) oder klicken — PNG/JPG/WebP, ≤10&nbsp;MB</span>
+              <input type="file" id="m2File" accept="image/png,image/jpeg,image/webp" multiple hidden>
+              <span id="m2DropLabel">Bild(er) hierher ziehen, einfügen (⌘/Ctrl+V) oder klicken — ein Bild, mehrere Bilder oder ein Moodboard · PNG/JPG/WebP, ≤10&nbsp;MB je Bild</span>
             </label>
-            <img class="st-thumb" id="m2Thumb" alt="" hidden>
+            <div class="thumb-row" id="m2Thumbs" hidden></div>
+            <label class="ref-row"><span>Art der Referenz</span>
+              <select id="m2RefType" class="st-select">
+                <option value="moodboard">Moodboard (Collage) — nur gemeinsame Stil-Sprache</option>
+                <option value="single">Einzelnes Bild (Inspiration) — näher am Vorbild</option>
+                <option value="multiple">Mehrere Bilder — gemeinsamer Nenner</option>
+              </select>
+            </label>
           </div>
 
           <div class="st-card">
@@ -113,7 +120,7 @@
               <button class="rbtn rbtn-ghost" id="m2Analyze" type="button">Analysieren</button>
             </div>
             <div class="st-busy st-busy-inline" id="m2Busy" hidden><span class="cb-spin"></span><span id="m2BusyMsg">…</span></div>
-            <div class="st-mini-note">Liest NUR die Stil-Sprache (Look, Farbwelt, Typo-Charakter, Textur, Stimmung) — NICHT die Collage-Struktur/Vielteiligkeit des Moodboards.</div>
+            <div class="st-mini-note">Liest NUR die Stil-Sprache (Look, Farbwelt, Typo-Charakter, Textur, Stimmung) — keine konkreten Inhalte. Bei „Moodboard" wird die Collage-Struktur ignoriert, bei „Einzelnes Bild" darf es näher am Vorbild bleiben.</div>
           </div>
 
           <!-- Das Herzstück: der fertige Club-Event-Flyer-Prompt zum Kopieren -->
@@ -123,11 +130,41 @@
               <button class="st-mini" id="m2Rebuild" type="button" hidden>Prompt aktualisieren</button>
             </div>
             <textarea class="st-prompt st-prompt-big" id="m2Prompt" rows="20"
-              placeholder="Erst ein Moodboard hochladen und analysieren — oder den Prompt direkt selbst schreiben …"></textarea>
+              placeholder="Erst Referenz(en) hochladen und analysieren — oder den Prompt direkt selbst schreiben …"></textarea>
             <div class="prompt-actions">
               <button class="rbtn rbtn-primary st-copy" id="m2Copy" type="button">📋 Prompt kopieren</button>
             </div>
-            <div class="st-mini-note">Prompt kopieren und in ChatGPT einfügen. Optional ein Moodboard als visuelle Referenz mit hochladen.</div>
+            <div class="st-mini-note">Prompt kopieren und in ChatGPT einfügen. Lade dort die Referenz (Moodboard / Inspirationsbild) als Bild mit hoch — sie ist der primäre visuelle Anker.</div>
+          </div>
+
+          <!-- Stil-Anker: gespeicherte Stil-DNA -->
+          <div class="st-card" id="m2AnchorCard" hidden>
+            <div class="st-head">Stil-Anker <span class="anchor-ok" id="m2AnchorState">✓ gespeichert</span></div>
+            <div class="anchor-dna" id="m2Anchor"></div>
+            <div class="st-mini-note">Dieser Stil bleibt fix — unten Varianten erzeugen, ohne neu zu analysieren.</div>
+          </div>
+
+          <!-- Varianten: gleicher Stil, gezielt geänderte Aspekte -->
+          <div class="st-card" id="m2VariantsCard" hidden>
+            <div class="st-head">
+              Varianten — gleicher Stil, gezielt geändert
+              <button class="st-mini" id="m2VarClear" type="button">Leeren</button>
+            </div>
+            <label class="ref-row"><span>Farbwelt</span>
+              <input type="text" id="m2VarColor" class="zone-text" placeholder="z.B. statt Neon: gedeckte Pastelltöne"></label>
+            <label class="ref-row"><span>Motive/Illustration</span>
+              <input type="text" id="m2VarImagery" class="zone-text" placeholder="z.B. statt Cartoon-Figur: abstrakte Formen"></label>
+            <label class="ref-row"><span>Stimmung (optional)</span>
+              <input type="text" id="m2VarMood" class="zone-text" placeholder="z.B. ruhiger, eleganter"></label>
+            <div class="st-row">
+              <button class="rbtn rbtn-ghost" id="m2VarAdd" type="button">+ Variante hinzufügen</button>
+            </div>
+            <div class="st-mini-note" style="margin-top:6px">Mehrere Farbwelten auf einmal (kommagetrennt) — eine Variante je Farbwelt:</div>
+            <div class="st-row">
+              <input type="text" id="m2VarColors" class="zone-text" placeholder="Pastell, Schwarzweiß, Erdtöne, Neon">
+              <button class="rbtn rbtn-primary" id="m2VarBatch" type="button">Varianten erzeugen</button>
+            </div>
+            <div class="variant-list" id="m2VariantList"></div>
           </div>
         </div>
       </section>

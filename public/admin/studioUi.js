@@ -60,6 +60,23 @@ export function wireDropzone(el, handler) {
   });
 }
 
+// Wie wireDropzone, aber gibt ALLE gedroppten Dateien (FileList) an den Handler —
+// für Mehrfach-Upload (Modus 2). Lässt wireDropzone (Einzeldatei, Modus 1) unberührt.
+export function wireDropzoneMulti(el, handler) {
+  if (!el) return;
+  const over = (e) => { e.preventDefault(); el.classList.add("dragover"); };
+  const leave = (e) => { e.preventDefault(); el.classList.remove("dragover"); };
+  el.addEventListener("dragenter", over);
+  el.addEventListener("dragover", over);
+  el.addEventListener("dragleave", leave);
+  el.addEventListener("drop", (e) => {
+    e.preventDefault();
+    el.classList.remove("dragover");
+    const files = e.dataTransfer && e.dataTransfer.files;
+    if (files && files.length) handler(files);
+  });
+}
+
 // Paste (Cmd/Ctrl+V) eines Bildes aus der Zwischenablage — nur wenn das
 // zugehörige Panel gerade sichtbar ist (aktiver Tab).
 export function wirePaste(panelEl, handler) {
