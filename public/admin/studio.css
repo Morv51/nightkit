@@ -277,6 +277,9 @@ html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: aut
   border-color: var(--color-accent, #ccff00);
 }
 
+/* Engine-Umschalter (Modus 1) */
+.engine-card label { flex: 0 0 56px; font-size: 12px; color: var(--muted, rgba(245,245,240,0.7)); }
+
 /* Toast */
 .studio-toast {
   position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px);

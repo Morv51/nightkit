@@ -104,6 +104,17 @@
                 placeholder="Erst Textzonen erkennen — oder den Prompt direkt selbst schreiben …"></textarea>
             </div>
 
+            <div class="st-card engine-card">
+              <div class="st-row">
+                <label for="m1Engine">Engine</label>
+                <select id="m1Engine" class="st-select">
+                  <option value="ideogram">Ideogram V3</option>
+                  <option value="openai">GPT Image 2 (Test)</option>
+                </select>
+              </div>
+              <div class="st-mini-note">Wählt die Bild-Engine für „Template bauen". GPT Image 2 ist ein Test-Vergleich (braucht OPENAI_API_KEY, liefert Hochformat ~2:3, nicht exakt 9:16).</div>
+            </div>
+
             <button class="rbtn rbtn-primary st-go" id="m1Insert" type="button">✦ Template bauen</button>
             <div class="st-mini-note">8–10 Textfelder auf einmal sind fehleranfällig — danach gezielt mit <b>Korrigieren</b> (Text/Layout) und <b>Bereinigen</b> (Reste wegradieren) nachjustieren.</div>
           </div>

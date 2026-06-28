@@ -314,9 +314,13 @@ async function insertPlaceholders() {
       state.current = img;
       showImage(img);
     }
-    // 2) Texte ersetzen + fehlende Pflicht-Platzhalter ergänzen (edit-Flow).
-    setBusy(true, "Setze Platzhalter ein + ergänze fehlende …");
-    const r2 = await post("/admin/edit", { image: img, prompt });
+    // 2) Texte ersetzen + fehlende ergänzen — je nach gewählter Engine.
+    const engine = ($("m1Engine") && $("m1Engine").value) || "ideogram";
+    const endpoint = engine === "openai" ? "/admin/edit-openai" : "/admin/edit";
+    setBusy(true, engine === "openai"
+      ? "GPT Image 2 baut das Template …"
+      : "Setze Platzhalter ein + ergänze fehlende …");
+    const r2 = await post(endpoint, { image: img, prompt });
     showImage(r2.image);
     $("m1Compare").hidden = false; // Vorher/Nachher jetzt verfügbar
     notify("Template gebaut — '⇄ Vorher/Nachher' zum Vergleichen, sonst Korrigieren/Bereinigen", "success");
