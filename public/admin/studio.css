@@ -265,31 +265,17 @@ html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: aut
 }
 .st-actions { display: flex; gap: 8px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
 
-/* Vorher/Nachher-Vergleich (Slider über der Ergebnis-Bühne) */
-.cmp-overlay { position: absolute; inset: 0; z-index: 6; display: none; cursor: ew-resize; touch-action: none; }
-.cmp-before {
-  position: absolute; inset: 0; width: 100%; height: 100%;
-  object-fit: contain; background: var(--card-inset, #0d0d0d);
+/* Vorher/Nachher-Toggle: Badge auf der Bühne, wenn das Original gezeigt wird */
+.cmp-badge {
+  position: absolute; top: 8px; left: 8px; z-index: 6; display: none;
+  font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px;
+  background: rgba(0, 0, 0, 0.6); color: #fff; pointer-events: none;
 }
-.cmp-handle {
-  position: absolute; top: 0; bottom: 0; left: 50%; width: 2px;
-  background: var(--color-accent, #ccff00); transform: translateX(-1px);
-  pointer-events: none; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
-}
-.cmp-grip {
-  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  width: 30px; height: 30px; border-radius: 50%;
+/* aktiver Vergleich-Button (zeigt gerade „Vorher") */
+.rbtn.active {
   background: var(--color-accent, #ccff00); color: #000;
-  display: grid; place-items: center; font-size: 15px; font-weight: 700;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
+  border-color: var(--color-accent, #ccff00);
 }
-.cmp-lab {
-  position: absolute; top: 8px; font-size: 11px; font-weight: 600;
-  padding: 3px 8px; border-radius: 6px;
-  background: rgba(0, 0, 0, 0.55); color: #fff; pointer-events: none;
-}
-.cmp-lab-l { left: 8px; }
-.cmp-lab-r { right: 8px; }
 
 /* Toast */
 .studio-toast {

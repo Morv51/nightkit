@@ -30,6 +30,7 @@ function showResult(dataUrl) {
   img.hidden = false;
   $("m2Empty").hidden = true;
   $("m2Actions").hidden = false;
+  if (compare) compare.reset();
 }
 
 async function onFile(file) {
@@ -89,7 +90,7 @@ async function generate() {
   if (!state.moodboard) return notify("Moodboard fehlt (dient als Style-Reference)", "error");
   const btn = $("m2Generate");
   btn.disabled = true;
-  if (compare) compare.close();
+  if (compare) compare.reset();
   setBusy(true, "Generiere Flyer (V3, höchste Qualität) …");
   try {
     const { image } = await post("/admin/generate", { prompt, styleImage: state.moodboard });
@@ -120,7 +121,12 @@ export function initMode2() {
   slider.addEventListener("input", () => { $("m2StyleVal").textContent = styleLabel(Number(slider.value)); });
 
   // Vorher/Nachher: Moodboard ⇄ generiertes Ergebnis.
-  compare = createCompare({ stage: $("m2Stage"), getBefore: () => state.moodboard });
+  compare = createCompare({
+    resultImg: $("m2Result"),
+    getBefore: () => state.moodboard,
+    getAfter: () => state.result,
+    button: $("m2Compare"),
+  });
   $("m2Compare").addEventListener("click", () => compare.toggle());
 
   // Bereinigen (LaMa-Brush) + Korrigieren (re-edit) auf dem aktuellen Ergebnis.

@@ -86,7 +86,13 @@
               <div class="st-head">3 · Textzonen → Rollen</div>
               <div class="zone-list" id="m1Zones"></div>
               <div class="miss-box" id="m1Missing" hidden></div>
-              <div class="st-mini-note">„ENTFERNEN" löscht die Zone (Credits/Logos) via Bereinigen. Fehlende Platzhalter werden beim Bauen als ein kompakter Info-Block ergänzt: untergeordnet, im Sekundär-Font (nicht Headline), Clubname/Website klein im Footer.</div>
+              <div class="font-ref" id="m1FontRef" hidden>
+                <label class="ref-row"><span>Font-Referenz</span>
+                  <select id="m1RefInfo" class="zone-role"></select>
+                </label>
+                <div class="st-mini-note">Wählt eine erkannte Original-Zone als Stil-Anker — die ergänzten Felder folgen genau deren Font, Casing und Setzweise (kein generischer Listen-Stil).</div>
+              </div>
+              <div class="st-mini-note">„ENTFERNEN" löscht die Zone (Credits/Logos) via Bereinigen. Fehlende Platzhalter (die keiner Zone zugewiesen sind) werden beim Bauen als kompakter Info-Block ergänzt; bereits zugewiesene werden an ihrer Originalposition ersetzt.</div>
             </div>
 
             <div class="st-card">

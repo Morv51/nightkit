@@ -23,6 +23,8 @@ const state = {
   pendingOriginal: null, normDims: null, normResult: null, normPending: false,
   // Vorher-Bild (Build-Eingang) für den Vorher/Nachher-Vergleich
   beforeImage: null,
+  // Font-Referenz für ergänzte Felder (Index in state.zones, -1 = automatisch)
+  fontRefIdx: -1,
 };
 
 const TARGET = 9 / 16; // 0.5625
@@ -72,6 +74,7 @@ function showImage(dataUrl) {
   img.hidden = false;
   $("m1Empty").hidden = true;
   $("m1Actions").hidden = false;
+  if (compare) compare.reset(); // neues Bild → zurück in den Nachher-Zustand
 }
 
 async function onFile(file) {
@@ -205,14 +208,17 @@ async function analyze() {
       image: state.current,
       model: $("m1Model").value,
     });
-    // bbox behalten (für ENTFERNEN-Maske). Nicht-Pflichtrollen (OTHER, Credits)
-    // als ENTFERNEN vorbelegen — der Nutzer kann das ändern.
+    // bbox behalten (für ENTFERNEN-Maske), font für die Font-Referenz. Nicht-
+    // Pflichtrollen (OTHER, Credits) als ENTFERNEN vorbelegen — änderbar.
     state.zones = (zones || []).map((z) => ({
       text: z.text || "",
       role: MANDATORY.includes(z.role) ? z.role : "ENTFERNEN",
       bbox: Array.isArray(z.bbox) && z.bbox.length === 4 ? z.bbox : null,
+      font: z.font && typeof z.font === "object" ? z.font : null,
     }));
+    state.fontRefIdx = -1;
     renderZones();
+    populateFontRef();
     $("m1Prompt").value = prompt || "";
     $("m1Rebuild").hidden = false;
     notify(`${state.zones.length} Textzonen erkannt`, "success");
@@ -224,12 +230,40 @@ async function analyze() {
   }
 }
 
+// Font-Referenz: gewählte Zone als Stil-Anker {text, font} (oder null).
+function refForPrompt() {
+  const z = state.fontRefIdx >= 0 ? state.zones[state.fontRefIdx] : null;
+  return z ? { text: z.text, font: z.font } : null;
+}
+
+// Dropdown „Font-Referenz für ergänzte Felder" mit den erkannten Zonen füllen.
+function populateFontRef() {
+  const sel = $("m1RefInfo"), box = $("m1FontRef");
+  if (!sel || !box) return;
+  sel.innerHTML = "";
+  const auto = document.createElement("option");
+  auto.value = "-1"; auto.textContent = "automatisch (Sekundär-Stil)";
+  sel.appendChild(auto);
+  state.zones.forEach((z, i) => {
+    const o = document.createElement("option");
+    o.value = String(i);
+    const hint = z.font ? " · " + [z.font.style, z.font.casing].filter(Boolean).join("/") : "";
+    o.textContent = (z.text || "(leer)").slice(0, 28) + hint;
+    sel.appendChild(o);
+  });
+  sel.value = String(state.fontRefIdx);
+  box.hidden = state.zones.length === 0;
+}
+
 async function rebuildPrompt() {
   if (!state.zones.length) return;
   try {
-    const { prompt } = await post("/admin/build-placeholder-prompt", { zones: state.zones });
+    const { prompt } = await post("/admin/build-placeholder-prompt", {
+      zones: state.zones,
+      infoRef: refForPrompt(),
+    });
     $("m1Prompt").value = prompt;
-    notify("Prompt aus Rollen neu gebaut", "success");
+    notify("Prompt neu gebaut (Rollen + Font-Referenz)", "success");
   } catch (e) {
     notify(e.message, "error");
   }
@@ -266,7 +300,7 @@ async function insertPlaceholders() {
   const removeZones = state.zones.filter((z) => z.role === "ENTFERNEN" && z.bbox);
   const btn = $("m1Insert");
   btn.disabled = true;
-  if (compare) compare.close();
+  if (compare) compare.reset();
   // Vorher-Bild = der Build-Eingang (Original-/9:16-Upload) für den Vergleich.
   state.beforeImage = state.current;
   try {
@@ -310,8 +344,16 @@ export function initMode1() {
   $("m1Rebuild").addEventListener("click", rebuildPrompt);
   $("m1Insert").addEventListener("click", insertPlaceholders);
 
+  // Font-Referenz für ergänzte Felder: Auswahl → Prompt neu bauen.
+  $("m1RefInfo").addEventListener("change", (e) => { state.fontRefIdx = Number(e.target.value); rebuildPrompt(); });
+
   // Vorher/Nachher-Vergleich über der Ergebnis-Bühne.
-  compare = createCompare({ stage: $("m1Stage"), getBefore: () => state.beforeImage });
+  compare = createCompare({
+    resultImg: $("m1Result"),
+    getBefore: () => state.beforeImage,
+    getAfter: () => state.current,
+    button: $("m1Compare"),
+  });
   $("m1Compare").addEventListener("click", () => compare.toggle());
 
   // Bereinigen (LaMa-Brush) + Korrigieren (re-edit) auf dem aktuellen Bild.
