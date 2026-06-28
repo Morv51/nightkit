@@ -1,6 +1,8 @@
 // Modus 2: Moodboard → Generieren.
-// Upload Moodboard → Vision-Analyse (Stil-DNA + Default-Prompt) → editierbarer
-// Prompt → Ideogram-V3-Generierung mit Moodboard als Style-Reference.
+// Upload Moodboard → Vision-Analyse extrahiert NUR die Stil-DNA (Look, nicht
+// Inhalt) → editierbarer Generierungs-Prompt → REINE Text-zu-Bild-Generierung
+// (GPT Image 2 oder Ideogram, KEIN Edit/keine Maske; das Moodboard wird NICHT als
+// Bild durchgereicht). Ergebnis = ein NEUER Flyer im Stil, keine Reproduktion.
 
 import { post } from "./studioApi.js";
 import { fileToDataUrl, downloadDataUrl, toJpeg, notify, wireDropzone, wirePaste } from "./studioUi.js";
@@ -8,15 +10,9 @@ import { createBrushTool, correctImage, saveTemplate } from "./studioBrush.js";
 import { createCompare } from "./studioCompare.js";
 
 const $ = (id) => document.getElementById(id);
-let compare; // Vorher/Nachher-Slider (in initMode2 erzeugt)
+let compare; // Vorher/Nachher: Moodboard ⇄ Ergebnis (in initMode2 erzeugt)
 
 const state = { moodboard: null, dna: null, result: null };
-
-function styleLabel(v) {
-  if (v < 0.34) return "locker";
-  if (v > 0.66) return "eng";
-  return "mittel";
-}
 
 function setBusy(on, msg) {
   $("m2Busy").hidden = !on;
@@ -52,11 +48,12 @@ async function analyze() {
   btn.disabled = true;
   setBusy(true, "Analysiere Stil-DNA …");
   try {
+    // NUR Stil-DNA (Look) — das Moodboard-Bild dient hier reiner Vision-Analyse,
+    // nicht als zu generierendes Bild.
     const { dna, prompt } = await post("/admin/analyze", {
       mode: "moodboard",
       image: state.moodboard,
       model: $("m2Model").value,
-      styleAdherence: Number($("m2Style").value),
     });
     state.dna = dna;
     $("m2Prompt").value = prompt;
@@ -73,35 +70,63 @@ async function analyze() {
 async function rebuildPrompt() {
   if (!state.dna) return;
   try {
-    const { prompt } = await post("/admin/build-prompt", {
-      dna: state.dna,
-      styleAdherence: Number($("m2Style").value),
-    });
+    const { prompt } = await post("/admin/build-prompt", { dna: state.dna });
     $("m2Prompt").value = prompt;
-    notify("Prompt aus DNA neu gebaut", "success");
+    notify("Prompt aus Stil-DNA neu gebaut", "success");
   } catch (e) {
     notify(e.message, "error");
   }
 }
 
+// ── Generierung mit Abbruch + Client-Timeout (kein ewiges Laden) ────────────
+let genAbort = null;
+let genTimedOut = false;
+
+function engineLabel() {
+  return (($("m2Engine") && $("m2Engine").value) === "ideogram") ? "Ideogram" : "GPT Image 2";
+}
+
+function setGenerating(on) {
+  setBusy(on, on ? `Generiere Flyer mit ${engineLabel()} …` : "");
+  $("m2Generate").disabled = on;
+  $("m2Cancel").hidden = !on;
+}
+
+function cancelGenerate() {
+  if (genAbort) genAbort.abort();
+}
+
 async function generate() {
   const prompt = $("m2Prompt").value.trim();
-  if (!prompt) return notify("Prompt ist leer", "error");
-  if (!state.moodboard) return notify("Moodboard fehlt (dient als Style-Reference)", "error");
-  const btn = $("m2Generate");
-  btn.disabled = true;
+  if (!prompt) return notify("Prompt ist leer — erst analysieren", "error");
+  const engine = (($("m2Engine") && $("m2Engine").value) === "ideogram") ? "ideogram" : "openai";
   if (compare) compare.reset();
-  setBusy(true, "Generiere Flyer (V3, höchste Qualität) …");
+
+  genAbort = new AbortController();
+  genTimedOut = false;
+  // Client-Sicherheitsnetz etwas über dem Server-Timeout (90 s) → nie ewiges Laden.
+  const timer = setTimeout(() => { genTimedOut = true; genAbort.abort(); }, 95000);
+  setGenerating(true);
   try {
-    const { image } = await post("/admin/generate", { prompt, styleImage: state.moodboard });
+    // KEIN Moodboard-Bild mitsenden — reine Text-zu-Bild-Generierung.
+    const { image } = await post("/admin/generate", { prompt, engine }, { signal: genAbort.signal });
     showResult(image);
     $("m2Compare").hidden = false; // Moodboard ⇄ Ergebnis vergleichbar
-    notify("Flyer generiert — '⇄ Vorher/Nachher' zum Vergleich mit dem Moodboard", "success");
+    notify(`Flyer generiert (${engineLabel()})`, "success");
   } catch (e) {
-    notify(e.message, "error");
+    if (genAbort && genAbort.signal.aborted) {
+      notify(genTimedOut
+        ? "Zeitüberschreitung — nach 95 s abgebrochen. Bitte erneut versuchen."
+        : "Generierung abgebrochen", "info");
+    } else {
+      // e.message trägt die Klartext-Server-/OpenAI-Meldung ("Generierung fehlgeschlagen: …").
+      notify(e.message, "error");
+    }
   } finally {
-    btn.disabled = false;
-    setBusy(false);
+    clearTimeout(timer);
+    genAbort = null;
+    genTimedOut = false;
+    setGenerating(false);
   }
 }
 
@@ -116,9 +141,7 @@ export function initMode2() {
   $("m2Analyze").addEventListener("click", analyze);
   $("m2Rebuild").addEventListener("click", rebuildPrompt);
   $("m2Generate").addEventListener("click", generate);
-
-  const slider = $("m2Style");
-  slider.addEventListener("input", () => { $("m2StyleVal").textContent = styleLabel(Number(slider.value)); });
+  $("m2Cancel").addEventListener("click", cancelGenerate);
 
   // Vorher/Nachher: Moodboard ⇄ generiertes Ergebnis.
   compare = createCompare({
@@ -129,7 +152,7 @@ export function initMode2() {
   });
   $("m2Compare").addEventListener("click", () => compare.toggle());
 
-  // Bereinigen (LaMa-Brush) + Korrigieren (re-edit) auf dem aktuellen Ergebnis.
+  // Bereinigen (LaMa-Brush) + Korrigieren (re-edit) auf dem generierten Ergebnis.
   const brush = createBrushTool({
     stage: $("m2Stage"), img: $("m2Result"),
     getImage: () => state.result, setImage: showResult, setBusy,
@@ -140,7 +163,7 @@ export function initMode2() {
   $("m2Save").addEventListener("click", () =>
     saveTemplate({
       getImage: () => state.result, mode: "moodboard",
-      getMeta: () => ({ prompt: $("m2Prompt").value, dna: state.dna, styleAdherence: Number($("m2Style").value) }),
+      getMeta: () => ({ prompt: $("m2Prompt").value, dna: state.dna }),
     }));
 
   $("m2ExportPng").addEventListener("click", () => {
@@ -153,6 +176,6 @@ export function initMode2() {
   });
 }
 
-// Für andere Module (Task: Bereinigen/Korrigieren) erreichbar.
+// Für andere Module erreichbar.
 export function getResult() { return state.result; }
 export function setResult(dataUrl) { showResult(dataUrl); }

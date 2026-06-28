@@ -20,12 +20,14 @@ export async function postAuth(code) {
   return data;
 }
 
-// Geschützter POST mit Token. Bei 401 → Gate.
-export async function post(path, body) {
+// Geschützter POST mit Token. Bei 401 → Gate. opts.signal erlaubt Abbruch
+// (AbortController) — für die Generierung (Abbrechen-Button / Client-Timeout).
+export async function post(path, body, opts = {}) {
   const res = await fetch(path, {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-Admin-Token": getToken() },
     body: JSON.stringify(body || {}),
+    signal: opts.signal,
   });
   if (res.status === 401) {
     clearToken();
