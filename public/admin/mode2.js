@@ -129,9 +129,10 @@ function showAnchor(dna) {
 function clearVariants() {
   $("m2VariantList").innerHTML = "";
   state.varCount = 0;
+  $("m2CopyAll").hidden = true;
 }
 
-function addVariant(label, variant) {
+function addVariant(label, variant, precomputedPrompt) {
   state.varCount += 1;
   const n = state.varCount;
   const card = document.createElement("div");
@@ -151,16 +152,22 @@ function addVariant(label, variant) {
   const ta = document.createElement("textarea");
   ta.className = "st-prompt variant-prompt";
   ta.readOnly = true;
-  ta.value = "… Prompt wird gebaut …";
 
   card.appendChild(head); card.appendChild(ta);
-  $("m2VariantList").prepend(card); // neueste oben
+  $("m2VariantList").appendChild(card); // natürliche Reihenfolge (1, 2, 3 …)
+  $("m2CopyAll").hidden = false;
 
   copyBtn.addEventListener("click", () => copyToClipboard(ta.value, copyBtn));
 
-  post("/admin/build-prompt", { dna: state.dna, refType: state.refType, variant })
-    .then(({ prompt }) => { ta.value = prompt; })
-    .catch((e) => { ta.value = "Fehler: " + e.message; notify(e.message, "error"); });
+  // Prompt entweder vorab geliefert (Auto-Varianten) oder hier einzeln bauen.
+  if (precomputedPrompt != null) {
+    ta.value = precomputedPrompt;
+  } else {
+    ta.value = "… Prompt wird gebaut …";
+    post("/admin/build-prompt", { dna: state.dna, refType: state.refType, variant })
+      .then(({ prompt }) => { ta.value = prompt; })
+      .catch((e) => { ta.value = "Fehler: " + e.message; notify(e.message, "error"); });
+  }
 }
 
 function addVariantFromInputs() {
@@ -182,6 +189,42 @@ function addBatchVariants() {
   if (!colors.length) return;
   colors.forEach((c) => addVariant(c, { color_world: c }));
   notify(`${colors.length} Varianten erzeugt`, "success");
+}
+
+// Vollautomatisch: N fertige Varianten (Default 10) — gleicher Stil-Anker,
+// automatisch verschieden in Farbe / Illustration / Aufbau. Ein Klick, nichts
+// eintippen. Ersetzt die aktuelle Varianten-Liste durch den frischen Satz.
+async function autoVariants() {
+  if (!state.dna) return notify("Erst eine Referenz analysieren", "info");
+  const count = Math.max(1, Math.min(24, parseInt($("m2AutoCount").value, 10) || 10));
+  const btn = $("m2AutoBtn");
+  btn.disabled = true;
+  setBusy(true, `Erzeuge ${count} Varianten …`);
+  try {
+    const { variants } = await post("/admin/auto-variants", {
+      dna: state.dna, refType: state.refType, count,
+    });
+    clearVariants();
+    (variants || []).forEach((vrt) => addVariant(vrt.label, null, vrt.prompt));
+    notify(`${(variants || []).length} Varianten automatisch erzeugt`, "success");
+  } catch (e) {
+    notify(e.message, "error");
+  } finally {
+    btn.disabled = false;
+    setBusy(false);
+  }
+}
+
+// Alle Varianten-Prompts als nummerierte Liste in die Zwischenablage.
+function copyAll() {
+  const cards = Array.from(document.querySelectorAll("#m2VariantList .variant-card"));
+  if (!cards.length) return notify("Keine Varianten zum Kopieren", "info");
+  const parts = cards.map((c) => {
+    const label = c.querySelector(".variant-label").textContent;
+    const prompt = c.querySelector(".variant-prompt").value;
+    return `=== ${label} ===\n${prompt}`;
+  });
+  copyToClipboard(parts.join("\n\n\n"), $("m2CopyAll"));
 }
 
 // ── Anzeige-Helfer ──────────────────────────────────────────────────────────
@@ -245,4 +288,6 @@ export function initMode2() {
   $("m2VarAdd").addEventListener("click", addVariantFromInputs);
   $("m2VarBatch").addEventListener("click", addBatchVariants);
   $("m2VarClear").addEventListener("click", clearVariants);
+  $("m2AutoBtn").addEventListener("click", autoVariants);
+  $("m2CopyAll").addEventListener("click", copyAll);
 }

@@ -345,6 +345,9 @@ html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: aut
 
 /* Eingabefelder in einer ref-row (Varianten) */
 .ref-row input { flex: 1; min-width: 0; }
+/* Texteingaben in einer Button-Reihe füllen; Anzahl-Feld bleibt schmal */
+.st-row > .zone-text { flex: 1; min-width: 0; }
+.auto-count { flex: 0 0 72px !important; text-align: center; }
 
 /* Stil-Anker */
 .anchor-ok { font-size: 11px; font-weight: 600; color: #9be37a; text-transform: none; letter-spacing: 0; }

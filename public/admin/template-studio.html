@@ -144,12 +144,23 @@
             <div class="st-mini-note">Dieser Stil bleibt fix — unten Varianten erzeugen, ohne neu zu analysieren.</div>
           </div>
 
-          <!-- Varianten: gleicher Stil, gezielt geänderte Aspekte -->
+          <!-- Varianten: gleicher Stil-Anker, automatisch verschieden -->
           <div class="st-card" id="m2VariantsCard" hidden>
             <div class="st-head">
-              Varianten — gleicher Stil, gezielt geändert
+              Varianten — gleicher Stil-Anker
               <button class="st-mini" id="m2VarClear" type="button">Leeren</button>
             </div>
+
+            <div class="st-mini-note">Auto-Varianten: ein Klick erzeugt mehrere fertige Prompts — alle mit dem Stil-Anker (Stimmung, Typo, Textur, Zeichenstil bleiben fix), automatisch verschieden in <b>Farbe</b>, <b>Illustration</b> und <b>Aufbau</b>.</div>
+            <div class="st-row">
+              <input type="number" id="m2AutoCount" class="zone-text auto-count" value="10" min="1" max="24" aria-label="Anzahl Varianten">
+              <button class="rbtn rbtn-primary" id="m2AutoBtn" type="button">Varianten automatisch erzeugen</button>
+            </div>
+            <div class="st-row" style="margin-top:4px">
+              <button class="rbtn rbtn-ghost" id="m2CopyAll" type="button" hidden>⧉ Alle kopieren</button>
+            </div>
+
+            <div class="st-mini-note" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--color-border,#222)">Oder gezielt eine Einzel-Variante (leer lassen = nicht ändern):</div>
             <label class="ref-row"><span>Farbwelt</span>
               <input type="text" id="m2VarColor" class="zone-text" placeholder="z.B. statt Neon: gedeckte Pastelltöne"></label>
             <label class="ref-row"><span>Motive/Illustration</span>
@@ -162,8 +173,9 @@
             <div class="st-mini-note" style="margin-top:6px">Mehrere Farbwelten auf einmal (kommagetrennt) — eine Variante je Farbwelt:</div>
             <div class="st-row">
               <input type="text" id="m2VarColors" class="zone-text" placeholder="Pastell, Schwarzweiß, Erdtöne, Neon">
-              <button class="rbtn rbtn-primary" id="m2VarBatch" type="button">Varianten erzeugen</button>
+              <button class="rbtn rbtn-ghost" id="m2VarBatch" type="button">erzeugen</button>
             </div>
+
             <div class="variant-list" id="m2VariantList"></div>
           </div>
         </div>
