@@ -160,7 +160,7 @@ function renderZones() {
       sel.appendChild(o);
     }
     const markRemove = () => row.classList.toggle("zone-remove", sel.value === "ENTFERNEN");
-    sel.addEventListener("change", () => { state.zones[i].role = sel.value; markRemove(); updateMissing(); });
+    sel.addEventListener("change", () => { state.zones[i].role = sel.value; markRemove(); updateMissing(); scheduleRebuild(); });
     markRemove();
     row.appendChild(text);
     row.appendChild(sel);
@@ -255,18 +255,42 @@ function populateFontRef() {
   box.hidden = state.zones.length === 0;
 }
 
-async function rebuildPrompt() {
+let rebuildSeq = 0;       // Race-Schutz: nur die jeweils LETZTE Antwort gilt
+let rebuildTimer = null;  // Debounce für schnelle Mehrfach-Auswahlen
+
+// Prompt aus dem AKTUELLEN Stand (Rollen + ENTFERNEN + Font-Referenz + fehlende
+// Platzhalter) neu bauen. silent = leise (kein Toast) für Live-Updates.
+async function rebuildPrompt({ silent = false } = {}) {
   if (!state.zones.length) return;
+  const seq = ++rebuildSeq;
   try {
     const { prompt } = await post("/admin/build-placeholder-prompt", {
       zones: state.zones,
       infoRef: refForPrompt(),
     });
+    if (seq !== rebuildSeq) return; // veraltete Antwort verwerfen
     $("m1Prompt").value = prompt;
-    notify("Prompt neu gebaut (Rollen + Font-Referenz)", "success");
+    flashPrompt();
+    if (!silent) notify("Prompt neu gebaut (Rollen + Font-Referenz)", "success");
   } catch (e) {
-    notify(e.message, "error");
+    if (seq === rebuildSeq) notify(e.message, "error");
   }
+}
+
+// Jede UI-Auswahl stößt den Neuaufbau leise an — gebündelt, damit schnelle
+// Klicks den Server nicht fluten; die letzte Auswahl gewinnt.
+function scheduleRebuild() {
+  if (rebuildTimer) clearTimeout(rebuildTimer);
+  rebuildTimer = setTimeout(() => { rebuildTimer = null; rebuildPrompt({ silent: true }); }, 220);
+}
+
+// Kurzes Aufblitzen des Prompt-Feldes, damit die Live-Aktualisierung sichtbar ist.
+function flashPrompt() {
+  const el = $("m1Prompt");
+  if (!el) return;
+  el.classList.remove("flash");
+  void el.offsetWidth; // Reflow → Animation neu starten
+  el.classList.add("flash");
 }
 
 // LaMa-Maske aus den bboxes der ENTFERNEN-Zonen (WEISS = entfernen). bbox ist
@@ -349,7 +373,7 @@ export function initMode1() {
   $("m1Insert").addEventListener("click", insertPlaceholders);
 
   // Font-Referenz für ergänzte Felder: Auswahl → Prompt neu bauen.
-  $("m1RefInfo").addEventListener("change", (e) => { state.fontRefIdx = Number(e.target.value); rebuildPrompt(); });
+  $("m1RefInfo").addEventListener("change", (e) => { state.fontRefIdx = Number(e.target.value); scheduleRebuild(); });
 
   // Vorher/Nachher-Vergleich über der Ergebnis-Bühne.
   compare = createCompare({
