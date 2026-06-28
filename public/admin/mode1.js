@@ -219,8 +219,11 @@ async function analyze() {
     state.fontRefIdx = -1;
     renderZones();
     populateFontRef();
-    $("m1Prompt").value = prompt || "";
+    $("m1Prompt").value = prompt || ""; // Fallback; gleich aus echtem Stand neu bauen
     $("m1Rebuild").hidden = false;
+    // Prompt aus dem tatsächlichen Zonen-Stand (inkl. auto-ENTFERNEN) erzeugen,
+    // damit der explizite REMOVE-Abschnitt und die richtigen Rollen sofort drin sind.
+    rebuildPrompt({ silent: true });
     notify(`${state.zones.length} Textzonen erkannt`, "success");
   } catch (e) {
     notify(e.message, "error");
