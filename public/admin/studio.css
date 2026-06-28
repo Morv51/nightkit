@@ -287,6 +287,38 @@ html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: aut
   100% { border-color: var(--color-border, #2a2a2a); box-shadow: 0 0 0 0 rgba(204,255,0,0); }
 }
 
+/* ── Modus 1: einspaltiger PROMPT-Generator ──────────────────────── */
+.studio-single {
+  max-width: 880px; margin: 0 auto;
+  display: flex; flex-direction: column; gap: 14px;
+}
+
+/* Inline-Busy-Zeile (kein Bühnen-Overlay mehr in Modus 1) */
+.st-busy-inline {
+  position: static; inset: auto; z-index: auto;
+  background: transparent; justify-content: flex-start;
+  color: var(--muted, rgba(245, 245, 240, 0.6)); font-size: 12.5px;
+}
+
+/* Großes, gut lesbares Prompt-Feld — das Herzstück. Wächst per JS auf den
+   Inhalt, damit der ganze Prompt sichtbar ist (die Seite scrollt). */
+.st-prompt-big {
+  min-height: 360px;
+  font-size: 14px; line-height: 1.65;
+  padding: 14px 16px;
+  overflow: hidden; resize: none;
+}
+
+.prompt-actions { display: flex; }
+.st-copy {
+  flex: 1; height: 48px;
+  font-size: 15px; font-weight: 700; letter-spacing: 0.01em;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.st-copy.copied {
+  background: #4ade80; border-color: #4ade80; color: #04210f;
+}
+
 /* Toast */
 .studio-toast {
   position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px);

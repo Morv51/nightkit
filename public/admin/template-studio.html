@@ -39,101 +39,55 @@
     </header>
 
     <main class="studio-main">
-      <!-- Modus 1: Flyer → Template -->
+      <!-- Modus 1: Flyer → Prompt (reiner PROMPT-Generator, keine Bildgenerierung) -->
       <section class="studio-panel active" id="panel-mode1" data-tab="mode1">
-        <div class="studio-grid">
-          <!-- Steuerung -->
-          <div class="studio-col">
-            <div class="st-card">
-              <div class="st-head">1 · Flyer</div>
-              <label class="st-drop" id="m1Drop">
-                <input type="file" id="m1File" accept="image/png,image/jpeg,image/webp" hidden>
-                <span id="m1DropLabel">Flyer hierher ziehen, einfügen (⌘/Ctrl+V) oder klicken — PNG/JPG/WebP, ≤10&nbsp;MB</span>
-              </label>
-            </div>
-
-            <!-- Schritt 1a: Format-Normalisierung auf 9:16 (nur wenn nötig) -->
-            <div class="st-card" id="m1NormCard" hidden>
-              <div class="st-head">1a · Auf 9:16 erweitern <span class="st-note" id="m1NormInfo"></span></div>
-              <div class="norm-grid">
-                <figure class="norm-fig"><img id="m1NormBefore" alt=""><figcaption>Vorher</figcaption></figure>
-                <figure class="norm-fig"><img id="m1NormAfter" alt=""><figcaption>Nachher · 9:16</figcaption></figure>
-              </div>
-              <div class="norm-dir" id="m1NormDir">
-                <label><input type="radio" name="m1NormDir" value="symmetric" checked> symmetrisch</label>
-                <label><input type="radio" name="m1NormDir" value="top"> nur oben</label>
-                <label><input type="radio" name="m1NormDir" value="bottom"> nur unten</label>
-              </div>
-              <div class="st-row">
-                <button class="rbtn rbtn-ghost" id="m1NormRun" type="button">Auf 9:16 erweitern</button>
-                <button class="rbtn rbtn-primary" id="m1NormApply" type="button" disabled>✓ Übernehmen</button>
-              </div>
-              <div class="st-mini-note">Verlustfreie Erweiterung per Outpaint (kein Beschnitt). Die neuen Flächen sind danach normal bereinigbar.</div>
-            </div>
-
-            <div class="st-card">
-              <div class="st-head">2 · Analyse</div>
-              <div class="st-row">
-                <select class="st-select" id="m1Model" aria-label="Vision-Modell">
-                  <option value="haiku">Haiku · schnell</option>
-                  <option value="sonnet">Sonnet · genauer</option>
-                </select>
-                <button class="rbtn rbtn-ghost" id="m1Analyze" type="button">Textzonen erkennen</button>
-              </div>
-            </div>
-
-            <div class="st-card" id="m1ZonesCard" hidden>
-              <div class="st-head">3 · Textzonen → Rollen</div>
-              <div class="zone-list" id="m1Zones"></div>
-              <div class="miss-box" id="m1Missing" hidden></div>
-              <div class="font-ref" id="m1FontRef" hidden>
-                <label class="ref-row"><span>Font-Referenz</span>
-                  <select id="m1RefInfo" class="zone-role"></select>
-                </label>
-                <div class="st-mini-note">Wählt eine erkannte Original-Zone als Stil-Anker — die ergänzten Felder folgen genau deren Font, Casing und Setzweise (kein generischer Listen-Stil).</div>
-              </div>
-              <div class="st-mini-note">„ENTFERNEN" löscht die Zone (Credits/Logos) via Bereinigen. Fehlende Platzhalter (die keiner Zone zugewiesen sind) werden beim Bauen als kompakter Info-Block ergänzt; bereits zugewiesene werden an ihrer Originalposition ersetzt.</div>
-            </div>
-
-            <div class="st-card">
-              <div class="st-head">
-                4 · Prompt
-                <button class="st-mini" id="m1Rebuild" type="button" hidden>Prompt aktualisieren</button>
-              </div>
-              <textarea class="st-prompt" id="m1Prompt" rows="9"
-                placeholder="Erst Textzonen erkennen — oder den Prompt direkt selbst schreiben …"></textarea>
-            </div>
-
-            <div class="st-card engine-card">
-              <div class="st-row">
-                <label for="m1Engine">Engine</label>
-                <select id="m1Engine" class="st-select">
-                  <option value="ideogram">Ideogram V3</option>
-                  <option value="openai">GPT Image 2 (Test)</option>
-                </select>
-              </div>
-              <div class="st-mini-note">Wählt die Bild-Engine für „Template bauen". GPT Image 2 ist ein Test-Vergleich (braucht OPENAI_API_KEY; Edit-Pfad mit dem Original als Referenz, Format folgt dem 9:16-Original).</div>
-            </div>
-
-            <button class="rbtn rbtn-primary st-go" id="m1Insert" type="button">✦ Template bauen</button>
-            <div class="st-mini-note">8–10 Textfelder auf einmal sind fehleranfällig — danach gezielt mit <b>Korrigieren</b> (Text/Layout) und <b>Bereinigen</b> (Reste wegradieren) nachjustieren.</div>
+        <div class="studio-single">
+          <div class="st-card">
+            <div class="st-head">1 · Flyer</div>
+            <label class="st-drop" id="m1Drop">
+              <input type="file" id="m1File" accept="image/png,image/jpeg,image/webp" hidden>
+              <span id="m1DropLabel">Flyer hierher ziehen, einfügen (⌘/Ctrl+V) oder klicken — PNG/JPG/WebP, ≤10&nbsp;MB</span>
+            </label>
+            <img class="st-thumb" id="m1Thumb" alt="" hidden>
           </div>
 
-          <!-- Ergebnis -->
-          <div class="studio-col">
-            <div class="st-stage" id="m1Stage">
-              <div class="st-stage-empty" id="m1Empty">Flyer hochladen, um zu starten</div>
-              <img class="st-result" id="m1Result" alt="" hidden>
-              <div class="st-busy" id="m1Busy" hidden><span class="cb-spin"></span><span id="m1BusyMsg">…</span></div>
+          <div class="st-card">
+            <div class="st-head">2 · Analyse</div>
+            <div class="st-row">
+              <select class="st-select" id="m1Model" aria-label="Vision-Modell">
+                <option value="haiku">Haiku · schnell</option>
+                <option value="sonnet">Sonnet · genauer</option>
+              </select>
+              <button class="rbtn rbtn-ghost" id="m1Analyze" type="button">Textzonen erkennen</button>
             </div>
-            <div class="st-actions" id="m1Actions" hidden>
-              <button class="rbtn rbtn-ghost" id="m1Compare" type="button" hidden>⇄ Vorher/Nachher</button>
-              <button class="rbtn rbtn-ghost" id="m1Clean" type="button">🩹 Bereinigen</button>
-              <button class="rbtn rbtn-ghost" id="m1Correct" type="button">✎ Korrigieren</button>
-              <button class="rbtn rbtn-ghost" id="m1ExportPng" type="button">⬇ PNG</button>
-              <button class="rbtn rbtn-ghost" id="m1ExportJpg" type="button">⬇ JPG</button>
-              <button class="rbtn rbtn-ghost" id="m1Save" type="button">💾 Speichern</button>
+            <div class="st-busy st-busy-inline" id="m1Busy" hidden><span class="cb-spin"></span><span id="m1BusyMsg">…</span></div>
+          </div>
+
+          <div class="st-card" id="m1ZonesCard" hidden>
+            <div class="st-head">3 · Textzonen → Rollen</div>
+            <div class="zone-list" id="m1Zones"></div>
+            <div class="miss-box" id="m1Missing" hidden></div>
+            <div class="font-ref" id="m1FontRef" hidden>
+              <label class="ref-row"><span>Font-Referenz</span>
+                <select id="m1RefInfo" class="zone-role"></select>
+              </label>
+              <div class="st-mini-note">Wählt eine erkannte Original-Zone als Stil-Anker — die ergänzten Felder folgen genau deren Font, Casing und Setzweise (kein generischer Listen-Stil).</div>
             </div>
+            <div class="st-mini-note">„ENTFERNEN" setzt den Text in den REMOVE-Abschnitt des Prompts (Credits/Logos). Fehlende Platzhalter (die keiner Zone zugewiesen sind) werden im Prompt als kompakter Info-Block ergänzt; bereits zugewiesene an ihrer Originalposition ersetzt.</div>
+          </div>
+
+          <!-- Das Herzstück: der fertige Prompt zum Kopieren -->
+          <div class="st-card prompt-card">
+            <div class="st-head">
+              4 · Dein Prompt
+              <button class="st-mini" id="m1Rebuild" type="button" hidden>Prompt aktualisieren</button>
+            </div>
+            <textarea class="st-prompt st-prompt-big" id="m1Prompt" rows="20"
+              placeholder="Erst einen Flyer hochladen und Textzonen erkennen — oder den Prompt direkt selbst schreiben …"></textarea>
+            <div class="prompt-actions">
+              <button class="rbtn rbtn-primary st-copy" id="m1Copy" type="button">📋 Prompt kopieren</button>
+            </div>
+            <div class="st-mini-note">Prompt kopieren und in ChatGPT einfügen — dazu das Original-Flyerbild mit hochladen.</div>
           </div>
         </div>
       </section>

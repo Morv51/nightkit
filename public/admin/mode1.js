@@ -1,144 +1,48 @@
-// Modus 1: Flyer → Template (invers zum Produktivpfad).
-// Upload fertiger Flyer → Vision erkennt Textzonen + Rollen → editierbarer
-// Platzhalter-Prompt → bestehender edit()-Flow ersetzt die echten Texte durch
-// unsere Platzhalter (Design/Typo bleiben).
+// Modus 1: Flyer → PROMPT. Reiner PROMPT-GENERATOR (keine Bildgenerierung).
+// Upload fertiger Flyer → Vision erkennt Textzonen + Rollen → der bestehende
+// Platzhalter-Prompt-Builder erzeugt den perfekten Prompt, den man kopiert und
+// selbst in ChatGPT (mit dem Original-Flyer) einfügt. KEINE Ideogram-/GPT-Image-
+// Aufrufe mehr in diesem Modus.
 
 import { post } from "./studioApi.js";
-import { fileToDataUrl, downloadDataUrl, toJpeg, notify, wireDropzone, wirePaste } from "./studioUi.js";
-import { createBrushTool, correctImage, saveTemplate } from "./studioBrush.js";
-import { createCompare } from "./studioCompare.js";
+import { fileToDataUrl, notify, wireDropzone, wirePaste } from "./studioUi.js";
 
 const $ = (id) => document.getElementById(id);
-let compare; // Vorher/Nachher-Slider (in initMode1 erzeugt)
 
-// Pflicht-Platzhalter (Soll-Liste) — ein Template muss sie alle enthalten.
+// Pflicht-Platzhalter (Soll-Liste) — ein Template soll sie alle enthalten.
 const MANDATORY = ["HEADLINE", "SUBLINE", "DATUM", "UHRZEIT", "LOCATION",
   "DJ NAME 1", "DJ NAME 2", "DJ NAME 3", "CLUBNAME", "WEBSITE"];
-// Dropdown je Zone: Pflichtrollen + "ENTFERNEN" (markiert die Zone fürs LaMa-Removal).
+// Dropdown je Zone: Pflichtrollen + "ENTFERNEN" (Text in den REMOVE-Abschnitt).
 const ROLES = [...MANDATORY, "ENTFERNEN"];
 
 const state = {
-  current: null, zones: [],
-  // Schritt 1a (9:16-Normalisierung)
-  pendingOriginal: null, normDims: null, normResult: null, normPending: false,
-  // Vorher-Bild (Build-Eingang) für den Vorher/Nachher-Vergleich
-  beforeImage: null,
-  // Font-Referenz für ergänzte Felder (Index in state.zones, -1 = automatisch)
-  fontRefIdx: -1,
+  current: null,   // hochgeladener Flyer (data-URL) — nur als Vision-Eingabe + Vorschau
+  zones: [],
+  fontRefIdx: -1,  // Font-Referenz für ergänzte Felder (Index in zones, -1 = automatisch)
 };
-
-const TARGET = 9 / 16; // 0.5625
-
-// Maße eines data-URL-Bildes lesen.
-function imgSize(dataUrl) {
-  return new Promise((res, rej) => {
-    const i = new Image();
-    i.onload = () => res({ w: i.naturalWidth, h: i.naturalHeight });
-    i.onerror = () => rej(new Error("Bild konnte nicht gelesen werden"));
-    i.src = dataUrl;
-  });
-}
-
-// Schon 9:16 (mit kleiner Toleranz)? → keine Normalisierung nötig.
-function isNineSixteen(w, h) {
-  return Math.abs((w / h) / TARGET - 1) <= 0.02; // ≤2% Abweichung
-}
-
-// Pixel-Erweiterung je Seite, um VERLUSTFREI auf 9:16 zu kommen (kein Crop).
-function computeExpand(w, h, direction) {
-  const r = w / h;
-  if (r > TARGET) {
-    // zu kurz → Höhe ergänzen (Richtung wählbar)
-    const extra = Math.round(w * 16 / 9) - h;
-    let top = 0, bottom = 0;
-    if (direction === "top") top = extra;
-    else if (direction === "bottom") bottom = extra;
-    else { top = Math.floor(extra / 2); bottom = extra - top; }
-    return { top, bottom, left: 0, right: 0, vertical: true };
-  }
-  // zu hoch/schmal → Breite ergänzen (symmetrisch)
-  const extra = Math.round(h * 9 / 16) - w;
-  const left = Math.floor(extra / 2);
-  return { top: 0, bottom: 0, left, right: extra - left, vertical: false };
-}
 
 function setBusy(on, msg) {
   $("m1Busy").hidden = !on;
   if (msg) $("m1BusyMsg").textContent = msg;
 }
 
-function showImage(dataUrl) {
+// Hochgeladenen Flyer als Vorschau-Thumbnail zeigen + als Vision-Eingabe merken.
+function showThumb(dataUrl) {
   state.current = dataUrl;
-  const img = $("m1Result");
-  img.src = dataUrl;
-  img.hidden = false;
-  $("m1Empty").hidden = true;
-  $("m1Actions").hidden = false;
-  if (compare) compare.reset(); // neues Bild → zurück in den Nachher-Zustand
+  const t = $("m1Thumb");
+  t.src = dataUrl;
+  t.hidden = false;
 }
 
 async function onFile(file) {
   try {
     const dataUrl = await fileToDataUrl(file);
     $("m1DropLabel").textContent = file.name;
-    const { w, h } = await imgSize(dataUrl);
-
-    if (isNineSixteen(w, h)) {
-      // Bereits 9:16 → Schritt 1a überspringen, direkt weiter.
-      state.normPending = false;
-      $("m1NormCard").hidden = true;
-      showImage(dataUrl);
-      return;
-    }
-
-    // Abweichend → Schritt 1a zeigen; Flow ist bis zur Bestätigung blockiert.
-    state.pendingOriginal = dataUrl;
-    state.normDims = { w, h };
-    state.normResult = null;
-    state.normPending = true;
-    const e = computeExpand(w, h, "symmetric");
-    $("m1NormDir").style.display = e.vertical ? "" : "none"; // Richtung nur bei Höhen-Erweiterung
-    $("m1NormBefore").src = dataUrl;
-    $("m1NormAfter").removeAttribute("src");
-    $("m1NormApply").disabled = true;
-    $("m1NormInfo").textContent = `aktuell ${w}×${h} — nicht 9:16`;
-    $("m1NormCard").hidden = false;
-    showImage(dataUrl); // Original schon sichtbar in der Bühne
-    notify("Flyer ist nicht 9:16 — erst auf 9:16 erweitern (Schritt 1a)", "info");
+    showThumb(dataUrl);
+    notify("Flyer geladen — jetzt Textzonen erkennen", "success");
   } catch (e) {
     notify(e.message, "error");
   }
-}
-
-async function normRun() {
-  if (!state.pendingOriginal) return;
-  const dir = (document.querySelector('input[name="m1NormDir"]:checked') || {}).value || "symmetric";
-  const e = computeExpand(state.normDims.w, state.normDims.h, dir);
-  $("m1NormRun").disabled = true;
-  setBusy(true, "Erweitere verlustfrei auf 9:16 …");
-  try {
-    const { image } = await post("/admin/normalize", {
-      image: state.pendingOriginal, top: e.top, bottom: e.bottom, left: e.left, right: e.right,
-    });
-    state.normResult = image;
-    $("m1NormAfter").src = image;
-    $("m1NormApply").disabled = false;
-    notify("9:16-Version erstellt — prüfen und übernehmen", "success");
-  } catch (err) {
-    notify(err.message, "error");
-  } finally {
-    setBusy(false);
-    $("m1NormRun").disabled = false;
-  }
-}
-
-function normApply() {
-  if (!state.normResult) return notify("Erst auf 9:16 erweitern", "error");
-  state.current = state.normResult;
-  state.normPending = false;
-  $("m1NormCard").hidden = true;
-  showImage(state.normResult);
-  notify("9:16 übernommen — weiter mit der Analyse", "success");
 }
 
 function renderZones() {
@@ -148,7 +52,7 @@ function renderZones() {
     const row = document.createElement("div");
     row.className = "zone-row";
     // Erkannten Text editierbar machen — die Vision-OCR liest z.B. vertikal
-    // gedrehten Text mal falsch; Korrektur fließt direkt in den Build-Prompt.
+    // gedrehten Text mal falsch; Korrektur fließt direkt in den Prompt.
     const text = document.createElement("input");
     text.type = "text";
     text.className = "zone-text";
@@ -176,7 +80,7 @@ function renderZones() {
 }
 
 // Soll-Abgleich: welche Pflicht-Platzhalter sind noch keiner Zone zugewiesen?
-// Die werden beim Bauen aktiv ergänzt — hier sichtbar gemacht.
+// Die werden im Prompt aktiv ergänzt — hier sichtbar gemacht.
 function updateMissing() {
   const el = $("m1Missing");
   if (!el) return;
@@ -203,7 +107,6 @@ function updateMissing() {
 
 async function analyze() {
   if (!state.current) return notify("Erst einen Flyer hochladen", "error");
-  if (state.normPending) return notify("Erst auf 9:16 erweitern und übernehmen (Schritt 1a)", "error");
   const btn = $("m1Analyze");
   btn.disabled = true;
   setBusy(true, "Erkenne Textzonen …");
@@ -213,21 +116,21 @@ async function analyze() {
       image: state.current,
       model: $("m1Model").value,
     });
-    // bbox behalten (für ENTFERNEN-Maske), font für die Font-Referenz. Nicht-
-    // Pflichtrollen (OTHER, Credits) als ENTFERNEN vorbelegen — änderbar.
+    // font für die Font-Referenz behalten. Nicht-Pflichtrollen (OTHER, Credits)
+    // als ENTFERNEN vorbelegen — im Dropdown änderbar.
     state.zones = (zones || []).map((z) => ({
       text: z.text || "",
       role: MANDATORY.includes(z.role) ? z.role : "ENTFERNEN",
-      bbox: Array.isArray(z.bbox) && z.bbox.length === 4 ? z.bbox : null,
       font: z.font && typeof z.font === "object" ? z.font : null,
     }));
     state.fontRefIdx = -1;
     renderZones();
     populateFontRef();
     $("m1Prompt").value = prompt || ""; // Fallback; gleich aus echtem Stand neu bauen
+    autoGrow();
     $("m1Rebuild").hidden = false;
     // Prompt aus dem tatsächlichen Zonen-Stand (inkl. auto-ENTFERNEN) erzeugen,
-    // damit der explizite REMOVE-Abschnitt und die richtigen Rollen sofort drin sind.
+    // damit der REMOVE-Abschnitt und die richtigen Rollen sofort drin sind.
     rebuildPrompt({ silent: true });
     notify(`${state.zones.length} Textzonen erkannt`, "success");
   } catch (e) {
@@ -278,8 +181,9 @@ async function rebuildPrompt({ silent = false } = {}) {
     });
     if (seq !== rebuildSeq) return; // veraltete Antwort verwerfen
     $("m1Prompt").value = prompt;
+    autoGrow();
     flashPrompt();
-    if (!silent) notify("Prompt neu gebaut (Rollen + Font-Referenz)", "success");
+    if (!silent) notify("Prompt aktualisiert (Rollen + Font-Referenz)", "success");
   } catch (e) {
     if (seq === rebuildSeq) notify(e.message, "error");
   }
@@ -301,66 +205,39 @@ function flashPrompt() {
   el.classList.add("flash");
 }
 
-// LaMa-Maske aus den bboxes der ENTFERNEN-Zonen (WEISS = entfernen). bbox ist
-// normiert [x,y,w,h]; leichte Polsterung für saubere Abdeckung.
-async function buildRemoveMask(dataUrl, zones) {
-  const { w, h } = await imgSize(dataUrl);
-  const c = document.createElement("canvas");
-  c.width = w; c.height = h;
-  const ctx = c.getContext("2d");
-  ctx.fillStyle = "#000000"; ctx.fillRect(0, 0, w, h); // behalten
-  ctx.fillStyle = "#FFFFFF"; // entfernen
-  const pad = 0.012;
-  for (const z of zones) {
-    if (!z.bbox) continue;
-    const [bx, by, bw, bh] = z.bbox;
-    const x = Math.max(0, bx - pad) * w;
-    const y = Math.max(0, by - pad) * h;
-    const rw = Math.min(1, bw + 2 * pad) * w;
-    const rh = Math.min(1, bh + 2 * pad) * h;
-    ctx.fillRect(x, y, rw, rh);
-  }
-  return c.toDataURL("image/png");
+// Prompt-Feld auf seinen Inhalt wachsen lassen — der ganze Prompt bleibt sichtbar,
+// ohne inneres Mini-Scrollen (die Studio-Seite scrollt stattdessen).
+function autoGrow() {
+  const el = $("m1Prompt");
+  if (!el) return;
+  el.style.height = "auto";
+  el.style.height = Math.max(el.scrollHeight + 2, 320) + "px";
 }
 
-async function insertPlaceholders() {
-  if (!state.current) return notify("Kein Flyer geladen", "error");
-  if (state.normPending) return notify("Erst auf 9:16 erweitern (Schritt 1a)", "error");
-  const prompt = $("m1Prompt").value.trim();
-  if (!prompt) return notify("Prompt ist leer — erst Textzonen erkennen", "error");
+// ── Kopieren in die Zwischenablage ─────────────────────────────────────────
+const COPY_LABEL = "📋 Prompt kopieren";
 
-  const removeZones = state.zones.filter((z) => z.role === "ENTFERNEN" && z.bbox);
-  const btn = $("m1Insert");
-  btn.disabled = true;
-  if (compare) compare.reset();
-  // Vorher-Bild = der Build-Eingang (Original-/9:16-Upload) für den Vergleich.
-  state.beforeImage = state.current;
-  try {
-    let img = state.current;
-    // 1) Als ENTFERNEN markierte Zonen aktiv via LaMa rauslöschen (Credits/Logos).
-    if (removeZones.length) {
-      setBusy(true, `Entferne ${removeZones.length} markierte Zone(n) …`);
-      const mask = await buildRemoveMask(img, removeZones);
-      const r = await post("/admin/remove", { image: img, mask });
-      img = r.image;
-      state.current = img;
-      showImage(img);
-    }
-    // 2) Texte ersetzen + fehlende ergänzen — je nach gewählter Engine.
-    const engine = ($("m1Engine") && $("m1Engine").value) || "ideogram";
-    const endpoint = engine === "openai" ? "/admin/edit-openai" : "/admin/edit";
-    setBusy(true, engine === "openai"
-      ? "GPT Image 2 baut das Template …"
-      : "Setze Platzhalter ein + ergänze fehlende …");
-    const r2 = await post(endpoint, { image: img, prompt });
-    showImage(r2.image);
-    $("m1Compare").hidden = false; // Vorher/Nachher jetzt verfügbar
-    notify("Template gebaut — '⇄ Vorher/Nachher' zum Vergleichen, sonst Korrigieren/Bereinigen", "success");
-  } catch (e) {
-    notify(e.message, "error");
-  } finally {
-    btn.disabled = false;
-    setBusy(false);
+function flashCopied() {
+  const b = $("m1Copy");
+  b.textContent = "✓ Kopiert!";
+  b.classList.add("copied");
+  setTimeout(() => { b.textContent = COPY_LABEL; b.classList.remove("copied"); }, 1600);
+}
+
+function fallbackCopy(done) {
+  const ta = $("m1Prompt");
+  ta.focus(); ta.select();
+  try { document.execCommand("copy"); done(); ta.setSelectionRange(0, 0); }
+  catch { notify("Kopieren nicht möglich — bitte Text manuell markieren (Cmd/Ctrl+A, dann Cmd/Ctrl+C)", "error"); }
+}
+
+function copyPrompt() {
+  const text = $("m1Prompt").value;
+  if (!text.trim()) return notify("Noch kein Prompt — erst Textzonen erkennen", "info");
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(flashCopied).catch(() => fallbackCopy(flashCopied));
+  } else {
+    fallbackCopy(flashCopied);
   }
 }
 
@@ -372,49 +249,12 @@ export function initMode1() {
   wireDropzone($("m1Drop"), onFile);
   wirePaste($("panel-mode1"), onFile);
 
-  // Schritt 1a: 9:16-Normalisierung
-  $("m1NormRun").addEventListener("click", normRun);
-  $("m1NormApply").addEventListener("click", normApply);
-
   $("m1Analyze").addEventListener("click", analyze);
   $("m1Rebuild").addEventListener("click", rebuildPrompt);
-  $("m1Insert").addEventListener("click", insertPlaceholders);
+  $("m1Copy").addEventListener("click", copyPrompt);
+  // Manuelle Prompt-Änderungen: Höhe mitwachsen lassen.
+  $("m1Prompt").addEventListener("input", autoGrow);
 
-  // Font-Referenz für ergänzte Felder: Auswahl → Prompt neu bauen.
+  // Font-Referenz für ergänzte Felder: Auswahl → Prompt live neu bauen.
   $("m1RefInfo").addEventListener("change", (e) => { state.fontRefIdx = Number(e.target.value); scheduleRebuild(); });
-
-  // Vorher/Nachher-Vergleich über der Ergebnis-Bühne.
-  compare = createCompare({
-    resultImg: $("m1Result"),
-    getBefore: () => state.beforeImage,
-    getAfter: () => state.current,
-    button: $("m1Compare"),
-  });
-  $("m1Compare").addEventListener("click", () => compare.toggle());
-
-  // Bereinigen (LaMa-Brush) + Korrigieren (re-edit) auf dem aktuellen Bild.
-  const brush = createBrushTool({
-    stage: $("m1Stage"), img: $("m1Result"),
-    getImage: () => state.current, setImage: showImage, setBusy,
-  });
-  $("m1Clean").addEventListener("click", () => brush.open());
-  $("m1Correct").addEventListener("click", () =>
-    correctImage({ getImage: () => state.current, setImage: showImage, setBusy }));
-  $("m1Save").addEventListener("click", () =>
-    saveTemplate({
-      getImage: () => state.current, mode: "flyer",
-      getMeta: () => ({ prompt: $("m1Prompt").value, zones: state.zones }),
-    }));
-
-  $("m1ExportPng").addEventListener("click", () => {
-    if (state.current) downloadDataUrl(state.current, "nightkit-template.png");
-  });
-  $("m1ExportJpg").addEventListener("click", async () => {
-    if (!state.current) return;
-    try { downloadDataUrl(await toJpeg(state.current), "nightkit-template.jpg"); }
-    catch (e) { notify(e.message, "error"); }
-  });
 }
-
-export function getResult() { return state.current; }
-export function setResult(dataUrl) { showImage(dataUrl); }
