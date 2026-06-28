@@ -33,7 +33,7 @@
       <div class="studio-brand">✶ NightKit <span>Template Studio</span></div>
       <div class="studio-tabs" id="tabs">
         <button class="studio-tab active" type="button" data-tab="mode1">Flyer → Template</button>
-        <button class="studio-tab" type="button" data-tab="mode2">Moodboard → Generieren</button>
+        <button class="studio-tab" type="button" data-tab="mode2">Moodboard → Prompt</button>
       </div>
       <button class="rbtn rbtn-ghost studio-lock" id="lockBtn" type="button" title="Sperren">⊘ Sperren</button>
     </header>
@@ -91,72 +91,43 @@
           </div>
         </div>
       </section>
-      <!-- Modus 2: Moodboard → Generieren -->
+      <!-- Modus 2: Moodboard → Prompt (reiner PROMPT-Generator, wie Modus 1) -->
       <section class="studio-panel" id="panel-mode2" data-tab="mode2" hidden>
-        <div class="studio-grid">
-          <!-- Steuerung -->
-          <div class="studio-col">
-            <div class="st-card">
-              <div class="st-head">1 · Moodboard</div>
-              <label class="st-drop" id="m2Drop">
-                <input type="file" id="m2File" accept="image/png,image/jpeg,image/webp" hidden>
-                <span id="m2DropLabel">Moodboard hierher ziehen, einfügen (⌘/Ctrl+V) oder klicken — PNG/JPG/WebP, ≤10&nbsp;MB</span>
-              </label>
-              <img class="st-thumb" id="m2Thumb" alt="" hidden>
-            </div>
-
-            <div class="st-card">
-              <div class="st-head">2 · Analyse</div>
-              <div class="st-row">
-                <select class="st-select" id="m2Model" aria-label="Vision-Modell">
-                  <option value="haiku">Haiku · schnell</option>
-                  <option value="sonnet">Sonnet · genauer</option>
-                </select>
-                <button class="rbtn rbtn-ghost" id="m2Analyze" type="button">Analysieren</button>
-              </div>
-              <div class="st-mini-note">Liest NUR den Stil (Look, Farbwelt, Typo-Charakter, Textur) — keine Inhalte/Objekte des Moodboards. Das Moodboard ist reine Design-Vorlage.</div>
-            </div>
-
-            <div class="st-card">
-              <div class="st-head">
-                3 · Prompt
-                <button class="st-mini" id="m2Rebuild" type="button" hidden>aus Stil neu bauen</button>
-              </div>
-              <textarea class="st-prompt" id="m2Prompt" rows="11"
-                placeholder="Erst analysieren — oder den Prompt direkt selbst schreiben …"></textarea>
-            </div>
-
-            <div class="st-card engine-card">
-              <div class="st-row">
-                <label for="m2Engine">Engine</label>
-                <select id="m2Engine" class="st-select">
-                  <option value="openai">GPT Image 2</option>
-                  <option value="ideogram">Ideogram</option>
-                </select>
-              </div>
-              <div class="st-mini-note">Reine Text-zu-Bild-Generierung (KEIN Edit, KEINE Maske; das Moodboard wird nicht als Bild durchgereicht). GPT Image 2 braucht OPENAI_API_KEY.</div>
-            </div>
-
-            <button class="rbtn rbtn-primary st-go" id="m2Generate" type="button">✦ Generieren</button>
-            <button class="rbtn rbtn-ghost st-go" id="m2Cancel" type="button" hidden>✕ Abbrechen</button>
+        <div class="studio-single">
+          <div class="st-card">
+            <div class="st-head">1 · Moodboard</div>
+            <label class="st-drop" id="m2Drop">
+              <input type="file" id="m2File" accept="image/png,image/jpeg,image/webp" hidden>
+              <span id="m2DropLabel">Moodboard hierher ziehen, einfügen (⌘/Ctrl+V) oder klicken — PNG/JPG/WebP, ≤10&nbsp;MB</span>
+            </label>
+            <img class="st-thumb" id="m2Thumb" alt="" hidden>
           </div>
 
-          <!-- Ergebnis -->
-          <div class="studio-col">
-            <div class="st-stage" id="m2Stage">
-              <div class="st-stage-empty" id="m2Empty">Ergebnis erscheint hier</div>
-              <div class="st-error" id="m2Error" hidden></div>
-              <img class="st-result" id="m2Result" alt="" hidden>
-              <div class="st-busy" id="m2Busy" hidden><span class="cb-spin"></span><span id="m2BusyMsg">…</span></div>
+          <div class="st-card">
+            <div class="st-head">2 · Analyse</div>
+            <div class="st-row">
+              <select class="st-select" id="m2Model" aria-label="Vision-Modell">
+                <option value="haiku">Haiku · schnell</option>
+                <option value="sonnet">Sonnet · genauer</option>
+              </select>
+              <button class="rbtn rbtn-ghost" id="m2Analyze" type="button">Analysieren</button>
             </div>
-            <div class="st-actions" id="m2Actions" hidden>
-              <button class="rbtn rbtn-ghost" id="m2Compare" type="button" hidden>⇄ Vorher/Nachher</button>
-              <button class="rbtn rbtn-ghost" id="m2Clean" type="button">🩹 Bereinigen</button>
-              <button class="rbtn rbtn-ghost" id="m2Correct" type="button">✎ Korrigieren</button>
-              <button class="rbtn rbtn-ghost" id="m2ExportPng" type="button">⬇ PNG</button>
-              <button class="rbtn rbtn-ghost" id="m2ExportJpg" type="button">⬇ JPG</button>
-              <button class="rbtn rbtn-ghost" id="m2Save" type="button">💾 Speichern</button>
+            <div class="st-busy st-busy-inline" id="m2Busy" hidden><span class="cb-spin"></span><span id="m2BusyMsg">…</span></div>
+            <div class="st-mini-note">Liest NUR die Stil-Sprache (Look, Farbwelt, Typo-Charakter, Textur, Stimmung) — NICHT die Collage-Struktur/Vielteiligkeit des Moodboards.</div>
+          </div>
+
+          <!-- Das Herzstück: der fertige Club-Event-Flyer-Prompt zum Kopieren -->
+          <div class="st-card prompt-card">
+            <div class="st-head">
+              3 · Dein Prompt
+              <button class="st-mini" id="m2Rebuild" type="button" hidden>Prompt aktualisieren</button>
             </div>
+            <textarea class="st-prompt st-prompt-big" id="m2Prompt" rows="20"
+              placeholder="Erst ein Moodboard hochladen und analysieren — oder den Prompt direkt selbst schreiben …"></textarea>
+            <div class="prompt-actions">
+              <button class="rbtn rbtn-primary st-copy" id="m2Copy" type="button">📋 Prompt kopieren</button>
+            </div>
+            <div class="st-mini-note">Prompt kopieren und in ChatGPT einfügen. Optional ein Moodboard als visuelle Referenz mit hochladen.</div>
           </div>
         </div>
       </section>

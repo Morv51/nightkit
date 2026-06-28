@@ -1,55 +1,34 @@
-// Modus 2: Moodboard → Generieren.
-// Upload Moodboard → Vision-Analyse extrahiert NUR die Stil-DNA (Look, nicht
-// Inhalt) → editierbarer Generierungs-Prompt → REINE Text-zu-Bild-Generierung
-// (GPT Image 2 oder Ideogram, KEIN Edit/keine Maske; das Moodboard wird NICHT als
-// Bild durchgereicht). Ergebnis = ein NEUER Flyer im Stil, keine Reproduktion.
+// Modus 2: Moodboard → PROMPT. Reiner PROMPT-GENERATOR (wie Modus 1, KEINE
+// Bildgenerierung mehr). Upload Moodboard → Vision abstrahiert NUR die Stil-
+// Sprache (Look, keine Collage-Struktur) → fertiger Club-Event-Flyer-Prompt zum
+// Kopieren und manuellen Einfügen in ChatGPT.
 
 import { post } from "./studioApi.js";
-import { fileToDataUrl, downloadDataUrl, toJpeg, notify, wireDropzone, wirePaste } from "./studioUi.js";
-import { createBrushTool, correctImage, saveTemplate } from "./studioBrush.js";
-import { createCompare } from "./studioCompare.js";
+import { fileToDataUrl, notify, wireDropzone, wirePaste } from "./studioUi.js";
 
 const $ = (id) => document.getElementById(id);
-let compare; // Vorher/Nachher: Moodboard ⇄ Ergebnis (in initMode2 erzeugt)
 
-const state = { moodboard: null, dna: null, result: null };
+const state = { moodboard: null, dna: null };
 
 function setBusy(on, msg) {
   $("m2Busy").hidden = !on;
   if (msg) $("m2BusyMsg").textContent = msg;
 }
 
-// Persistente Fehleranzeige in der Bühne (verschwindet nicht wie ein Toast) —
-// damit ein GPT-/Ideogram-Fehler IMMER sichtbar bleibt.
-function showError(msg) {
-  const el = $("m2Error");
-  if (el) { el.textContent = "⚠ " + msg; el.hidden = false; }
-  $("m2Empty").hidden = true;
-}
-function hideError() {
-  const el = $("m2Error");
-  if (el) el.hidden = true;
-}
-
-function showResult(dataUrl) {
-  state.result = dataUrl;
-  const img = $("m2Result");
-  img.src = dataUrl;
-  img.hidden = false;
-  $("m2Empty").hidden = true;
-  hideError();
-  $("m2Actions").hidden = false;
-  if (compare) compare.reset();
+// Hochgeladenes Moodboard als Vorschau-Thumbnail zeigen + als Vision-Eingabe merken.
+function showThumb(dataUrl) {
+  state.moodboard = dataUrl;
+  const t = $("m2Thumb");
+  t.src = dataUrl;
+  t.hidden = false;
 }
 
 async function onFile(file) {
   try {
     const dataUrl = await fileToDataUrl(file);
-    state.moodboard = dataUrl;
-    const t = $("m2Thumb");
-    t.src = dataUrl;
-    t.hidden = false;
     $("m2DropLabel").textContent = file.name;
+    showThumb(dataUrl);
+    notify("Moodboard geladen — jetzt analysieren", "success");
   } catch (e) {
     notify(e.message, "error");
   }
@@ -61,17 +40,18 @@ async function analyze() {
   btn.disabled = true;
   setBusy(true, "Analysiere Stil-DNA …");
   try {
-    // NUR Stil-DNA (Look) — das Moodboard-Bild dient hier reiner Vision-Analyse,
-    // nicht als zu generierendes Bild.
+    // NUR Stil-DNA (Look, keine Collage-Struktur). Das Moodboard ist reine
+    // Vision-Eingabe — es wird NICHT generiert.
     const { dna, prompt } = await post("/admin/analyze", {
       mode: "moodboard",
       image: state.moodboard,
       model: $("m2Model").value,
     });
     state.dna = dna;
-    $("m2Prompt").value = prompt;
+    $("m2Prompt").value = prompt || "";
+    autoGrow();
     $("m2Rebuild").hidden = false;
-    notify("Analyse fertig — Prompt bereit zum Feinschliff", "success");
+    notify("Analyse fertig — Prompt bereit zum Kopieren", "success");
   } catch (e) {
     notify(e.message, "error");
   } finally {
@@ -80,70 +60,61 @@ async function analyze() {
   }
 }
 
+// Prompt aus der vorhandenen Stil-DNA neu bauen (z.B. nach manueller Änderung).
 async function rebuildPrompt() {
-  if (!state.dna) return;
+  if (!state.dna) return notify("Erst ein Moodboard analysieren", "info");
   try {
     const { prompt } = await post("/admin/build-prompt", { dna: state.dna });
     $("m2Prompt").value = prompt;
+    autoGrow();
+    flashPrompt();
     notify("Prompt aus Stil-DNA neu gebaut", "success");
   } catch (e) {
     notify(e.message, "error");
   }
 }
 
-// ── Generierung mit Abbruch + Client-Timeout (kein ewiges Laden) ────────────
-let genAbort = null;
-let genTimedOut = false;
-
-function engineLabel() {
-  return (($("m2Engine") && $("m2Engine").value) === "ideogram") ? "Ideogram" : "GPT Image 2";
+// Kurzes Aufblitzen des Prompt-Feldes, damit die Aktualisierung sichtbar ist.
+function flashPrompt() {
+  const el = $("m2Prompt");
+  if (!el) return;
+  el.classList.remove("flash");
+  void el.offsetWidth; // Reflow → Animation neu starten
+  el.classList.add("flash");
 }
 
-function setGenerating(on) {
-  setBusy(on, on ? `Generiere Flyer mit ${engineLabel()} …` : "");
-  $("m2Generate").disabled = on;
-  $("m2Cancel").hidden = !on;
+// Prompt-Feld auf seinen Inhalt wachsen lassen — ganzer Prompt sichtbar (Seite scrollt).
+function autoGrow() {
+  const el = $("m2Prompt");
+  if (!el) return;
+  el.style.height = "auto";
+  el.style.height = Math.max(el.scrollHeight + 2, 320) + "px";
 }
 
-function cancelGenerate() {
-  if (genAbort) genAbort.abort();
+// ── Kopieren in die Zwischenablage (identisch zu Modus 1) ───────────────────
+const COPY_LABEL = "📋 Prompt kopieren";
+
+function flashCopied() {
+  const b = $("m2Copy");
+  b.textContent = "✓ Kopiert!";
+  b.classList.add("copied");
+  setTimeout(() => { b.textContent = COPY_LABEL; b.classList.remove("copied"); }, 1600);
 }
 
-async function generate() {
-  const prompt = $("m2Prompt").value.trim();
-  if (!prompt) return notify("Prompt ist leer — erst analysieren", "error");
-  const engine = (($("m2Engine") && $("m2Engine").value) === "ideogram") ? "ideogram" : "openai";
-  if (compare) compare.reset();
+function fallbackCopy(done) {
+  const ta = $("m2Prompt");
+  ta.focus(); ta.select();
+  try { document.execCommand("copy"); done(); ta.setSelectionRange(0, 0); }
+  catch { notify("Kopieren nicht möglich — bitte Text manuell markieren (Cmd/Ctrl+A, dann Cmd/Ctrl+C)", "error"); }
+}
 
-  hideError();
-  genAbort = new AbortController();
-  genTimedOut = false;
-  // Client-Sicherheitsnetz über dem Server-Timeout (OpenAI 90 s + ggf. FAL-Outpaint)
-  // → es lädt nie ewig.
-  const timer = setTimeout(() => { genTimedOut = true; genAbort.abort(); }, 170000);
-  setGenerating(true);
-  try {
-    // KEIN Moodboard-Bild mitsenden — reine Text-zu-Bild-Generierung.
-    const { image } = await post("/admin/generate", { prompt, engine }, { signal: genAbort.signal });
-    showResult(image);
-    $("m2Compare").hidden = false; // Moodboard ⇄ Ergebnis vergleichbar
-    notify(`Flyer generiert (${engineLabel()})`, "success");
-  } catch (e) {
-    if (genAbort && genAbort.signal.aborted && !genTimedOut) {
-      notify("Generierung abgebrochen", "info"); // bewusst vom Nutzer abgebrochen
-    } else {
-      // Fehler/Timeout: IMMER sichtbar — als Toast UND persistent in der Bühne.
-      const msg = genTimedOut
-        ? "Zeitüberschreitung — nach 170 s abgebrochen. Bitte erneut versuchen."
-        : e.message; // trägt die Klartext-Server-/OpenAI-Meldung ("Generierung fehlgeschlagen: …")
-      notify(msg, "error");
-      showError(msg);
-    }
-  } finally {
-    clearTimeout(timer);
-    genAbort = null;
-    genTimedOut = false;
-    setGenerating(false);
+function copyPrompt() {
+  const text = $("m2Prompt").value;
+  if (!text.trim()) return notify("Noch kein Prompt — erst analysieren", "info");
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(flashCopied).catch(() => fallbackCopy(flashCopied));
+  } else {
+    fallbackCopy(flashCopied);
   }
 }
 
@@ -157,42 +128,7 @@ export function initMode2() {
 
   $("m2Analyze").addEventListener("click", analyze);
   $("m2Rebuild").addEventListener("click", rebuildPrompt);
-  $("m2Generate").addEventListener("click", generate);
-  $("m2Cancel").addEventListener("click", cancelGenerate);
-
-  // Vorher/Nachher: Moodboard ⇄ generiertes Ergebnis.
-  compare = createCompare({
-    resultImg: $("m2Result"),
-    getBefore: () => state.moodboard,
-    getAfter: () => state.result,
-    button: $("m2Compare"),
-  });
-  $("m2Compare").addEventListener("click", () => compare.toggle());
-
-  // Bereinigen (LaMa-Brush) + Korrigieren (re-edit) auf dem generierten Ergebnis.
-  const brush = createBrushTool({
-    stage: $("m2Stage"), img: $("m2Result"),
-    getImage: () => state.result, setImage: showResult, setBusy,
-  });
-  $("m2Clean").addEventListener("click", () => brush.open());
-  $("m2Correct").addEventListener("click", () =>
-    correctImage({ getImage: () => state.result, setImage: showResult, setBusy }));
-  $("m2Save").addEventListener("click", () =>
-    saveTemplate({
-      getImage: () => state.result, mode: "moodboard",
-      getMeta: () => ({ prompt: $("m2Prompt").value, dna: state.dna }),
-    }));
-
-  $("m2ExportPng").addEventListener("click", () => {
-    if (state.result) downloadDataUrl(state.result, "nightkit-studio.png");
-  });
-  $("m2ExportJpg").addEventListener("click", async () => {
-    if (!state.result) return;
-    try { downloadDataUrl(await toJpeg(state.result), "nightkit-studio.jpg"); }
-    catch (e) { notify(e.message, "error"); }
-  });
+  $("m2Copy").addEventListener("click", copyPrompt);
+  // Manuelle Prompt-Änderungen: Höhe mitwachsen lassen.
+  $("m2Prompt").addEventListener("input", autoGrow);
 }
-
-// Für andere Module erreichbar.
-export function getResult() { return state.result; }
-export function setResult(dataUrl) { showResult(dataUrl); }
