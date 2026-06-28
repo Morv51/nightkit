@@ -6,8 +6,10 @@
 import { post } from "./studioApi.js";
 import { fileToDataUrl, downloadDataUrl, toJpeg, notify, wireDropzone, wirePaste } from "./studioUi.js";
 import { createBrushTool, correctImage, saveTemplate } from "./studioBrush.js";
+import { createCompare } from "./studioCompare.js";
 
 const $ = (id) => document.getElementById(id);
+let compare; // Vorher/Nachher-Slider (in initMode1 erzeugt)
 
 // Pflicht-Platzhalter (Soll-Liste) — ein Template muss sie alle enthalten.
 const MANDATORY = ["HEADLINE", "SUBLINE", "DATUM", "UHRZEIT", "LOCATION",
@@ -19,6 +21,8 @@ const state = {
   current: null, zones: [],
   // Schritt 1a (9:16-Normalisierung)
   pendingOriginal: null, normDims: null, normResult: null, normPending: false,
+  // Vorher-Bild (Build-Eingang) für den Vorher/Nachher-Vergleich
+  beforeImage: null,
 };
 
 const TARGET = 9 / 16; // 0.5625
@@ -262,6 +266,9 @@ async function insertPlaceholders() {
   const removeZones = state.zones.filter((z) => z.role === "ENTFERNEN" && z.bbox);
   const btn = $("m1Insert");
   btn.disabled = true;
+  if (compare) compare.close();
+  // Vorher-Bild = der Build-Eingang (Original-/9:16-Upload) für den Vergleich.
+  state.beforeImage = state.current;
   try {
     let img = state.current;
     // 1) Als ENTFERNEN markierte Zonen aktiv via LaMa rauslöschen (Credits/Logos).
@@ -277,7 +284,8 @@ async function insertPlaceholders() {
     setBusy(true, "Setze Platzhalter ein + ergänze fehlende …");
     const r2 = await post("/admin/edit", { image: img, prompt });
     showImage(r2.image);
-    notify("Template gebaut — bei Bedarf mit Korrigieren/Bereinigen nachjustieren", "success");
+    $("m1Compare").hidden = false; // Vorher/Nachher jetzt verfügbar
+    notify("Template gebaut — '⇄ Vorher/Nachher' zum Vergleichen, sonst Korrigieren/Bereinigen", "success");
   } catch (e) {
     notify(e.message, "error");
   } finally {
@@ -301,6 +309,10 @@ export function initMode1() {
   $("m1Analyze").addEventListener("click", analyze);
   $("m1Rebuild").addEventListener("click", rebuildPrompt);
   $("m1Insert").addEventListener("click", insertPlaceholders);
+
+  // Vorher/Nachher-Vergleich über der Ergebnis-Bühne.
+  compare = createCompare({ stage: $("m1Stage"), getBefore: () => state.beforeImage });
+  $("m1Compare").addEventListener("click", () => compare.toggle());
 
   // Bereinigen (LaMa-Brush) + Korrigieren (re-edit) auf dem aktuellen Bild.
   const brush = createBrushTool({

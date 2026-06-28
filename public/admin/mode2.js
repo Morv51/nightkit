@@ -5,8 +5,10 @@
 import { post } from "./studioApi.js";
 import { fileToDataUrl, downloadDataUrl, toJpeg, notify, wireDropzone, wirePaste } from "./studioUi.js";
 import { createBrushTool, correctImage, saveTemplate } from "./studioBrush.js";
+import { createCompare } from "./studioCompare.js";
 
 const $ = (id) => document.getElementById(id);
+let compare; // Vorher/Nachher-Slider (in initMode2 erzeugt)
 
 const state = { moodboard: null, dna: null, result: null };
 
@@ -87,11 +89,13 @@ async function generate() {
   if (!state.moodboard) return notify("Moodboard fehlt (dient als Style-Reference)", "error");
   const btn = $("m2Generate");
   btn.disabled = true;
+  if (compare) compare.close();
   setBusy(true, "Generiere Flyer (V3, höchste Qualität) …");
   try {
     const { image } = await post("/admin/generate", { prompt, styleImage: state.moodboard });
     showResult(image);
-    notify("Flyer generiert", "success");
+    $("m2Compare").hidden = false; // Moodboard ⇄ Ergebnis vergleichbar
+    notify("Flyer generiert — '⇄ Vorher/Nachher' zum Vergleich mit dem Moodboard", "success");
   } catch (e) {
     notify(e.message, "error");
   } finally {
@@ -114,6 +118,10 @@ export function initMode2() {
 
   const slider = $("m2Style");
   slider.addEventListener("input", () => { $("m2StyleVal").textContent = styleLabel(Number(slider.value)); });
+
+  // Vorher/Nachher: Moodboard ⇄ generiertes Ergebnis.
+  compare = createCompare({ stage: $("m2Stage"), getBefore: () => state.moodboard });
+  $("m2Compare").addEventListener("click", () => compare.toggle());
 
   // Bereinigen (LaMa-Brush) + Korrigieren (re-edit) auf dem aktuellen Ergebnis.
   const brush = createBrushTool({

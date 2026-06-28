@@ -13,6 +13,11 @@
    gewinnen — sonst bleiben „versteckte" Overlays sichtbar. */
 [hidden] { display: none !important; }
 
+/* Scrollen: die Haupt-App-CSS (app.css) setzt html,body auf overflow:hidden für
+   ihr fixiertes Layout. studio.css lädt nur hier und danach → wir erlauben für
+   die Studio-Seite vertikales Scrollen, damit nichts unten abgeschnitten wird. */
+html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: auto; }
+
 /* ── Code-Gate ─────────────────────────────────────────────── */
 .studio-gate {
   position: fixed;
@@ -259,6 +264,32 @@
   background: rgba(0,0,0,0.6); color: var(--color-text,#fff); font-size: 13px;
 }
 .st-actions { display: flex; gap: 8px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
+
+/* Vorher/Nachher-Vergleich (Slider über der Ergebnis-Bühne) */
+.cmp-overlay { position: absolute; inset: 0; z-index: 6; display: none; cursor: ew-resize; touch-action: none; }
+.cmp-before {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: contain; background: var(--card-inset, #0d0d0d);
+}
+.cmp-handle {
+  position: absolute; top: 0; bottom: 0; left: 50%; width: 2px;
+  background: var(--color-accent, #ccff00); transform: translateX(-1px);
+  pointer-events: none; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+.cmp-grip {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--color-accent, #ccff00); color: #000;
+  display: grid; place-items: center; font-size: 15px; font-weight: 700;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
+}
+.cmp-lab {
+  position: absolute; top: 8px; font-size: 11px; font-weight: 600;
+  padding: 3px 8px; border-radius: 6px;
+  background: rgba(0, 0, 0, 0.55); color: #fff; pointer-events: none;
+}
+.cmp-lab-l { left: 8px; }
+.cmp-lab-r { right: 8px; }
 
 /* Toast */
 .studio-toast {
