@@ -147,10 +147,15 @@ function renderZones() {
   state.zones.forEach((z, i) => {
     const row = document.createElement("div");
     row.className = "zone-row";
-    const text = document.createElement("span");
+    // Erkannten Text editierbar machen — die Vision-OCR liest z.B. vertikal
+    // gedrehten Text mal falsch; Korrektur fließt direkt in den Build-Prompt.
+    const text = document.createElement("input");
+    text.type = "text";
     text.className = "zone-text";
-    text.textContent = z.text || "(leer)";
-    text.title = z.text || "";
+    text.value = z.text || "";
+    text.title = "Erkannten Text bei Bedarf korrigieren";
+    text.placeholder = "(leer)";
+    text.addEventListener("input", () => { state.zones[i].text = text.value; scheduleRebuild(); });
     const sel = document.createElement("select");
     sel.className = "zone-role";
     for (const r of ROLES) {

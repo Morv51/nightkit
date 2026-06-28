@@ -345,12 +345,13 @@ html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: aut
 .zone-row { display: flex; align-items: center; gap: 8px; }
 .zone-text {
   flex: 1; min-width: 0;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-size: 13px; color: var(--color-text, #fff);
+  height: 32px; box-sizing: border-box;
+  font: inherit; font-size: 13px; color: var(--color-text, #fff);
   background: var(--card-inset, #0d0d0d);
   border: 1px solid var(--color-border, #222);
-  border-radius: 8px; padding: 6px 10px;
+  border-radius: 8px; padding: 0 10px;
 }
+.zone-text:focus { outline: none; border-color: var(--color-accent, #ccff00); }
 .zone-role {
   flex: 0 0 140px;
   height: 32px; padding: 0 8px;
@@ -358,7 +359,7 @@ html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: aut
   border: 1px solid var(--color-border, #222); border-radius: 8px;
   font: inherit; font-size: 12px;
 }
-.zone-row.zone-remove .zone-text { opacity: 0.5; text-decoration: line-through; }
+.zone-row.zone-remove .zone-text { opacity: 0.55; }
 .zone-row.zone-remove .zone-role { border-color: #ff6b6b; color: #ff9b9b; }
 
 /* Soll-Abgleich: fehlende Pflicht-Platzhalter */
