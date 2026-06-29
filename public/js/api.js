@@ -90,16 +90,32 @@ export async function postRemove(payload) {
   return data.image;
 }
 
-// Text anpassen: fertiger Flyer ({ image }) + korrigierter Text + markierte Zone
-// ({ text, area }). Nutzt serverseitig den bestehenden edit()-Flow und liefert
-// den neu gerenderten (ganzen) Flyer als base64 data URL zurück; das Frontend
-// kopiert davon nur die markierte Zone ins Original.
+// Text anpassen: fertiger Flyer ({ image }) + Pinsel-Maske ({ mask }, SCHWARZ =
+// bearbeiten) + korrigierter Text ({ text }). Serverseitig echtes Inpainting
+// (nur die maskierte Zone wird neu gerendert). Liefert den neu gerenderten Flyer
+// als base64 data URL; das Frontend kopiert davon nur die übermalte Zone zurück.
+// Harter Client-Timeout, damit ein hängender Aufruf nicht still ewig lädt.
 export async function postAdjust(payload) {
-  const res = await fetch("/api/adjust-text", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
-    body: JSON.stringify(payload),
-  });
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 120 * 1000);
+  let res;
+  try {
+    res = await fetch("/api/adjust-text", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+      body: JSON.stringify(payload),
+      signal: ctrl.signal,
+    });
+  } catch (e) {
+    if (e && e.name === "AbortError") {
+      const t = new Error("Zeitüberschreitung — die Korrektur hat zu lange gedauert. Bitte nochmal versuchen.");
+      t.code = "timeout";
+      throw t;
+    }
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
   await ensureOk(res);
   const data = await res.json();
   if (!data.image) throw new Error("Kein angepasstes Bild erhalten.");

@@ -135,30 +135,23 @@ router.post("/api/remove", async (req, res) => {
   }
 });
 
-// Prompt für "Text anpassen" — grenzt die Änderung auf die markierte Zone ein
-// und sichert exakte, vollständige Schreibweise. Eigener Prompt, NICHT der
-// buildPrompt-Befüll-Prompt (der bleibt unangetastet).
-function buildAdjustPrompt(text, area) {
-  let where = "the marked area";
-  if (area && Number.isFinite(area.x)) {
-    const cy = area.y + (Number(area.h) || 0) / 2;
-    const cx = area.x + (Number(area.w) || 0) / 2;
-    const v = cy < 0.34 ? "upper" : cy > 0.66 ? "lower" : "middle";
-    const h = cx < 0.34 ? "left" : cx > 0.66 ? "right" : "centre";
-    where = `the marked area (the ${v} ${h} region of the flyer)`;
-  }
+// Prompt für "Text anpassen" — die Maske bestimmt die Stelle (echtes
+// Inpainting), der Prompt beschreibt NUR den einzusetzenden Text + den Stil.
+// Eigener Prompt, NICHT der buildPrompt-Befüll-Prompt (der bleibt unangetastet).
+function buildAdjustPrompt(text) {
   return [
-    `Edit this flyer. In ${where} ONLY, render exactly this text: "${text}".`,
-    "Correct spelling, EVERY letter present, no missing, dropped or swapped letters.",
-    "Match the existing design at that spot exactly: same font, style, effect, colour, size and position as the text already there.",
-    "Change NOTHING outside that area — keep the entire rest of the flyer identical (same background, photos, graphics, other texts, colours and layout).",
+    `Render exactly this text in the edited region: "${text}".`,
+    "Correct spelling, EVERY letter present, no missing, dropped or swapped letters; spell each word in full.",
+    "Match the flyer's existing design at that spot: same font, weight, style, effect, colour and size as the text already there, seamlessly integrated with the surrounding artwork.",
   ].join("\n");
 }
 
-// "Text anpassen": gezielte Nachkorrektur EINER markierten Zone im fertigen
-// Flyer. NUTZT den bestehenden ideogram.edit()-Flow (maskenlos, magic_prompt
-// OFF) — der Prompt grenzt auf die Zone ein; das Frontend kopiert danach NUR das
-// markierte Rechteck zurück, sodass der Rest pixelgenau unverändert bleibt.
+// "Text anpassen": gezielte Nachkorrektur EINER übermalten Zone im fertigen
+// Flyer per echtem Inpainting (ideogram.editMasked, magic_prompt OFF). Die
+// Pinsel-Maske (SCHWARZ = bearbeiten) geht an Ideogram, sodass NUR diese Fläche
+// neu gerendert wird; das Frontend kopiert danach zusätzlich nur die übermalte
+// Fläche ins Original zurück, sodass der Rest garantiert pixelgenau bleibt.
+// edit() (Haupt-Generierung) wird NICHT genutzt/verändert.
 // Auth-geschützt wie /api/generate; ein erfolgreicher Lauf zählt als ein Call.
 router.post("/api/adjust-text", async (req, res) => {
   if (!IDEOGRAM_KEY) return sendError(res, 500, "IDEOGRAM_API_KEY not configured");
@@ -178,13 +171,20 @@ router.post("/api/adjust-text", async (req, res) => {
 
   const image = parseDataUrl(body.image);
   if (!image) return sendError(res, 400, "Flyer-Bild fehlt oder ist ungültig");
+  const mask = parseDataUrl(body.mask);
+  if (!mask) return sendError(res, 400, "Keine Auswahl markiert — bitte zuerst über die Stelle malen");
   const text = typeof body.text === "string" ? body.text.trim() : "";
   if (!text) return sendError(res, 400, "Bitte den korrigierten Text eingeben");
 
-  const prompt = buildAdjustPrompt(text, body.area);
+  const prompt = buildAdjustPrompt(text);
   try {
-    // Bestehender edit()-Flow, unverändert (magic_prompt OFF ist Default).
-    const { url } = await ideogram.edit({ apiKey: IDEOGRAM_KEY, prompt, imageBuffer: image.buffer });
+    // Echtes Inpainting: nur die maskierte Zone wird neu gerendert. magic_prompt OFF.
+    const { url } = await ideogram.editMasked({
+      apiKey: IDEOGRAM_KEY,
+      prompt,
+      imageBuffer: image.buffer,
+      maskBuffer: mask.buffer,
+    });
     const dl = await ideogram.download(url);
     sendJson(res, 200, { image: `data:${dl.contentType};base64,${dl.buffer.toString("base64")}` });
     if (user) auth.incrementGenerations(user.id);

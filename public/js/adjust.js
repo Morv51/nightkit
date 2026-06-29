@@ -1,6 +1,6 @@
 import { state } from "./state.js";
 import { $, els, on } from "./dom.js";
-import { postAdjust, friendlyMessage } from "./api.js";
+import { postAdjust } from "./api.js";
 import { addToHistory } from "./history.js";
 import { setMaster, selectFormat } from "./formats.js";
 import { exitStageVideo } from "./video.js";
@@ -133,6 +133,14 @@ function hideToast() {
   if (dismissToast) { dismissToast(); dismissToast = null; }
 }
 
+// Fehler im Klartext zeigen (kein stilles Nichts): spezifische Server-, Timeout-
+// und Limit-Meldungen bevorzugen, nur unbekannte Netzfehler abfangen.
+function adjustErrorMessage(e) {
+  if (!e) return "Das hat nicht geklappt. Bitte nochmal versuchen.";
+  if (["http", "limit", "auth", "timeout"].includes(e.code)) return e.message;
+  return (e.message && e.message.length < 160) ? e.message : "Verbindungsproblem — bitte nochmal versuchen.";
+}
+
 // ── Bild-Helfer + Masken-Composite ───────────────────────────────
 function blobToDataUrl(blob) {
   if (blob.size > MAX_UPLOAD) throw new Error("Das Bild ist zu groß (max. 10 MB).");
@@ -157,9 +165,23 @@ function loadImg(src) {
   });
 }
 
-// Maske der übermalten Fläche: deckend weiße Striche auf transparentem Grund,
-// mit weicher Kante (Blur) für nahtloses Einfügen. Wird als Alpha genutzt.
-function buildMaskCanvas() {
+// Zwei Masken aus denselben Pinsel-Strichen:
+// 1) Ideogram-Maske fürs echte Inpainting — SCHWARZ = bearbeiten, WEISS =
+//    behalten (Ideogram-Konvention!), deckend, gleiche Größe wie der Flyer.
+function buildIdeogramMaskDataUrl() {
+  const c = document.createElement("canvas");
+  c.width = canvas.width;
+  c.height = canvas.height;
+  const mx = c.getContext("2d");
+  mx.fillStyle = "#ffffff"; mx.fillRect(0, 0, c.width, c.height); // behalten
+  drawStrokes(mx, "#000000");                                     // bearbeiten
+  return c.toDataURL("image/png");
+}
+
+// 2) Alpha-Maske fürs Zurückkopieren — deckend weiße Striche auf transparentem
+//    Grund, weiche Kante (Blur) für nahtlosen Übergang. Garantiert, dass nur die
+//    übermalte Fläche aus dem Ergebnis übernommen wird, der Rest = Original.
+function buildAlphaMaskCanvas() {
   const c = document.createElement("canvas");
   c.width = canvas.width;
   c.height = canvas.height;
@@ -168,24 +190,6 @@ function buildMaskCanvas() {
   try { mx.filter = `blur(${feather}px)`; } catch {}
   drawStrokes(mx, "#ffffff");
   return c;
-}
-
-// Begrenzungsrechteck der Markierung (normiert 0..1) — nur als Positions-Hinweis
-// für den Prompt, nicht fürs Zuschneiden.
-function maskBoundsNormalized() {
-  let minX = 1, minY = 1, maxX = 0, maxY = 0, any = false;
-  for (const s of strokes) {
-    for (const [x, y] of s.pts) {
-      const nx = x / canvas.width, ny = y / canvas.height;
-      if (nx < minX) minX = nx;
-      if (ny < minY) minY = ny;
-      if (nx > maxX) maxX = nx;
-      if (ny > maxY) maxY = ny;
-      any = true;
-    }
-  }
-  if (!any) return null;
-  return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
 }
 
 // Nur die maskierte (übermalte) Fläche aus dem editierten Ergebnis übernehmen,
@@ -233,12 +237,14 @@ async function apply() {
   setBusy(true);
   try {
     const masterUrl = await currentImageDataUrl();
-    const area = maskBoundsNormalized();
-    const mask = buildMaskCanvas(); // vor dem Async-Call bauen (Striche bleiben gültig)
+    // Beide Masken aus den aktuellen Strichen bauen (vor dem Async-Call).
+    const maskUrl = buildIdeogramMaskDataUrl(); // SCHWARZ = bearbeiten → an Ideogram
+    const alphaMask = buildAlphaMaskCanvas();   // fürs pixelgenaue Zurückkopieren
 
-    // Gezielter edit()-Aufruf (ganzes Bild), dann nur die maskierte Zone zurückkopieren.
-    const edited = await postAdjust({ image: masterUrl, text, area });
-    const composited = await compositeMask(masterUrl, edited, mask);
+    // Echtes Inpainting: nur die maskierte Zone neu rendern. Danach zusätzlich nur
+    // die übermalte Fläche ins Original zurückkopieren (Rest bleibt unverändert).
+    const edited = await postAdjust({ image: masterUrl, text, mask: maskUrl });
+    const composited = await compositeMask(masterUrl, edited, alphaMask);
 
     setMaster(composited);
     addToHistory(composited);
@@ -250,7 +256,7 @@ async function apply() {
     redraw();
     toast("Stelle angepasst — du kannst direkt die nächste übermalen.", { type: "success" });
   } catch (e) {
-    showToast(friendlyMessage(e), true);
+    showToast(adjustErrorMessage(e), true);
   } finally {
     setBusy(false);
   }
