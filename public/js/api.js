@@ -169,7 +169,10 @@ export async function getJobStatus(jobId) {
 }
 
 export async function getTemplates() {
-  const res = await fetch("/api/templates");
+  // Niemals eine veraltete (evtl. leere) Template-Liste aus dem Browser-/Proxy-
+  // Cache verwenden — sonst bleibt die Galerie bei manchen Usern leer, obwohl der
+  // Server die volle Liste hat. cache:no-store + Zeitstempel erzwingen frisch.
+  const res = await fetch("/api/templates?t=" + Date.now(), { cache: "no-store" });
   if (!res.ok) throw new Error("Templates konnten nicht geladen werden.");
   const data = await res.json();
   return { templates: data.templates || [], categories: data.categories || [] };
