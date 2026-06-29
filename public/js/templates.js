@@ -166,6 +166,34 @@ function galleryFiltered() {
   return state.templates.filter((t) => t.category === galleryCategory);
 }
 
+// Thumbnails laden erst, wenn ihre Karte (fast) im echten Sichtfeld ist — geprüft
+// über die tatsächliche Bildschirmposition (getBoundingClientRect), NICHT über
+// native loading="lazy" oder IntersectionObserver. Beide hängen am nächsten
+// Scroll-Container; auf Mobil scrollt aber die SEITE (nicht das Grid), und das
+// overflow:auto-Grid stört die Berechnung — auf iOS Safari blieben dadurch
+// Thumbnails leer ("nicht alle Templates laden"). Die Positionsprüfung greift
+// unabhängig davon, was scrollt — Mobil wie Desktop. Wichtig: 57 MB Bilder dürfen
+// NICHT auf einmal geladen werden, daher echtes Nachladen beim Scrollen.
+let pendingImgs = [];
+function loadVisibleGalleryImgs() {
+  if (!pendingImgs.length) return;
+  const vh = window.innerHeight || document.documentElement.clientHeight;
+  const margin = 800; // etwas vorausladen, damit nichts leer in den Blick scrollt
+  pendingImgs = pendingImgs.filter((img) => {
+    const r = img.getBoundingClientRect();
+    if (r.bottom > -margin && r.top < vh + margin && img.dataset.src) {
+      img.src = img.dataset.src;
+      img.removeAttribute("data-src");
+    }
+    return !!img.dataset.src; // noch ungeladen → in der Warteschlange behalten
+  });
+}
+let imgScrollRaf = 0;
+export function onGalleryScroll() {
+  if (imgScrollRaf) return;
+  imgScrollRaf = requestAnimationFrame(() => { imgScrollRaf = 0; loadVisibleGalleryImgs(); });
+}
+
 function galleryCard(t, i) {
   const card = document.createElement("button");
   card.type = "button";
@@ -174,12 +202,11 @@ function galleryCard(t, i) {
   card.style.animationDelay = Math.min(i * 18, 280) + "ms"; // schneller Stagger
   const img = document.createElement("img");
   img.alt = t.name || "";
-  img.loading = "lazy"; // wichtig bei großen Bibliotheken — nur Sichtbares laden
   const done = () => card.classList.add("loaded"); // entfernt das Skeleton-Shimmer
   img.addEventListener("load", done, { once: true });
   img.addEventListener("error", done, { once: true });
-  img.src = t.src;
-  if (img.complete && img.naturalWidth) done();
+  img.dataset.src = t.src;       // src wird gesetzt, sobald die Karte ins Sichtfeld kommt
+  pendingImgs.push(img);
   card.appendChild(img);
   card.addEventListener("click", () => selectTemplate(t.file));
   return card;
@@ -193,6 +220,7 @@ function galleryRenderNext() {
   slice.forEach((t, i) => frag.appendChild(galleryCard(t, galleryShown + i)));
   grid.appendChild(frag);
   galleryShown += slice.length;
+  loadVisibleGalleryImgs(); // sofort die jetzt sichtbaren Thumbnails laden
   galleryObserve();
 }
 
@@ -218,6 +246,7 @@ function galleryApply() {
   galleryList = galleryFiltered();
   galleryShown = 0;
   if (galleryObserver) { galleryObserver.disconnect(); galleryObserver = null; }
+  pendingImgs = []; // alte Warteschlange verwerfen; neue Karten füllen sie neu
   const grid = $("tgGrid"), empty = $("tgEmpty");
   if (grid) { grid.scrollTop = 0; grid.innerHTML = ""; grid.style.display = galleryList.length ? "" : "none"; }
   if (empty) empty.hidden = galleryList.length > 0;
@@ -261,8 +290,11 @@ export function bindGalleryControls() {
   if (search) search.addEventListener("input", () => { gallerySearch = search.value; galleryApply(); });
   const retry = $("tgRetry");
   if (retry) retry.addEventListener("click", () => reloadTemplates(retry));
-  // Lazy-Load-Fallback: zusätzlich zum IntersectionObserver auch auf Scroll
-  // nahe dem Ende nachladen (robust, falls IO mal nicht greift).
+  // Thumbnails beim Scrollen nachladen — Capture auf window fängt sowohl das
+  // Seiten-Scrollen (Mobil) als auch das Grid-Scrollen (Desktop) ab.
+  window.addEventListener("scroll", onGalleryScroll, true);
+  window.addEventListener("resize", onGalleryScroll);
+  // Mehr Karten nachladen, wenn das Grid nahe ans Ende scrollt (Desktop).
   const grid = $("tgGrid");
   if (grid) grid.addEventListener("scroll", () => {
     if (galleryShown < galleryList.length && grid.scrollTop + grid.clientHeight >= grid.scrollHeight - 400) {
