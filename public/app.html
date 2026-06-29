@@ -215,8 +215,9 @@
           <canvas class="correct-canvas" id="correctCanvas"></canvas>
           <div class="correct-cursor" id="correctCursor"></div>
           <div class="correct-busy" id="correctBusy"><span class="cb-spin"></span></div>
-          <!-- Text anpassen: Rechteck-Markierung über dem Flyer -->
+          <!-- Text anpassen: Pinsel-Markierung über dem Flyer -->
           <canvas class="adjust-canvas" id="adjustCanvas"></canvas>
+          <div class="correct-cursor adjust-cursor" id="adjustCursor"></div>
           <div class="correct-busy adjust-busy" id="adjustBusy"><span class="cb-spin"></span></div>
         </div>
         <!-- Korrektur-Controls liegen in der Toolbar-Sidebar (#toolCorrect) -->
@@ -252,13 +253,19 @@
      <!-- Text-anpassen-Controls: ersetzen im Modus die normalen Tool-Gruppen -->
      <div class="tool-adjust" id="toolAdjust">
        <div class="tool-group-head">Text anpassen</div>
+       <label class="cc-label" for="adjustSize">Pinselgröße</label>
+       <input class="cbar-size" id="adjustSize" type="range" min="0" max="1" step="0.01" value="0.3" aria-label="Pinselgröße">
        <label class="cc-label" for="adjustText">Korrigierter Text</label>
        <input class="adjust-input" id="adjustText" type="text" placeholder="z. B. Tattoos &amp; Beats" autocomplete="off">
+       <div class="cc-row">
+         <button class="rbtn rbtn-ghost" id="adjustUndo" type="button">↩ Rückgängig</button>
+         <button class="rbtn rbtn-ghost" id="adjustClear" type="button">⊘ Markierung löschen</button>
+       </div>
        <div class="cc-row">
          <button class="rbtn rbtn-primary" id="adjustApply" type="button">✓ Übernehmen</button>
          <button class="rbtn cc-cancel" id="adjustCancel" type="button">✕ Abbrechen</button>
        </div>
-       <div class="cc-hint" id="adjustHint">Bereich markieren und korrigierten Text eingeben — nur diese Stelle wird neu gesetzt.</div>
+       <div class="cc-hint" id="adjustHint">Mit dem Pinsel über die Textstelle malen, korrigierten Text eingeben, übernehmen.</div>
      </div>
 
      <!-- Responsive-Tabs (nur < 1024px sichtbar) -->
