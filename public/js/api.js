@@ -90,6 +90,22 @@ export async function postRemove(payload) {
   return data.image;
 }
 
+// Text anpassen: fertiger Flyer ({ image }) + korrigierter Text + markierte Zone
+// ({ text, area }). Nutzt serverseitig den bestehenden edit()-Flow und liefert
+// den neu gerenderten (ganzen) Flyer als base64 data URL zurück; das Frontend
+// kopiert davon nur die markierte Zone ins Original.
+export async function postAdjust(payload) {
+  const res = await fetch("/api/adjust-text", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+    body: JSON.stringify(payload),
+  });
+  await ensureOk(res);
+  const data = await res.json();
+  if (!data.image) throw new Error("Kein angepasstes Bild erhalten.");
+  return data.image;
+}
+
 // Multi-format export: master image as base64 data URL + target format id
 // ('feed' | 'square'). Returns the reframed image as a data URL.
 export async function postReframe(payload) {

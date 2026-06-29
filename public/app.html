@@ -215,6 +215,9 @@
           <canvas class="correct-canvas" id="correctCanvas"></canvas>
           <div class="correct-cursor" id="correctCursor"></div>
           <div class="correct-busy" id="correctBusy"><span class="cb-spin"></span></div>
+          <!-- Text anpassen: Rechteck-Markierung über dem Flyer -->
+          <canvas class="adjust-canvas" id="adjustCanvas"></canvas>
+          <div class="correct-busy adjust-busy" id="adjustBusy"><span class="cb-spin"></span></div>
         </div>
         <!-- Korrektur-Controls liegen in der Toolbar-Sidebar (#toolCorrect) -->
         <a class="newtpl-link prev-link" id="correctPrevLink" href="#" style="display:none">↩ Vorherige Version</a>
@@ -244,6 +247,18 @@
          <button class="rbtn cc-cancel" id="correctCancel" type="button">✕ Abbrechen</button>
        </div>
        <div class="cc-hint" id="correctHint">Male über die Stelle die entfernt werden soll</div>
+     </div>
+
+     <!-- Text-anpassen-Controls: ersetzen im Modus die normalen Tool-Gruppen -->
+     <div class="tool-adjust" id="toolAdjust">
+       <div class="tool-group-head">Text anpassen</div>
+       <label class="cc-label" for="adjustText">Korrigierter Text</label>
+       <input class="adjust-input" id="adjustText" type="text" placeholder="z. B. Tattoos &amp; Beats" autocomplete="off">
+       <div class="cc-row">
+         <button class="rbtn rbtn-primary" id="adjustApply" type="button">✓ Übernehmen</button>
+         <button class="rbtn cc-cancel" id="adjustCancel" type="button">✕ Abbrechen</button>
+       </div>
+       <div class="cc-hint" id="adjustHint">Bereich markieren und korrigierten Text eingeben — nur diese Stelle wird neu gesetzt.</div>
      </div>
 
      <!-- Responsive-Tabs (nur < 1024px sichtbar) -->
@@ -285,6 +300,10 @@
          <button class="tool" id="btnCorrect" type="button">
            <span class="tool-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span>
            <span class="tool-lbl">Korrigieren</span>
+         </button>
+         <button class="tool" id="btnAdjust" type="button">
+           <span class="tool-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V5a1 1 0 0 1 1-1h2"/><path d="M17 4h2a1 1 0 0 1 1 1v2"/><path d="M20 17v2a1 1 0 0 1-1 1h-2"/><path d="M7 20H5a1 1 0 0 1-1-1v-2"/><path d="M8 12h8"/><path d="M12 9v6"/></svg></span>
+           <span class="tool-lbl">Text anpassen</span>
          </button>
          <button class="tool" id="btnRegen" type="button">
            <span class="tool-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 4v5h-5"/></svg></span>

@@ -5,6 +5,7 @@ import { showErr, clearErr } from "./errors.js";
 import { addToHistory } from "./history.js";
 import { compositeLogo } from "./composite.js";
 import { resetCorrectState } from "./correct.js";
+import { resetAdjustState } from "./adjust.js";
 import { setMaster, resetFormatsState } from "./formats.js";
 import { resetVideo } from "./video.js";
 import { resetCaption } from "./caption.js";
@@ -90,6 +91,7 @@ async function showResult(proxiedUrl) {
   }
 
   resetCorrectState(); // neuer Flyer → Korrektur-Verlauf des alten verwerfen
+  resetAdjustState();  // ebenso den Text-anpassen-Modus verlassen
   setMaster(displayUrl); // setzt Master + Anzeige, verwirft gecachte Formate
 
   exitBeforeMode();          // immer im "Nachher"-Zustand (fertiger Flyer) starten
@@ -156,6 +158,7 @@ export function resetToPreview(e) {
   if (e && e.preventDefault) e.preventDefault();
   exitBeforeMode();      // Vorher/Nachher zurück auf den fertigen Flyer
   resetCorrectState();   // Korrektur-Verlauf verwerfen
+  resetAdjustState();    // Text-anpassen-Modus verlassen
   resetVideo();          // laufende Animation stoppen, Video-Bereich leeren
   resetCaption();        // Caption-Box leeren
   resetFormatsState();   // gecachte Formate + Kachel-Häkchen + Beta-Toggles weg

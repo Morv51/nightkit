@@ -135,6 +135,65 @@ router.post("/api/remove", async (req, res) => {
   }
 });
 
+// Prompt für "Text anpassen" — grenzt die Änderung auf die markierte Zone ein
+// und sichert exakte, vollständige Schreibweise. Eigener Prompt, NICHT der
+// buildPrompt-Befüll-Prompt (der bleibt unangetastet).
+function buildAdjustPrompt(text, area) {
+  let where = "the marked area";
+  if (area && Number.isFinite(area.x)) {
+    const cy = area.y + (Number(area.h) || 0) / 2;
+    const cx = area.x + (Number(area.w) || 0) / 2;
+    const v = cy < 0.34 ? "upper" : cy > 0.66 ? "lower" : "middle";
+    const h = cx < 0.34 ? "left" : cx > 0.66 ? "right" : "centre";
+    where = `the marked area (the ${v} ${h} region of the flyer)`;
+  }
+  return [
+    `Edit this flyer. In ${where} ONLY, render exactly this text: "${text}".`,
+    "Correct spelling, EVERY letter present, no missing, dropped or swapped letters.",
+    "Match the existing design at that spot exactly: same font, style, effect, colour, size and position as the text already there.",
+    "Change NOTHING outside that area — keep the entire rest of the flyer identical (same background, photos, graphics, other texts, colours and layout).",
+  ].join("\n");
+}
+
+// "Text anpassen": gezielte Nachkorrektur EINER markierten Zone im fertigen
+// Flyer. NUTZT den bestehenden ideogram.edit()-Flow (maskenlos, magic_prompt
+// OFF) — der Prompt grenzt auf die Zone ein; das Frontend kopiert danach NUR das
+// markierte Rechteck zurück, sodass der Rest pixelgenau unverändert bleibt.
+// Auth-geschützt wie /api/generate; ein erfolgreicher Lauf zählt als ein Call.
+router.post("/api/adjust-text", async (req, res) => {
+  if (!IDEOGRAM_KEY) return sendError(res, 500, "IDEOGRAM_API_KEY not configured");
+
+  let user = null;
+  if (auth.isConfigured()) {
+    user = await auth.verifyToken(auth.bearer(req));
+    if (!user) return sendError(res, 401, "Authentifizierung erforderlich");
+  }
+
+  let body;
+  try {
+    body = await readJson(req, { limit: 25 * 1024 * 1024 });
+  } catch (e) {
+    return sendError(res, e.status || 400, e.message);
+  }
+
+  const image = parseDataUrl(body.image);
+  if (!image) return sendError(res, 400, "Flyer-Bild fehlt oder ist ungültig");
+  const text = typeof body.text === "string" ? body.text.trim() : "";
+  if (!text) return sendError(res, 400, "Bitte den korrigierten Text eingeben");
+
+  const prompt = buildAdjustPrompt(text, body.area);
+  try {
+    // Bestehender edit()-Flow, unverändert (magic_prompt OFF ist Default).
+    const { url } = await ideogram.edit({ apiKey: IDEOGRAM_KEY, prompt, imageBuffer: image.buffer });
+    const dl = await ideogram.download(url);
+    sendJson(res, 200, { image: `data:${dl.contentType};base64,${dl.buffer.toString("base64")}` });
+    if (user) auth.incrementGenerations(user.id);
+  } catch (e) {
+    console.error("adjust-text error:", e.message, e.response || "");
+    sendError(res, 502, "Text anpassen fehlgeschlagen: " + e.message);
+  }
+});
+
 // Ziel-Seitenverhältnisse (Breite:Höhe) der abgeleiteten Formate. Beide sind
 // breiter als das 9:16-Master ⇒ wir behalten die volle Höhe und erweitern nur
 // links/rechts (kein vertikales Cropping, volles Hochformat bleibt erhalten).
