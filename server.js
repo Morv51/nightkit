@@ -367,7 +367,8 @@ router.get("/api/templates", (_req, res) => {
     name: t.name,
     category: t.category,
     featured: t.featured,
-    src: `/templates/${t.file}`,
+    // Pfad pro Segment URL-encodieren (Ordnernamen mit Leerzeichen/„&").
+    src: "/templates/" + t.file.split("/").map(encodeURIComponent).join("/"),
   }));
   sendJson(res, 200, { templates: list, categories: templates.categories() });
 });
