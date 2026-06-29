@@ -184,6 +184,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 /* Leerer Suchtreffer */
 .tg-empty{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--color-text-muted);font-size:var(--font-size-sm);padding:var(--space-6)}
 .tg-empty[hidden]{display:none}
+#tgError{flex-direction:column;gap:12px}
 
 .tg-foot{flex-shrink:0;font-size:var(--font-size-xs);color:var(--color-text-dim);text-align:center;line-height:var(--line-height-snug)}
 

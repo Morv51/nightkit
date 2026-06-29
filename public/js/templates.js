@@ -12,12 +12,41 @@ import { resetToPreview } from "./generator.js";
 let activeCategory = "Alle";
 
 export async function loadTemplates() {
-  const data = await getTemplates();
-  state.templates = data.templates;
-  state.categories = data.categories;
-  if (!state.currentTemplateFile && state.templates[0]) {
-    state.currentTemplateFile = state.templates[0].file;
+  // Ein automatischer Wiederholversuch überlebt einen einmaligen Aussetzer beim
+  // Seitenaufbau (langsames Netz, kurzer Timeout) — sonst bliebe die Galerie für
+  // diesen User dauerhaft leer, bis er die Seite neu lädt.
+  let lastErr;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const data = await getTemplates();
+      state.templates = data.templates;
+      state.categories = data.categories;
+      if (!state.currentTemplateFile && state.templates[0]) {
+        state.currentTemplateFile = state.templates[0].file;
+      }
+      return;
+    } catch (e) {
+      lastErr = e;
+      if (attempt === 0) await new Promise((r) => setTimeout(r, 800));
+    }
   }
+  throw lastErr;
+}
+
+// Galerie + Picker komplett neu laden (für den "Erneut versuchen"-Button, wenn
+// das Laden fehlgeschlagen war).
+export async function reloadTemplates(btn) {
+  if (btn) { btn.disabled = true; btn.textContent = "Lädt…"; }
+  try {
+    await loadTemplates();
+  } catch (e) {
+    console.error("Templates konnten nicht geladen werden:", e);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "Erneut versuchen"; }
+  }
+  renderPicker();
+  renderGallery();
+  applyCurrentTemplate();
 }
 
 export function getCurrentTemplate() {
@@ -197,6 +226,18 @@ function galleryApply() {
 
 export function renderGallery() {
   if (!$("tgGrid")) return;
+  // Der Katalog ist nie legitim leer. Ist er hier leer, ist das Laden
+  // fehlgeschlagen (Netz/Cache/Blocker) → klare Meldung + Retry zeigen, statt
+  // stumm eine leere Galerie (oder ein irreführendes "passe deine Suche an").
+  const err = $("tgError");
+  if (!state.templates.length) {
+    if (err) err.hidden = false;
+    const grid = $("tgGrid"); if (grid) { grid.innerHTML = ""; grid.style.display = "none"; }
+    const empty = $("tgEmpty"); if (empty) empty.hidden = true;
+    const cnt = $("tgCount"); if (cnt) cnt.textContent = "";
+    return;
+  }
+  if (err) err.hidden = true;
   const count = $("tgCount");
   if (count) count.textContent = state.templates.length ? state.templates.length + " Vorlagen" : "";
   const cats = $("tgCats");
@@ -218,6 +259,8 @@ export function renderGallery() {
 export function bindGalleryControls() {
   const search = $("tgSearch");
   if (search) search.addEventListener("input", () => { gallerySearch = search.value; galleryApply(); });
+  const retry = $("tgRetry");
+  if (retry) retry.addEventListener("click", () => reloadTemplates(retry));
   // Lazy-Load-Fallback: zusätzlich zum IntersectionObserver auch auf Scroll
   // nahe dem Ende nachladen (robust, falls IO mal nicht greift).
   const grid = $("tgGrid");

@@ -429,6 +429,9 @@ router.get("/api/templates", (_req, res) => {
     // Pfad pro Segment URL-encodieren (Ordnernamen mit Leerzeichen/„&").
     src: "/templates/" + t.file.split("/").map(encodeURIComponent).join("/"),
   }));
+  // Liste immer frisch laden — nie eine veraltete (evtl. leere) Version aus dem
+  // Browser-/Proxy-Cache ausliefern (kann sonst eine leere Galerie verursachen).
+  res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
   sendJson(res, 200, { templates: list, categories: templates.categories() });
 });
 
