@@ -5,7 +5,7 @@
 // werden sichtbar gemacht (kein stilles Hängen). KEIN Ideogram, KEINE ChatGPT-
 // Weboberfläche. Bewusst nur EIN Bild (Vorstufe zur späteren Stapelverarbeitung).
 
-import { post } from "./studioApi.js";
+import { post, getToken } from "./studioApi.js";
 import { fileToDataUrl, downloadDataUrl, toJpeg, wireDropzone, wirePaste, notify } from "./studioUi.js";
 
 const $ = (id) => document.getElementById(id);
@@ -50,6 +50,30 @@ async function pickFile(file) {
   catch (e) { notify(e.message, "error"); }
 }
 
+// Den asynchronen Generier-Job pollen, bis er fertig ist oder fehlschlägt.
+// Großzügige Gesamt-Obergrenze (6 Min), Status mit laufender Sekundenanzeige.
+async function pollAutoGenerate(jobId, startedAt) {
+  const deadline = Date.now() + 6 * 60 * 1000;
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 3000));
+    let res;
+    try {
+      res = await fetch("/admin/auto-generate/" + encodeURIComponent(jobId), {
+        headers: { "X-Admin-Token": getToken() },
+      });
+    } catch {
+      continue; // kurzer Netz-Aussetzer → weiter pollen
+    }
+    const job = await res.json().catch(() => ({}));
+    if (res.status === 404) throw new Error(job.error || "Auftrag nicht mehr gefunden — bitte erneut starten.");
+    if (!res.ok) throw new Error(job.error || ("HTTP " + res.status));
+    if (job.status === "done") return job;
+    if (job.status === "error") throw new Error(job.error || "Generierung fehlgeschlagen");
+    setStep("afS2", "afStep2", "running", "läuft … (" + Math.round((Date.now() - startedAt) / 1000) + " s)");
+  }
+  throw new Error("Zeitüberschreitung — die Generierung hat über 6 Minuten gedauert.");
+}
+
 async function run() {
   if (running) return;
   if (!imageDataUrl) return notify("Erst einen Referenz-Flyer hochladen", "info");
@@ -77,13 +101,17 @@ async function run() {
   }
 
   // ── Schritt 2: Generierung (offizielle OpenAI-Bild-API, Referenz + Prompt) ──
-  setStep("afS2", "afStep2", "running", "läuft … (kann bis ~2 Min dauern)");
+  setStep("afS2", "afStep2", "running", "läuft … (kann 1–2 Min dauern)");
   const t0 = Date.now();
   try {
-    const r = await post("/admin/auto-generate", { image: imageDataUrl, prompt });
-    if (!r || !r.image) throw new Error("Kein Bild erhalten");
-    const secs = r.ms ? Math.round(r.ms / 1000) : Math.round((Date.now() - t0) / 1000);
-    resultImage = r.image;
+    // Asynchron: Auftrag starten (sofortige 202-Antwort) und dann pollen — so kappt
+    // der Render-Gateway den langen Lauf nicht mehr mit 502.
+    const start = await post("/admin/auto-generate", { image: imageDataUrl, prompt });
+    if (!start || !start.jobId) throw new Error("Kein Auftrag gestartet");
+    const job = await pollAutoGenerate(start.jobId, t0);
+    if (!job.image) throw new Error("Kein Bild erhalten");
+    const secs = job.ms ? Math.round(job.ms / 1000) : Math.round((Date.now() - t0) / 1000);
+    resultImage = job.image;
     $("afResultImg").src = resultImage;
     $("afResultCard").hidden = false;
     $("afTime").textContent = "· generiert in " + secs + " s";
