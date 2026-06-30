@@ -169,7 +169,10 @@ function addVariant(label, variant, precomputedPrompt) {
   $("m2VariantList").appendChild(card); // natürliche Reihenfolge (1, 2, 3 …)
   $("m2CopyAll").hidden = false;
 
-  copyBtn.addEventListener("click", () => copyToClipboard(ta.value, copyBtn));
+  // Nach erfolgreichem Kopieren die GANZE Karte dauerhaft als "kopiert" markieren
+  // (grün), damit man bei vielen Varianten den Überblick behält. Bleibt bestehen,
+  // bis ein neuer Varianten-Satz erzeugt wird (clearVariants leert die Liste).
+  copyBtn.addEventListener("click", () => copyToClipboard(ta.value, copyBtn, () => card.classList.add("variant-copied")));
 
   // Prompt entweder vorab geliefert (Auto-Varianten) oder hier einzeln bauen.
   if (precomputedPrompt != null) {
@@ -265,11 +268,12 @@ function fallbackCopyText(text, done) {
   ta.remove();
 }
 
-function copyToClipboard(text, btn) {
+function copyToClipboard(text, btn, onCopied) {
   if (!text || !text.trim()) return notify("Noch kein Prompt zum Kopieren", "info");
   const restore = btn.textContent;
   const flash = () => {
     btn.textContent = "✓ Kopiert!"; btn.classList.add("copied");
+    if (typeof onCopied === "function") onCopied(); // z.B. Varianten-Karte grün markieren
     setTimeout(() => { btn.textContent = restore; btn.classList.remove("copied"); }, 1600);
   };
   if (navigator.clipboard && navigator.clipboard.writeText) {
