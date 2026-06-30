@@ -404,6 +404,39 @@ html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: aut
   display: block; width: 100%; max-width: 420px; margin: 0 auto 12px;
   border-radius: 10px; border: 1px solid var(--color-border, #222);
 }
+
+/* ── Batch Studio (Beta) ────────────────────────────────────────────────── */
+.batch-thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.batch-thumb { position: relative; width: 64px; height: 114px; border-radius: 8px; overflow: hidden; border: 1px solid var(--color-border, #222); }
+.batch-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.batch-thumb-x { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; border-radius: 50%; border: none; background: rgba(0,0,0,.65); color: #fff; font-size: 11px; line-height: 1; cursor: pointer; padding: 0; }
+.batch-thumb-x:hover { background: #ff6b6b; }
+.batch-varcount { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--color-text-muted, #888); }
+.batch-varcount .auto-count { width: 56px; }
+.batch-bar { height: 8px; border-radius: 4px; background: var(--color-surface-2, #1a1a1a); overflow: hidden; }
+.batch-bar > span { display: block; height: 100%; width: 0; background: var(--color-accent, #ccff00); transition: width .3s ease; }
+.batch-list { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; }
+.batch-pack { border: 1px solid var(--color-border, #222); border-radius: 12px; padding: 12px; background: var(--card-inset, #0d0d0d); }
+.batch-pack-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.batch-pack-num { font-size: 14px; font-weight: 700; color: var(--color-text, #fff); }
+.batch-status { font-size: 12px; font-weight: 600; color: var(--color-text-muted, #888); }
+.batch-pack.running .batch-status { color: var(--color-accent, #ccff00); }
+.batch-pack.done .batch-status { color: #4ade80; }
+.batch-pack.error .batch-status { color: #ff6b6b; }
+.batch-pack-body { display: flex; gap: 12px; align-items: stretch; }
+.batch-pack-img { display: flex; flex-direction: column; gap: 8px; flex: 0 0 130px; }
+.batch-pack-img img { width: 130px; border-radius: 8px; border: 1px solid var(--color-border, #222); display: block; }
+.batch-pack-prompt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.batch-pack-prompt .st-prompt, .batch-var .st-prompt { width: 100%; box-sizing: border-box; resize: vertical; }
+.batch-variants { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.batch-var-head { font-size: 12px; font-weight: 700; color: var(--color-accent, #ccff00); margin-top: 4px; }
+.batch-var { border: 1px solid var(--color-border, #222); border-radius: 8px; padding: 8px; background: rgba(255,255,255,.02); display: flex; flex-direction: column; gap: 6px; }
+.batch-var-label { font-size: 12px; font-weight: 600; color: var(--color-text-muted, #aaa); }
+.batch-pack.batch-copied { border-color: #4ade80; background: rgba(74,222,128,.10); box-shadow: inset 0 0 0 1px rgba(74,222,128,.4); }
+.batch-pack.batch-copied .batch-pack-num::after { content: " ✓ kopiert"; color: #4ade80; font-weight: 700; }
+.batch-var.batch-copied { border-color: #4ade80; background: rgba(74,222,128,.10); }
+.batch-var.batch-copied .batch-var-label::after { content: " ✓ kopiert"; color: #4ade80; font-weight: 700; }
+@media (max-width: 560px) { .batch-pack-body { flex-direction: column; } .batch-pack-img { flex-basis: auto; } .batch-pack-img img { width: 100%; max-width: 200px; } }
 .variant-prompt {
   min-height: 130px; max-height: 220px; overflow: auto; resize: vertical;
   font-size: 12px; line-height: 1.5;
