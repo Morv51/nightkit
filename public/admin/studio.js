@@ -15,6 +15,7 @@ function showStudio() {
   // Modus-Module lazy laden (existieren ab den nächsten Bau-Schritten).
   import("./mode2.js").then((m) => m.initMode2 && m.initMode2()).catch(() => {});
   import("./mode1.js").then((m) => m.initMode1 && m.initMode1()).catch(() => {});
+  import("./autoflow.js").then((m) => m.initAutoflow && m.initAutoflow()).catch(() => {});
 }
 
 async function unlock(e) {

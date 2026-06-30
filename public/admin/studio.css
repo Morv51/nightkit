@@ -375,6 +375,35 @@ html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: aut
 }
 .variant-card.variant-copied .variant-label { color: #4ade80; }
 .variant-card.variant-copied .variant-label::after { content: " ✓ kopiert"; font-weight: 700; }
+
+/* ── Auto-Flow (Beta) ───────────────────────────────────────────────────── */
+.tab-beta, .beta-badge {
+  display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .04em;
+  padding: 1px 6px; border-radius: 999px; margin-left: 6px; vertical-align: middle;
+  background: rgba(204,255,0,0.16); color: var(--color-accent, #ccff00);
+  border: 1px solid rgba(204,255,0,0.4);
+}
+.af-steps { display: flex; flex-direction: column; gap: 8px; }
+.af-step { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--color-text, #fff); }
+.af-step .af-dot { width: 10px; height: 10px; border-radius: 50%; background: #333; flex: 0 0 auto; }
+.af-step .af-label { flex: 1; }
+.af-step .af-state { font-size: 12px; color: var(--color-text-muted, #888); font-weight: 600; }
+.af-step.running .af-dot { background: var(--color-accent, #ccff00); animation: afpulse 1s ease-in-out infinite; }
+.af-step.running .af-state { color: var(--color-accent, #ccff00); }
+.af-step.done .af-dot { background: #4ade80; }
+.af-step.done .af-state { color: #4ade80; }
+.af-step.error .af-dot { background: #ff6b6b; }
+.af-step.error .af-state { color: #ff6b6b; }
+@keyframes afpulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+.af-error {
+  margin-top: 10px; padding: 10px 12px; border-radius: 8px; font-size: 13px;
+  background: rgba(255,107,107,0.12); border: 1px solid rgba(255,107,107,0.5); color: #ffb4b4;
+}
+.af-time { font-size: 12px; font-weight: 600; color: #4ade80; }
+.af-result-img {
+  display: block; width: 100%; max-width: 420px; margin: 0 auto 12px;
+  border-radius: 10px; border: 1px solid var(--color-border, #222);
+}
 .variant-prompt {
   min-height: 130px; max-height: 220px; overflow: auto; resize: vertical;
   font-size: 12px; line-height: 1.5;

@@ -34,6 +34,7 @@
       <div class="studio-tabs" id="tabs">
         <button class="studio-tab active" type="button" data-tab="mode1">Flyer → Template</button>
         <button class="studio-tab" type="button" data-tab="mode2">Moodboard → Prompt</button>
+        <button class="studio-tab" type="button" data-tab="auto">Auto-Flow <span class="tab-beta">Beta</span></button>
       </div>
       <button class="rbtn rbtn-ghost studio-lock" id="lockBtn" type="button" title="Sperren">⊘ Sperren</button>
     </header>
@@ -177,6 +178,63 @@
             </div>
 
             <div class="variant-list" id="m2VariantList"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Auto-Flow (Beta): vollautomatischer Ein-Flyer-Durchlauf über die
+           offizielle OpenAI-Bild-API (GPT Image). Nutzt die bestehende Modus-2-
+           Analyse/Prompt-Logik (nur aufgerufen) + einen isolierten Generier-Pfad. -->
+      <section class="studio-panel" id="panel-auto" data-tab="auto" hidden>
+        <div class="studio-single">
+          <div class="st-card">
+            <div class="st-head">Auto-Flow <span class="beta-badge">BETA</span></div>
+            <div class="st-mini-note">Vollautomatischer Ein-Flyer-Durchlauf zum Testen: EINEN Referenz-Flyer hochladen → automatisch Analyse + Prompt (bestehende Modus-2-Logik) → Bildgenerierung über die offizielle OpenAI-Bild-API (GPT Image, dasselbe Modell wie ChatGPT) → fertiges Template als Vorschau + Download. Noch kein Mehrfach-Upload (bewusst nur ein Bild). Da die App in der Cloud läuft: bitte hochladen, kein Zugriff auf die lokale Festplatte.</div>
+          </div>
+
+          <div class="st-card">
+            <div class="st-head">1 · Referenz-Flyer (ein Bild)</div>
+            <label class="st-drop" id="afDrop">
+              <input type="file" id="afFile" accept="image/png,image/jpeg,image/webp" hidden>
+              <span id="afDropLabel">Einen Flyer hierher ziehen, einfügen (⌘/Ctrl+V) oder klicken — PNG/JPG/WebP, ≤10&nbsp;MB</span>
+            </label>
+            <img class="st-thumb" id="afThumb" alt="" hidden>
+          </div>
+
+          <div class="st-card">
+            <div class="st-head">2 · Modell + Start</div>
+            <div class="st-row">
+              <select class="st-select" id="afModel" aria-label="Vision-Modell">
+                <option value="haiku">Haiku · schnell</option>
+                <option value="sonnet">Sonnet · genauer</option>
+              </select>
+              <button class="rbtn rbtn-primary" id="afStart" type="button">▶ Auto-Flow starten</button>
+            </div>
+            <div class="st-mini-note">Läuft danach ohne weiteres Zutun: Analyse → Prompt → Generierung. Die Generierung über GPT Image kann bis ~2 Minuten dauern (Admin-Hintergrundlauf, großzügiger Timeout).</div>
+          </div>
+
+          <div class="st-card">
+            <div class="st-head">3 · Status</div>
+            <div class="af-steps" id="afSteps">
+              <div class="af-step" id="afStep1"><span class="af-dot"></span><span class="af-label">Analyse + Prompt</span><span class="af-state" id="afS1">wartet</span></div>
+              <div class="af-step" id="afStep2"><span class="af-dot"></span><span class="af-label">Bildgenerierung (GPT Image)</span><span class="af-state" id="afS2">wartet</span></div>
+            </div>
+            <div class="af-error" id="afError" hidden></div>
+          </div>
+
+          <div class="st-card prompt-card" id="afPromptCard" hidden>
+            <div class="st-head">Verwendeter Prompt</div>
+            <textarea class="st-prompt st-prompt-big" id="afPrompt" rows="14" readonly></textarea>
+          </div>
+
+          <div class="st-card" id="afResultCard" hidden>
+            <div class="st-head">Ergebnis <span class="af-time" id="afTime"></span></div>
+            <img class="af-result-img" id="afResultImg" alt="Generiertes Template">
+            <div class="prompt-actions">
+              <button class="rbtn rbtn-primary" id="afDownloadPng" type="button">⬇ PNG herunterladen</button>
+              <button class="rbtn rbtn-ghost" id="afDownloadJpg" type="button">⬇ JPG</button>
+            </div>
+            <div class="st-mini-note">Vergleiche die Qualität mit deinem manuellen ChatGPT-Weg — das ist der Nachweis, ob der automatische Lauf gut genug ist.</div>
           </div>
         </div>
       </section>
