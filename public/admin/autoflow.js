@@ -100,13 +100,17 @@ async function run() {
     return;
   }
 
-  // ── Schritt 2: Generierung (offizielle OpenAI-Bild-API, Referenz + Prompt) ──
-  setStep("afS2", "afStep2", "running", "läuft … (kann 1–2 Min dauern)");
+  // ── Schritt 2: Generierung (Nano Banana über Segmind, Referenz + Prompt) ──
+  const engine = $("afEngine") ? $("afEngine").value : "nano-banana-pro";
+  const engineName = ($("afEngine") && $("afEngine").selectedOptions[0])
+    ? $("afEngine").selectedOptions[0].text.split("·")[0].trim() : "Nano Banana Pro";
+  if ($("afStep2Label")) $("afStep2Label").textContent = "Bildgenerierung (" + engineName + ")";
+  setStep("afS2", "afStep2", "running", "läuft … " + engineName + " (kann 1–2 Min dauern)");
   const t0 = Date.now();
   try {
     // Asynchron: Auftrag starten (sofortige 202-Antwort) und dann pollen — so kappt
-    // der Render-Gateway den langen Lauf nicht mehr mit 502.
-    const start = await post("/admin/auto-generate", { image: imageDataUrl, prompt });
+    // der Render-Gateway den langen Lauf nicht mehr mit 502. Gewähltes Bildmodell mit.
+    const start = await post("/admin/auto-generate", { image: imageDataUrl, prompt, model: engine });
     if (!start || !start.jobId) throw new Error("Kein Auftrag gestartet");
     const job = await pollAutoGenerate(start.jobId, t0);
     if (!job.image) throw new Error("Kein Bild erhalten");

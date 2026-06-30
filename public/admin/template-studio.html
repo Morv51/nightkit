@@ -204,20 +204,28 @@
           <div class="st-card">
             <div class="st-head">2 · Modell + Start</div>
             <div class="st-row">
-              <select class="st-select" id="afModel" aria-label="Vision-Modell">
-                <option value="haiku">Haiku · schnell</option>
-                <option value="sonnet">Sonnet · genauer</option>
-              </select>
+              <label class="af-field">Analyse-Modell
+                <select class="st-select" id="afModel" aria-label="Analyse-Modell">
+                  <option value="haiku">Haiku · schnell</option>
+                  <option value="sonnet">Sonnet · genauer</option>
+                </select>
+              </label>
+              <label class="af-field">Bildmodell
+                <select class="st-select" id="afEngine" aria-label="Nano-Banana-Modell">
+                  <option value="nano-banana-pro">Nano Banana Pro · beste Qualität</option>
+                  <option value="nano-banana-2">Nano Banana 2 · Anweisungstreue / Fotorealismus</option>
+                </select>
+              </label>
               <button class="rbtn rbtn-primary" id="afStart" type="button">▶ Auto-Flow starten</button>
             </div>
-            <div class="st-mini-note">Läuft danach ohne weiteres Zutun: Analyse → Prompt → Generierung. Die Generierung über Nano Banana Pro kann bis ~2 Minuten dauern (Admin-Hintergrundlauf, großzügiger Timeout, Inhaltsfilter auf permissivster Stufe).</div>
+            <div class="st-mini-note">„Analyse-Modell" = Sprachmodell für Stil-Analyse + Prompt. „Bildmodell" = Nano-Banana-Variante zum Generieren — so kannst du denselben Flyer mit verschiedenen Modellen erzeugen und vergleichen, welches deinem ChatGPT-Weg am nächsten kommt. Die Generierung kann bis ~2 Minuten dauern (Inhaltsfilter auf permissivster Stufe).</div>
           </div>
 
           <div class="st-card">
             <div class="st-head">3 · Status</div>
             <div class="af-steps" id="afSteps">
               <div class="af-step" id="afStep1"><span class="af-dot"></span><span class="af-label">Analyse + Prompt</span><span class="af-state" id="afS1">wartet</span></div>
-              <div class="af-step" id="afStep2"><span class="af-dot"></span><span class="af-label">Bildgenerierung (Nano Banana Pro)</span><span class="af-state" id="afS2">wartet</span></div>
+              <div class="af-step" id="afStep2"><span class="af-dot"></span><span class="af-label" id="afStep2Label">Bildgenerierung</span><span class="af-state" id="afS2">wartet</span></div>
             </div>
             <div class="af-error" id="afError" hidden></div>
           </div>

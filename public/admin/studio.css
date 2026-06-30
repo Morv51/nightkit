@@ -383,6 +383,7 @@ html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: aut
   background: rgba(204,255,0,0.16); color: var(--color-accent, #ccff00);
   border: 1px solid rgba(204,255,0,0.4);
 }
+.af-field { display: inline-flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 600; color: var(--color-text-muted, #888); }
 .af-steps { display: flex; flex-direction: column; gap: 8px; }
 .af-step { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--color-text, #fff); }
 .af-step .af-dot { width: 10px; height: 10px; border-radius: 50%; background: #333; flex: 0 0 auto; }
