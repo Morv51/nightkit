@@ -35,7 +35,6 @@
         <button class="studio-tab active" type="button" data-tab="mode1">Flyer → Template</button>
         <button class="studio-tab" type="button" data-tab="mode2">Moodboard → Prompt</button>
         <button class="studio-tab" type="button" data-tab="auto">Auto-Flow <span class="tab-beta">Beta</span></button>
-        <button class="studio-tab" type="button" data-tab="batch">Batch Studio <span class="tab-beta">Beta</span></button>
       </div>
       <button class="rbtn rbtn-ghost studio-lock" id="lockBtn" type="button" title="Sperren">⊘ Sperren</button>
     </header>
@@ -184,13 +183,13 @@
       </section>
 
       <!-- Auto-Flow (Beta): vollautomatischer Ein-Flyer-Durchlauf über die
-           offizielle OpenAI-Bild-API (GPT Image). Nutzt die bestehende Modus-2-
+           Segmind-API (Nano Banana Pro). Nutzt die bestehende Modus-2-
            Analyse/Prompt-Logik (nur aufgerufen) + einen isolierten Generier-Pfad. -->
       <section class="studio-panel" id="panel-auto" data-tab="auto" hidden>
         <div class="studio-single">
           <div class="st-card">
             <div class="st-head">Auto-Flow <span class="beta-badge">BETA</span></div>
-            <div class="st-mini-note">Vollautomatischer Ein-Flyer-Durchlauf zum Testen: EINEN Referenz-Flyer hochladen → automatisch Analyse + Prompt (bestehende Modus-2-Logik) → Bildgenerierung über die offizielle OpenAI-Bild-API (GPT Image, dasselbe Modell wie ChatGPT) → fertiges Template als Vorschau + Download. Noch kein Mehrfach-Upload (bewusst nur ein Bild). Da die App in der Cloud läuft: bitte hochladen, kein Zugriff auf die lokale Festplatte.</div>
+            <div class="st-mini-note">Vollautomatischer Ein-Flyer-Durchlauf zum Testen: EINEN Referenz-Flyer hochladen → automatisch Analyse + Prompt (bestehende Modus-2-Logik) → Bildgenerierung über <b>Nano Banana Pro</b> (Segmind-API), mit deinem Flyer als Stil-Referenz und 9:16 → fertiges Template als Vorschau + Download. Noch kein Mehrfach-Upload (bewusst nur ein Bild). Da die App in der Cloud läuft: bitte hochladen, kein Zugriff auf die lokale Festplatte.</div>
           </div>
 
           <div class="st-card">
@@ -211,14 +210,14 @@
               </select>
               <button class="rbtn rbtn-primary" id="afStart" type="button">▶ Auto-Flow starten</button>
             </div>
-            <div class="st-mini-note">Läuft danach ohne weiteres Zutun: Analyse → Prompt → Generierung. Die Generierung über GPT Image kann bis ~2 Minuten dauern (Admin-Hintergrundlauf, großzügiger Timeout).</div>
+            <div class="st-mini-note">Läuft danach ohne weiteres Zutun: Analyse → Prompt → Generierung. Die Generierung über Nano Banana Pro kann bis ~2 Minuten dauern (Admin-Hintergrundlauf, großzügiger Timeout, Inhaltsfilter auf permissivster Stufe).</div>
           </div>
 
           <div class="st-card">
             <div class="st-head">3 · Status</div>
             <div class="af-steps" id="afSteps">
               <div class="af-step" id="afStep1"><span class="af-dot"></span><span class="af-label">Analyse + Prompt</span><span class="af-state" id="afS1">wartet</span></div>
-              <div class="af-step" id="afStep2"><span class="af-dot"></span><span class="af-label">Bildgenerierung (GPT Image)</span><span class="af-state" id="afS2">wartet</span></div>
+              <div class="af-step" id="afStep2"><span class="af-dot"></span><span class="af-label">Bildgenerierung (Nano Banana Pro)</span><span class="af-state" id="afS2">wartet</span></div>
             </div>
             <div class="af-error" id="afError" hidden></div>
           </div>
@@ -235,57 +234,8 @@
               <button class="rbtn rbtn-primary" id="afDownloadPng" type="button">⬇ PNG herunterladen</button>
               <button class="rbtn rbtn-ghost" id="afDownloadJpg" type="button">⬇ JPG</button>
             </div>
-            <div class="st-mini-note">Vergleiche die Qualität mit deinem manuellen ChatGPT-Weg — das ist der Nachweis, ob der automatische Lauf gut genug ist.</div>
+            <div class="st-mini-note">Vergleiche die Qualität mit deinem manuellen ChatGPT-Weg — und prüfe besonders, ob Club-Motive (z. B. Tattoo-Flyer mit Models) jetzt akzeptiert werden.</div>
           </div>
-        </div>
-      </section>
-
-      <!-- Batch Studio (Beta): Stapel-PROMPT-Erzeugung. Mehrere Flyer → pro Flyer
-           ein Paket (Originalbild + erzeugter Prompt + optional Varianten) für den
-           parallelen ChatGPT-Workflow. KEINE Bildgenerierung. Nutzt die bestehende
-           Modus-2-Analyse/Varianten-Logik (nur aufgerufen). -->
-      <section class="studio-panel" id="panel-batch" data-tab="batch" hidden>
-        <div class="studio-single">
-          <div class="st-card">
-            <div class="st-head">Batch Studio <span class="beta-badge">BETA</span></div>
-            <div class="st-mini-note">Mehrere Flyer auf einmal hochladen → pro Flyer ein zusammengehöriges Paket aus <b>Originalbild + erzeugtem Prompt</b> (gleiche Nummer), für parallele ChatGPT-Chats. <b>Keine automatische Bildgenerierung</b> — du fügst Bild + Prompt pro Chat ein und generierst dort. Upload, da die App in der Cloud läuft (kein Zugriff auf die lokale Festplatte).</div>
-          </div>
-
-          <div class="st-card">
-            <div class="st-head">1 · Flyer hochladen (mehrere)</div>
-            <label class="st-drop" id="bDrop">
-              <input type="file" id="bFile" accept="image/png,image/jpeg,image/webp" multiple hidden>
-              <span id="bDropLabel">Mehrere Flyer hierher ziehen, einfügen (⌘/Ctrl+V) oder klicken — PNG/JPG/WebP, ≤10&nbsp;MB je Bild</span>
-            </label>
-            <div class="batch-thumbs" id="bThumbs" hidden></div>
-          </div>
-
-          <div class="st-card">
-            <div class="st-head">2 · Einstellungen + Start</div>
-            <div class="st-row">
-              <select class="st-select" id="bModel" aria-label="Vision-Modell">
-                <option value="haiku">Haiku · schnell</option>
-                <option value="sonnet">Sonnet · genauer</option>
-              </select>
-              <label class="batch-varcount">Varianten je Flyer
-                <input type="number" id="bVarCount" class="zone-text auto-count" value="0" min="0" max="5">
-              </label>
-              <button class="rbtn rbtn-primary" id="bStart" type="button">▶ Prompts erzeugen</button>
-            </div>
-            <div class="st-mini-note">Pro Flyer wird über die bestehende Modus-2-Logik ein Haupt-Prompt erzeugt. Optional zusätzlich N Varianten-Prompts je Flyer (0 = keine, bis 5). Läuft nacheinander, Fortschritt unten.</div>
-          </div>
-
-          <div class="st-card" id="bProgressCard" hidden>
-            <div class="st-head">Fortschritt <span class="af-time" id="bProgress"></span></div>
-            <div class="batch-bar"><span id="bProgressFill"></span></div>
-            <div class="st-row" style="margin-top:10px">
-              <button class="rbtn rbtn-ghost" id="bExportAll" type="button">⧉ Alle Prompts kopieren</button>
-              <button class="rbtn rbtn-ghost" id="bExportTxt" type="button">⬇ Prompts als .txt exportieren</button>
-            </div>
-            <div class="st-mini-note">Bilder lädst du je Paket einzeln herunter („⬇ Bild") — die .txt enthält alle Prompts nummeriert (Flyer 1, 2, …) passend dazu.</div>
-          </div>
-
-          <div class="batch-list" id="bList"></div>
         </div>
       </section>
     </main>
