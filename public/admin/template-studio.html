@@ -243,12 +243,18 @@
           </div>
 
           <div class="st-card">
-            <div class="st-head">2 · Abstand zum Original</div>
-            <div class="st-row">
-              <select class="st-select" id="af2Path" aria-label="Abstands-Pfad">
-                <option value="near" selected>Nah (Pfad A) — mit Bild-Referenz, bewusster Abstand</option>
-                <option value="far">Weit (Pfad B) — nur Text-Beschreibung, ohne Bild</option>
-              </select>
+            <div class="st-head">2 · Abstand zum Original — Pfad wählen</div>
+            <div class="af2-pathsel" role="radiogroup" aria-label="Abstands-Pfad">
+              <label class="af2-pathopt">
+                <input type="radio" name="af2Path" value="near" checked>
+                <span class="af2-pathopt-t">Nah (Pfad A)</span>
+                <span class="af2-pathopt-d">Bild-Referenz geht mit, bewusster Abstand</span>
+              </label>
+              <label class="af2-pathopt">
+                <input type="radio" name="af2Path" value="far">
+                <span class="af2-pathopt-t">Weit (Pfad B)</span>
+                <span class="af2-pathopt-d">nur abstrakte Text-Beschreibung, ohne Bild</span>
+              </label>
             </div>
             <div class="st-mini-note"><b>Nah (Pfad A):</b> dein Flyer geht als Bild mit, der Prompt verbietet aber ausdrücklich das Übernehmen konkreter Elemente (Hintergrundtyp, Deko-Grafik, Farbspritzer/Texturen, exakte Farbkombination, Motiv, Komposition) — gleiche grobe Richtung, aber eigenständig. <b>Weit (Pfad B):</b> das Bild wird <b>nicht</b> geschickt — Sonnet beschreibt nur abstrakt Stimmung/Genre/Farbstimmung/Typo-Charakter, daraus wird komplett neu generiert (löst sich am weitesten vom Original).</div>
           </div>

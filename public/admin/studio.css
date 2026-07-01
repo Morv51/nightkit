@@ -459,6 +459,14 @@ html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: aut
 .af-tile.cancelled .af-tile-mark { color: #9ca3af; background: rgba(156,163,175,.10); }
 .rbtn-danger { background: #b91c1c; border-color: #b91c1c; color: #fff; }
 .rbtn-danger:hover { background: #dc2626; border-color: #dc2626; }
+/* Auto-Flow 2: Zwei-Knopf-Umschalter für die zwei Abstands-Pfade */
+.af2-pathsel { display: flex; gap: 10px; flex-wrap: wrap; margin: 4px 0 2px; }
+.af2-pathopt { flex: 1 1 230px; display: flex; flex-direction: column; gap: 3px; cursor: pointer; position: relative; padding: 12px 14px 12px 40px; border: 1.5px solid var(--color-border, #333); border-radius: 10px; background: var(--card-inset, #0d0d0d); transition: border-color .12s, background .12s; }
+.af2-pathopt input { position: absolute; left: 14px; top: 14px; width: 16px; height: 16px; accent-color: var(--color-accent, #ccff00); cursor: pointer; }
+.af2-pathopt:hover { border-color: #555; }
+.af2-pathopt:has(input:checked) { border-color: var(--color-accent, #ccff00); background: rgba(204,255,0,.07); }
+.af2-pathopt-t { font-size: 14px; font-weight: 700; color: var(--color-text, #fff); }
+.af2-pathopt-d { font-size: 12px; color: var(--color-text-muted, #999); }
 .af-tile-acts { position: absolute; bottom: 4px; right: 4px; display: flex; gap: 4px; }
 .af-icon-btn { width: 26px; height: 26px; border-radius: 6px; border: 1px solid rgba(255,255,255,.25); background: rgba(0,0,0,.62); color: #fff; font-size: 13px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
 .af-icon-btn:hover { background: rgba(0,0,0,.88); }

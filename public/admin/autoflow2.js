@@ -300,7 +300,8 @@ async function run() {
   if (running) return;
   if (!files.length) return notify("Erst Flyer hochladen", "info");
   running = true; cancelled = false; showRunningUI(true);
-  pathMode = ($("af2Path") && $("af2Path").value === "far") ? "far" : "near";
+  const _pe = document.querySelector('input[name="af2Path"]:checked') || $("af2Path");
+  pathMode = (_pe && _pe.value === "far") ? "far" : "near";
   rows = []; $("af2List").innerHTML = ""; ensureLightbox();
   $("af2SummaryCard").hidden = false;
   const multi = files.length > 1;
