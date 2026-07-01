@@ -62,7 +62,9 @@ function packCard(p) {
   const resCol = document.createElement("div"); resCol.className = "batch-pack-prompt"; resCol.id = "afRes" + p.idx;
   resCol.innerHTML = '<div class="af-res-wait">… wartet …</div>';
   bodyEl.appendChild(orig); bodyEl.appendChild(resCol);
-  card.appendChild(head); card.appendChild(bodyEl);
+  const promptBox = document.createElement("div");
+  promptBox.className = "af-pack-prompt"; promptBox.id = "afPromptBox" + p.idx; promptBox.hidden = true;
+  card.appendChild(head); card.appendChild(bodyEl); card.appendChild(promptBox);
   return card;
 }
 function setStatus(idx, state, text) {
@@ -93,6 +95,38 @@ function setReason(idx, blocked, reason) {
   const box = document.createElement("div"); box.className = blocked ? "af-blocked" : "af-error";
   box.textContent = (blocked ? "⚠ Blockiert (Inhaltsfilter): " : "✗ Fehler: ") + reason;
   col.appendChild(box);
+}
+
+// Kopieren + kurze "Kopiert ✓"-Bestätigung.
+function fallbackCopy(text, done) {
+  const ta = document.createElement("textarea");
+  ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try { document.execCommand("copy"); done(); } catch { notify("Kopieren nicht möglich — bitte manuell markieren", "error"); }
+  ta.remove();
+}
+function copyText(text, btn) {
+  const restore = btn.textContent;
+  const ok = () => { btn.textContent = "Kopiert ✓"; btn.classList.add("copied"); setTimeout(() => { btn.textContent = restore; btn.classList.remove("copied"); }, 1600); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(ok).catch(() => fallbackCopy(text, ok));
+  else fallbackCopy(text, ok);
+}
+
+// GENAU den an die API gesendeten (entschärften) Prompt anzeigen + kopierbar —
+// vollständig (Textfeld, scrollbar, nicht abgeschnitten), auch im Block-Fall.
+function setPrompt(idx, prompt) {
+  const box = $("afPromptBox" + idx);
+  if (!box || !prompt) return;
+  box.hidden = false;
+  box.innerHTML = "";
+  const label = document.createElement("div");
+  label.className = "af-pp-label"; label.textContent = "Verwendeter Prompt (exakt an die API gesendet)";
+  const ta = document.createElement("textarea");
+  ta.className = "st-prompt af-pp-text"; ta.readOnly = true; ta.rows = 10; ta.value = prompt;
+  const btn = document.createElement("button");
+  btn.type = "button"; btn.className = "rbtn rbtn-ghost af-pp-copy"; btn.textContent = "📋 Prompt kopieren";
+  btn.addEventListener("click", () => copyText(prompt, btn));
+  box.appendChild(label); box.appendChild(ta); box.appendChild(btn);
 }
 
 // ── Asynchrone Generierung pollen (timeout-sicher) ──
@@ -131,6 +165,8 @@ async function processOne(p) {
   try {
     const start = await post("/admin/auto-generate", { image: p.dataUrl, prompt });
     if (!start || !start.jobId) throw new Error("Kein Auftrag gestartet");
+    p.sentPrompt = start.prompt || prompt;   // EXAKT der (entschärfte) Prompt, der an die API ging
+    setPrompt(p.idx, p.sentPrompt);          // sofort sichtbar — bleibt auch, wenn danach blockiert wird
     const job = await pollJob(start.jobId, t0, p.idx);
     if (!job.image) throw new Error("Kein Bild erhalten");
     const secs = job.ms ? Math.round(job.ms / 1000) : Math.round((Date.now() - t0) / 1000);
