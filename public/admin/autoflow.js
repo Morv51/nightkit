@@ -274,6 +274,8 @@ async function run() {
   rows = []; $("afList").innerHTML = ""; ensureLightbox();
   $("afSummaryCard").hidden = false;
   const multi = files.length > 1;
+  const N = files.length;
+  const TOTAL = 1 + VARIANTS; // Hauptflyer + Varianten = 7 Bilder je Flyer
 
   for (let fi = 0; fi < files.length; fi++) {
     const f = files[fi]; const fnum = fi + 1;
@@ -282,7 +284,7 @@ async function run() {
     row.tiles.push(mkTile(rowIdx, fnum, 0, "main", "Haupt"));
     for (let k = 1; k <= VARIANTS; k++) row.tiles.push(mkTile(rowIdx, fnum, k, "variant", String(k)));
     rows.push(row); appendRow(row); updateOverview();
-    const tag = multi ? "Flyer " + fnum + ": " : "";
+    const tag = multi ? "Flyer " + fnum + " von " + N + " · " : "";
 
     // 1) Analyse + Haupt-Prompt (Sonnet)
     setPhase(tag + "Stil-Analyse + Prompt …"); setRowStat(row, "Analyse …");
@@ -297,7 +299,7 @@ async function run() {
 
     // 2) Hauptflyer
     row.tiles[0].prompt = mainPrompt;
-    setPhase(tag + "Hauptflyer generieren …");
+    setPhase(tag + "generiere Bild 1 von " + TOTAL + " (Hauptflyer) …");
     await genTile(row, row.tiles[0]); updateRow(row); updateOverview();
 
     // 3) 6 Varianten-Prompts (bestehender Generator)
@@ -311,7 +313,7 @@ async function run() {
       const t = row.tiles[k + 1];
       if (!variants[k]) { t.status = "error"; t.reason = "Keine Variante erzeugt"; updateTile(t); updateRow(row); updateOverview(); continue; }
       t.prompt = variants[k].prompt;
-      setPhase(tag + "generiere Variante " + (k + 1) + " von " + VARIANTS + " …");
+      setPhase(tag + "generiere Bild " + (k + 2) + " von " + TOTAL + " (Variante " + (k + 1) + ") …");
       await genTile(row, t); updateRow(row); updateOverview();
     }
     updateRow(row);
