@@ -405,6 +405,31 @@ html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: aut
   display: block; width: 100%; max-width: 420px; margin: 0 auto 12px;
   border-radius: 10px; border: 1px solid var(--color-border, #222);
 }
+
+/* ── Auto-Flow Batch (Original + Ergebnis je Flyer, Erfolgsquote) ── */
+.batch-thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.batch-thumb { position: relative; width: 64px; height: 114px; border-radius: 8px; overflow: hidden; border: 1px solid var(--color-border, #222); }
+.batch-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.batch-thumb-x { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; border-radius: 50%; border: none; background: rgba(0,0,0,.65); color: #fff; font-size: 11px; line-height: 1; cursor: pointer; padding: 0; }
+.batch-thumb-x:hover { background: #ff6b6b; }
+.batch-list { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; }
+.batch-pack { border: 1px solid var(--color-border, #222); border-radius: 12px; padding: 12px; background: var(--card-inset, #0d0d0d); }
+.batch-pack-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.batch-pack-num { font-size: 14px; font-weight: 700; color: var(--color-text, #fff); }
+.batch-status { font-size: 12px; font-weight: 600; color: var(--color-text-muted, #888); }
+.batch-pack.running .batch-status { color: var(--color-accent, #ccff00); }
+.batch-pack.done .batch-status { color: #4ade80; }
+.batch-pack.error .batch-status { color: #ff6b6b; }
+.batch-pack.blocked .batch-status { color: #f59e0b; }
+.batch-pack-body { display: flex; gap: 12px; align-items: flex-start; }
+.batch-pack-img { flex: 0 0 110px; }
+.batch-pack-img img { width: 110px; border-radius: 8px; border: 1px solid var(--color-border, #222); display: block; }
+.batch-pack-prompt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.batch-pack-prompt .af-result-img { width: 100%; max-width: 320px; margin: 0; }
+.af-res-wait { font-size: 13px; color: var(--color-text-muted, #888); padding: 8px 0; }
+.af-blocked { padding: 10px 12px; border-radius: 8px; font-size: 13px; background: rgba(245,158,11,.12); border: 1px solid rgba(245,158,11,.5); color: #fcd34d; }
+.af-summary { font-size: 15px; font-weight: 700; color: var(--color-text, #fff); }
+@media (max-width: 560px) { .batch-pack-body { flex-direction: column; } .batch-pack-img { flex-basis: auto; } .batch-pack-img img { width: 100%; max-width: 180px; } }
 .variant-prompt {
   min-height: 130px; max-height: 220px; overflow: auto; resize: vertical;
   font-size: 12px; line-height: 1.5;

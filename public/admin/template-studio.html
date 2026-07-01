@@ -182,71 +182,42 @@
         </div>
       </section>
 
-      <!-- Auto-Flow (Beta): vollautomatischer Ein-Flyer-Durchlauf über die
-           Segmind-API (Nano Banana Pro). Nutzt die bestehende Modus-2-
-           Analyse/Prompt-Logik (nur aufgerufen) + einen isolierten Generier-Pfad. -->
+      <!-- Auto-Flow (Beta): Flyer-Erstellung über die OpenAI-Bild-API (GPT Image)
+           als EINZIGE Engine. Sprachmodell fest = Sonnet. Ein ODER mehrere Bilder;
+           blockierte werden übersprungen, am Ende Erfolgsquote. Nutzt die
+           bestehende Modus-2-Analyse/Prompt-Logik (nur aufgerufen). Der produktive
+           Ideogram-Befüllflow im Haupt-Tool bleibt unberührt. -->
       <section class="studio-panel" id="panel-auto" data-tab="auto" hidden>
         <div class="studio-single">
           <div class="st-card">
             <div class="st-head">Auto-Flow <span class="beta-badge">BETA</span></div>
-            <div class="st-mini-note">Vollautomatischer Ein-Flyer-Durchlauf zum Testen: EINEN Referenz-Flyer hochladen → automatisch Analyse + Prompt (bestehende Modus-2-Logik) → Bildgenerierung über <b>Nano Banana Pro</b> (Segmind-API), mit deinem Flyer als Stil-Referenz und 9:16 → fertiges Template als Vorschau + Download. Noch kein Mehrfach-Upload (bewusst nur ein Bild). Da die App in der Cloud läuft: bitte hochladen, kein Zugriff auf die lokale Festplatte.</div>
+            <div class="st-mini-note">Vollautomatische Flyer-Erstellung: EINEN oder MEHRERE Referenz-Flyer hochladen → je Flyer automatisch Analyse + Prompt (<b>Sonnet</b>) → Bildgenerierung über die <b>OpenAI-Bild-API (GPT Image)</b>, dein Flyer als Stil-Referenz, 9:16. Der Prompt wird gegen Filter-<b>Fehlalarme</b> wort-entschärft (nur bei legitimen Inhalten, keine Regelumgehung). Bei mehreren Bildern wird ein blockiertes <b>übersprungen</b> und am Ende die <b>Erfolgsquote</b> gezeigt. Upload, da die App in der Cloud läuft.</div>
           </div>
 
           <div class="st-card">
-            <div class="st-head">1 · Referenz-Flyer (ein Bild)</div>
+            <div class="st-head">1 · Referenz-Flyer (ein oder mehrere)</div>
             <label class="st-drop" id="afDrop">
-              <input type="file" id="afFile" accept="image/png,image/jpeg,image/webp" hidden>
-              <span id="afDropLabel">Einen Flyer hierher ziehen, einfügen (⌘/Ctrl+V) oder klicken — PNG/JPG/WebP, ≤10&nbsp;MB</span>
+              <input type="file" id="afFile" accept="image/png,image/jpeg,image/webp" multiple hidden>
+              <span id="afDropLabel">Flyer hierher ziehen, einfügen (⌘/Ctrl+V) oder klicken — ein oder mehrere · PNG/JPG/WebP, ≤10&nbsp;MB je Bild</span>
             </label>
-            <img class="st-thumb" id="afThumb" alt="" hidden>
+            <div class="batch-thumbs" id="afThumbs" hidden></div>
           </div>
 
           <div class="st-card">
-            <div class="st-head">2 · Modell + Start</div>
+            <div class="st-head">2 · Start</div>
             <div class="st-row">
-              <label class="af-field">Analyse-Modell
-                <select class="st-select" id="afModel" aria-label="Analyse-Modell">
-                  <option value="haiku">Haiku · schnell</option>
-                  <option value="sonnet">Sonnet · genauer</option>
-                </select>
-              </label>
-              <label class="af-field">Bildmodell
-                <select class="st-select" id="afEngine" aria-label="Bildmodell">
-                  <option value="nano-banana-pro">Nano Banana Pro · beste Qualität</option>
-                  <option value="nano-banana-2">Nano Banana 2 · Anweisungstreue / Fotorealismus</option>
-                  <option value="seedream-4">Seedream 4.0 · stark bei Text / Poster-Layout</option>
-                  <option value="flux-2-pro">FLUX.2 Pro · konsistenter Stil über Referenz</option>
-                  <option value="ideogram-v3">Ideogram V3 · Typografie-Spezialist (Style-Referenz)</option>
-                </select>
-              </label>
-              <button class="rbtn rbtn-primary" id="afStart" type="button">▶ Auto-Flow starten</button>
+              <button class="rbtn rbtn-primary" id="afStart" type="button">▶ Generieren</button>
+              <span class="af-time" id="afProgress"></span>
             </div>
-            <div class="st-mini-note">„Analyse-Modell" = Sprachmodell für Stil-Analyse + Prompt. „Bildmodell" = das Generier-Modell (Nano Banana Pro/2, Seedream 4.0, FLUX.2 Pro über Segmind; Ideogram V3 als Typografie-Spezialist über den Ideogram-Zugang) — so kannst du denselben Flyer schnell nacheinander mit verschiedenen Modellen erzeugen und vergleichen, welches deinen Stil (besonders Typografie/Layout) am besten trifft. Referenzbild geht überall als Stil-Referenz mit, 9:16, Inhaltsfilter (falls vorhanden) permissiv. Die Generierung kann bis ~2 Minuten dauern. Hinweis: Ideogram V3 ist hier ein SEPARATER Erstell-Aufruf — der produktive Ideogram-Befüllflow im Haupt-Tool bleibt davon unberührt.</div>
+            <div class="st-mini-note">Sprachmodell fest: <b>Sonnet</b>. Bildmodell: <b>OpenAI GPT Image</b> (einzige Engine, moderation „low"). Läuft je Bild nacheinander; die Generierung ist timeout-sicher (asynchron mit Polling, kann bis ~2 Min je Bild dauern).</div>
           </div>
 
-          <div class="st-card">
-            <div class="st-head">3 · Status</div>
-            <div class="af-steps" id="afSteps">
-              <div class="af-step" id="afStep1"><span class="af-dot"></span><span class="af-label">Analyse + Prompt</span><span class="af-state" id="afS1">wartet</span></div>
-              <div class="af-step" id="afStep2"><span class="af-dot"></span><span class="af-label" id="afStep2Label">Bildgenerierung</span><span class="af-state" id="afS2">wartet</span></div>
-            </div>
-            <div class="af-error" id="afError" hidden></div>
+          <div class="st-card" id="afSummaryCard" hidden>
+            <div class="st-head">Übersicht</div>
+            <div class="af-summary" id="afSummary"></div>
           </div>
 
-          <div class="st-card prompt-card" id="afPromptCard" hidden>
-            <div class="st-head">Verwendeter Prompt</div>
-            <textarea class="st-prompt st-prompt-big" id="afPrompt" rows="14" readonly></textarea>
-          </div>
-
-          <div class="st-card" id="afResultCard" hidden>
-            <div class="st-head">Ergebnis <span class="af-time" id="afTime"></span></div>
-            <img class="af-result-img" id="afResultImg" alt="Generiertes Template">
-            <div class="prompt-actions">
-              <button class="rbtn rbtn-primary" id="afDownloadPng" type="button">⬇ PNG herunterladen</button>
-              <button class="rbtn rbtn-ghost" id="afDownloadJpg" type="button">⬇ JPG</button>
-            </div>
-            <div class="st-mini-note">Vergleiche die Qualität mit deinem manuellen ChatGPT-Weg — und prüfe besonders, ob Club-Motive (z. B. Tattoo-Flyer mit Models) jetzt akzeptiert werden.</div>
-          </div>
+          <div class="batch-list" id="afList"></div>
         </div>
       </section>
     </main>
