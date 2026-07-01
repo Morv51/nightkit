@@ -208,9 +208,10 @@
             <div class="st-head">2 · Start</div>
             <div class="st-row">
               <button class="rbtn rbtn-primary" id="afStart" type="button">▶ Generieren</button>
+              <button class="rbtn rbtn-danger" id="afCancel" type="button" hidden>■ Abbrechen</button>
               <span class="af-time" id="afProgress"></span>
             </div>
-            <div class="st-mini-note">Sprachmodell fest: <b>Sonnet</b>. Bildmodell: <b>OpenAI GPT Image</b> (einzige Engine, moderation „low"). Je Flyer entstehen 10 Bilder (Hauptflyer + 9 Varianten), nacheinander — das dauert entsprechend (jede Generierung bis ~2 Min, timeout-sicher per Polling). Fortschritt und Erfolgsquote siehst du unten.</div>
+            <div class="st-mini-note">Sprachmodell fest: <b>Sonnet</b>. Bildmodell: <b>OpenAI GPT Image</b> (einzige Engine, moderation „low"). Je Flyer entstehen 10 Bilder (Hauptflyer + 9 Varianten), nacheinander — das dauert entsprechend (jede Generierung bis ~2 Min, timeout-sicher per Polling). Läuft ein Lauf, kannst du ihn mit <b>Abbrechen</b> stoppen — schon fertige Bilder bleiben erhalten.</div>
           </div>
 
           <div class="st-card" id="afSummaryCard" hidden>
@@ -242,12 +243,24 @@
           </div>
 
           <div class="st-card">
-            <div class="st-head">2 · Start</div>
+            <div class="st-head">2 · Abstand zum Original</div>
+            <div class="st-row">
+              <select class="st-select" id="af2Path" aria-label="Abstands-Pfad">
+                <option value="near" selected>Nah (Pfad A) — mit Bild-Referenz, bewusster Abstand</option>
+                <option value="far">Weit (Pfad B) — nur Text-Beschreibung, ohne Bild</option>
+              </select>
+            </div>
+            <div class="st-mini-note"><b>Nah (Pfad A):</b> dein Flyer geht als Bild mit, der Prompt verbietet aber ausdrücklich das Übernehmen konkreter Elemente (Hintergrundtyp, Deko-Grafik, Farbspritzer/Texturen, exakte Farbkombination, Motiv, Komposition) — gleiche grobe Richtung, aber eigenständig. <b>Weit (Pfad B):</b> das Bild wird <b>nicht</b> geschickt — Sonnet beschreibt nur abstrakt Stimmung/Genre/Farbstimmung/Typo-Charakter, daraus wird komplett neu generiert (löst sich am weitesten vom Original).</div>
+          </div>
+
+          <div class="st-card">
+            <div class="st-head">3 · Start</div>
             <div class="st-row">
               <button class="rbtn rbtn-primary" id="af2Start" type="button">▶ Generieren</button>
+              <button class="rbtn rbtn-danger" id="af2Cancel" type="button" hidden>■ Abbrechen</button>
               <span class="af-time" id="af2Progress"></span>
             </div>
-            <div class="st-mini-note">Gleiche Engine wie Auto-Flow 1 (<b>Sonnet</b> + <b>OpenAI GPT Image</b>), nur die Referenz-Bindung ist <b>lockerer</b>: eigenständiges Ergebnis statt Nachbau. Je Flyer 10 Bilder, nacheinander.</div>
+            <div class="st-mini-note">Gleiche Engine wie Auto-Flow 1 (<b>Sonnet</b> + <b>OpenAI GPT Image</b>). Je Flyer 10 Bilder, nacheinander. Läuft ein Lauf, kannst du ihn mit <b>Abbrechen</b> stoppen — schon fertige Bilder bleiben erhalten.</div>
           </div>
 
           <div class="st-card" id="af2SummaryCard" hidden>

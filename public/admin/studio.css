@@ -456,6 +456,9 @@ html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: aut
 .af-tile-mark { width: 108px; height: 192px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 12px; font-weight: 700; padding: 8px; box-sizing: border-box; }
 .af-tile.blocked .af-tile-mark { color: #fcd34d; background: rgba(245,158,11,.12); }
 .af-tile.error .af-tile-mark { color: #ff9b9b; background: rgba(239,68,68,.1); }
+.af-tile.cancelled .af-tile-mark { color: #9ca3af; background: rgba(156,163,175,.10); }
+.rbtn-danger { background: #b91c1c; border-color: #b91c1c; color: #fff; }
+.rbtn-danger:hover { background: #dc2626; border-color: #dc2626; }
 .af-tile-acts { position: absolute; bottom: 4px; right: 4px; display: flex; gap: 4px; }
 .af-icon-btn { width: 26px; height: 26px; border-radius: 6px; border: 1px solid rgba(255,255,255,.25); background: rgba(0,0,0,.62); color: #fff; font-size: 13px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
 .af-icon-btn:hover { background: rgba(0,0,0,.88); }

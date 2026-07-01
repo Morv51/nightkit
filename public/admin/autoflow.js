@@ -14,6 +14,7 @@ const VARIANTS = 9;
 let files = [];   // [{ name, dataUrl }]
 let rows = [];    // [{ idx, fnum, prefix, dataUrl, tiles:[tile] }]
 let running = false;
+let cancelled = false;   // Abbrechen angefordert → keine neuen Bilder mehr starten
 
 // ── Upload ───────────────────────────────────────────────────────
 async function addFiles(fileList) {
@@ -161,9 +162,9 @@ function renderTileInner(el, t) {
     acts.appendChild(iconBtn("⬇", "Herunterladen", () => downloadTile(t)));
     acts.appendChild(iconBtn("📋", "Prompt kopieren", (b) => copyText(t.sentPrompt, b)));
     el.appendChild(acts);
-  } else if (t.status === "blocked" || t.status === "error") {
+  } else if (t.status === "blocked" || t.status === "error" || t.status === "cancelled") {
     const mk = document.createElement("div"); mk.className = "af-tile-mark"; mk.title = t.reason || "";
-    mk.textContent = t.status === "blocked" ? "⚠ blockiert" : "✗ Fehler"; el.appendChild(mk);
+    mk.textContent = t.status === "blocked" ? "⚠ blockiert" : t.status === "cancelled" ? "⊘ abgebrochen" : "✗ Fehler"; el.appendChild(mk);
     if (t.sentPrompt) { const acts = document.createElement("div"); acts.className = "af-tile-acts"; acts.appendChild(iconBtn("📋", "Prompt kopieren", (b) => copyText(t.sentPrompt, b))); el.appendChild(acts); }
   } else {
     const ph = document.createElement("div"); ph.className = "af-tile-ph"; ph.textContent = t.status === "running" ? "…" : ""; el.appendChild(ph);
@@ -224,6 +225,33 @@ function updateOverview() {
   const za = $("afZipAll"); if (za) za.disabled = done === 0;
 }
 
+// ── Abbrechen: stoppt WEITERE Generierung (Bilder/Varianten/Flyer); ein im Moment
+//    des Klicks laufendes Einzelbild darf noch fertig werden. Fertige bleiben. ──
+function showRunningUI(on) {
+  const start = $("afStart"); if (start) start.disabled = on;
+  const cancel = $("afCancel"); if (cancel) { cancel.hidden = !on; cancel.disabled = false; }
+}
+function requestCancel() {
+  if (!running || cancelled) return;
+  cancelled = true;
+  const cancel = $("afCancel"); if (cancel) cancel.disabled = true;
+  setPhase("Abbrechen … (laufendes Bild wird noch fertig, danach Stopp)");
+}
+function finishSummary(wasCancelled) {
+  const all = rows.reduce((a, r) => a.concat(r.tiles), []);
+  const done = all.filter((t) => t.status === "done").length;
+  const blocked = all.filter((t) => t.status === "blocked").length;
+  const err = all.filter((t) => t.status === "error").length;
+  let s = wasCancelled
+    ? "Abgebrochen — " + done + " von " + all.length + " Bildern fertig"
+    : rows.length + " Flyer · " + all.length + " Bilder · " + done + " fertig";
+  if (blocked) s += " · " + blocked + " blockiert";
+  if (err) s += " · " + err + " Fehler";
+  $("afSummary").textContent = s;
+  $("afSummaryCard").hidden = false;
+  const za = $("afZipAll"); if (za) za.disabled = done === 0;
+}
+
 // ── Poll (timeout-sicher) ──
 async function pollJob(jobId) {
   const deadline = Date.now() + 6 * 60 * 1000;
@@ -270,7 +298,7 @@ function mkTile(rowIdx, fnum, num, kind, badge) {
 async function run() {
   if (running) return;
   if (!files.length) return notify("Erst Flyer hochladen", "info");
-  running = true; $("afStart").disabled = true;
+  running = true; cancelled = false; showRunningUI(true);
   rows = []; $("afList").innerHTML = ""; ensureLightbox();
   $("afSummaryCard").hidden = false;
   const multi = files.length > 1;
@@ -278,6 +306,7 @@ async function run() {
   const TOTAL = 1 + VARIANTS; // Hauptflyer + Varianten = 10 Bilder je Flyer
 
   for (let fi = 0; fi < files.length; fi++) {
+    if (cancelled) break;
     const f = files[fi]; const fnum = fi + 1;
     const rowIdx = rows.length;
     const row = { idx: rowIdx, fnum, prefix: multi ? "Flyer " + fnum : "Flyer", dataUrl: f.dataUrl, tiles: [] };
@@ -301,6 +330,7 @@ async function run() {
     row.tiles[0].prompt = mainPrompt;
     setPhase(tag + "generiere Bild 1 von " + TOTAL + " (Hauptflyer) …");
     await genTile(row, row.tiles[0]); updateRow(row); updateOverview();
+    if (cancelled) break;
 
     // 3) 6 Varianten-Prompts (bestehender Generator)
     setPhase(tag + "Varianten-Prompts …");
@@ -310,6 +340,7 @@ async function run() {
 
     // 4) Varianten generieren
     for (let k = 0; k < VARIANTS; k++) {
+      if (cancelled) break;
       const t = row.tiles[k + 1];
       if (!variants[k]) { t.status = "error"; t.reason = "Keine Variante erzeugt"; updateTile(t); updateRow(row); updateOverview(); continue; }
       t.prompt = variants[k].prompt;
@@ -319,8 +350,17 @@ async function run() {
     updateRow(row);
   }
 
-  setPhase(""); running = false; $("afStart").disabled = false;
-  updateOverview(); notify("Auto-Flow fertig", "success");
+  setPhase("");
+  if (cancelled) {
+    // Noch nicht gestartete Kacheln als abgebrochen markieren (fertige bleiben erhalten).
+    for (const row of rows) {
+      for (const t of row.tiles) if (t.status === "pending" || t.status === "running") { t.status = "cancelled"; t.reason = "Abgebrochen"; updateTile(t); }
+      updateRow(row);
+    }
+  }
+  running = false; showRunningUI(false);
+  finishSummary(cancelled);
+  notify(cancelled ? "Lauf abgebrochen — fertige Bilder bleiben" : "Auto-Flow fertig", cancelled ? "info" : "success");
 }
 
 export function initAutoflow() {
@@ -332,5 +372,6 @@ export function initAutoflow() {
   wireDropzoneMulti($("afDrop"), addFiles);
   wirePaste($("panel-auto"), (f) => addFiles([f]));
   if ($("afStart")) $("afStart").addEventListener("click", run);
+  if ($("afCancel")) $("afCancel").addEventListener("click", requestCancel);
   if ($("afZipAll")) $("afZipAll").addEventListener("click", zipAll);
 }

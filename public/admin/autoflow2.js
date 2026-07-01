@@ -1,7 +1,8 @@
-// Auto-Flow 2 (Beta) — KOPIE von autoflow.js. EINZIGER Unterschied: schickt loose:true
-// an /admin/analyze und /admin/auto-variants, sodass der Prompt die Referenz nur als
-// LOSE Stil-Inspiration nutzt (eigenständiges Ergebnis, kein Nachbau). Eigener id-
-// Namensraum (af2…). Alle CSS-Klassen (af-…) werden geteilt. Auto-Flow 1 bleibt unberührt.
+// Auto-Flow 2 (Beta) — KOPIE von autoflow.js (eigener id-Namensraum af2…, gemeinsame
+// CSS-Klassen af-…). Zwei Abstands-Pfade via Umschalter #af2Path:
+//   near = Pfad A: Referenzbild geht mit, Prompt hält bewusst Abstand (loose).
+//   far  = Pfad B: KEIN Bild (textOnly) + abstrakte Text-Beschreibung (loose+abstract).
+// Sonst identisch zu Auto-Flow 1 inkl. Abbrechen. Auto-Flow 1 bleibt unberührt.
 
 import { post, getToken } from "./studioApi.js";
 import { fileToDataUrl, downloadDataUrl, wireDropzoneMulti, wirePaste, notify } from "./studioUi.js";
@@ -13,6 +14,8 @@ const VARIANTS = 9;
 let files = [];   // [{ name, dataUrl }]
 let rows = [];    // [{ idx, fnum, prefix, dataUrl, tiles:[tile] }]
 let running = false;
+let cancelled = false;   // Abbrechen angefordert → keine neuen Bilder mehr starten
+let pathMode = "near";   // Pfad A ("near", mit Bild) | Pfad B ("far", nur Text-Beschreibung)
 
 // ── Upload ───────────────────────────────────────────────────────
 async function addFiles(fileList) {
@@ -160,9 +163,9 @@ function renderTileInner(el, t) {
     acts.appendChild(iconBtn("⬇", "Herunterladen", () => downloadTile(t)));
     acts.appendChild(iconBtn("📋", "Prompt kopieren", (b) => copyText(t.sentPrompt, b)));
     el.appendChild(acts);
-  } else if (t.status === "blocked" || t.status === "error") {
+  } else if (t.status === "blocked" || t.status === "error" || t.status === "cancelled") {
     const mk = document.createElement("div"); mk.className = "af-tile-mark"; mk.title = t.reason || "";
-    mk.textContent = t.status === "blocked" ? "⚠ blockiert" : "✗ Fehler"; el.appendChild(mk);
+    mk.textContent = t.status === "blocked" ? "⚠ blockiert" : t.status === "cancelled" ? "⊘ abgebrochen" : "✗ Fehler"; el.appendChild(mk);
     if (t.sentPrompt) { const acts = document.createElement("div"); acts.className = "af-tile-acts"; acts.appendChild(iconBtn("📋", "Prompt kopieren", (b) => copyText(t.sentPrompt, b))); el.appendChild(acts); }
   } else {
     const ph = document.createElement("div"); ph.className = "af-tile-ph"; ph.textContent = t.status === "running" ? "…" : ""; el.appendChild(ph);
@@ -223,6 +226,33 @@ function updateOverview() {
   const za = $("af2ZipAll"); if (za) za.disabled = done === 0;
 }
 
+// ── Abbrechen: stoppt WEITERE Generierung (Bilder/Varianten/Flyer); ein im Moment
+//    des Klicks laufendes Einzelbild darf noch fertig werden. Fertige bleiben. ──
+function showRunningUI(on) {
+  const start = $("af2Start"); if (start) start.disabled = on;
+  const cancel = $("af2Cancel"); if (cancel) { cancel.hidden = !on; cancel.disabled = false; }
+}
+function requestCancel() {
+  if (!running || cancelled) return;
+  cancelled = true;
+  const cancel = $("af2Cancel"); if (cancel) cancel.disabled = true;
+  setPhase("Abbrechen … (laufendes Bild wird noch fertig, danach Stopp)");
+}
+function finishSummary(wasCancelled) {
+  const all = rows.reduce((a, r) => a.concat(r.tiles), []);
+  const done = all.filter((t) => t.status === "done").length;
+  const blocked = all.filter((t) => t.status === "blocked").length;
+  const err = all.filter((t) => t.status === "error").length;
+  let s = wasCancelled
+    ? "Abgebrochen — " + done + " von " + all.length + " Bildern fertig"
+    : rows.length + " Flyer · " + all.length + " Bilder · " + done + " fertig";
+  if (blocked) s += " · " + blocked + " blockiert";
+  if (err) s += " · " + err + " Fehler";
+  $("af2Summary").textContent = s;
+  $("af2SummaryCard").hidden = false;
+  const za = $("af2ZipAll"); if (za) za.disabled = done === 0;
+}
+
 // ── Poll (timeout-sicher) ──
 async function pollJob(jobId) {
   const deadline = Date.now() + 6 * 60 * 1000;
@@ -245,7 +275,7 @@ async function genTile(row, tile) {
   tile.status = "running"; updateTile(tile);
   const t0 = Date.now();
   try {
-    const start = await post("/admin/auto-generate", { image: row.dataUrl, prompt: tile.prompt });
+    const start = await post("/admin/auto-generate", pathMode === "far" ? { prompt: tile.prompt, textOnly: true } : { image: row.dataUrl, prompt: tile.prompt });
     if (!start || !start.jobId) throw new Error("Kein Auftrag gestartet");
     tile.sentPrompt = start.prompt || tile.prompt;
     const job = await pollJob(start.jobId);
@@ -269,7 +299,8 @@ function mkTile(rowIdx, fnum, num, kind, badge) {
 async function run() {
   if (running) return;
   if (!files.length) return notify("Erst Flyer hochladen", "info");
-  running = true; $("af2Start").disabled = true;
+  running = true; cancelled = false; showRunningUI(true);
+  pathMode = ($("af2Path") && $("af2Path").value === "far") ? "far" : "near";
   rows = []; $("af2List").innerHTML = ""; ensureLightbox();
   $("af2SummaryCard").hidden = false;
   const multi = files.length > 1;
@@ -277,6 +308,7 @@ async function run() {
   const TOTAL = 1 + VARIANTS; // Hauptflyer + Varianten = 10 Bilder je Flyer
 
   for (let fi = 0; fi < files.length; fi++) {
+    if (cancelled) break;
     const f = files[fi]; const fnum = fi + 1;
     const rowIdx = rows.length;
     const row = { idx: rowIdx, fnum, prefix: multi ? "Flyer " + fnum : "Flyer", dataUrl: f.dataUrl, tiles: [] };
@@ -289,7 +321,7 @@ async function run() {
     setPhase(tag + "Stil-Analyse + Prompt …"); setRowStat(row, "Analyse …");
     let dna, mainPrompt;
     try {
-      const r = await post("/admin/analyze", { images: [f.dataUrl], refType: "single", model: MODEL, loose: true });
+      const r = await post("/admin/analyze", { images: [f.dataUrl], refType: "single", model: MODEL, loose: true, abstract: (pathMode === "far") });
       dna = r && r.dna; mainPrompt = r && r.prompt; if (!mainPrompt) throw new Error("Kein Prompt erhalten");
     } catch (e) {
       for (const t of row.tiles) { t.status = "error"; t.reason = e.message; updateTile(t); }
@@ -300,15 +332,17 @@ async function run() {
     row.tiles[0].prompt = mainPrompt;
     setPhase(tag + "generiere Bild 1 von " + TOTAL + " (Hauptflyer) …");
     await genTile(row, row.tiles[0]); updateRow(row); updateOverview();
+    if (cancelled) break;
 
     // 3) 6 Varianten-Prompts (bestehender Generator)
     setPhase(tag + "Varianten-Prompts …");
     let variants = [];
-    try { const vr = await post("/admin/auto-variants", { dna, count: VARIANTS, refType: "single", model: MODEL, loose: true }); variants = (vr && vr.variants) || []; }
+    try { const vr = await post("/admin/auto-variants", { dna, count: VARIANTS, refType: "single", model: MODEL, loose: true, abstract: (pathMode === "far") }); variants = (vr && vr.variants) || []; }
     catch (e) { notify(tag + "Varianten-Prompts fehlgeschlagen: " + e.message, "error"); }
 
     // 4) Varianten generieren
     for (let k = 0; k < VARIANTS; k++) {
+      if (cancelled) break;
       const t = row.tiles[k + 1];
       if (!variants[k]) { t.status = "error"; t.reason = "Keine Variante erzeugt"; updateTile(t); updateRow(row); updateOverview(); continue; }
       t.prompt = variants[k].prompt;
@@ -318,8 +352,17 @@ async function run() {
     updateRow(row);
   }
 
-  setPhase(""); running = false; $("af2Start").disabled = false;
-  updateOverview(); notify("Auto-Flow 2 fertig", "success");
+  setPhase("");
+  if (cancelled) {
+    // Noch nicht gestartete Kacheln als abgebrochen markieren (fertige bleiben erhalten).
+    for (const row of rows) {
+      for (const t of row.tiles) if (t.status === "pending" || t.status === "running") { t.status = "cancelled"; t.reason = "Abgebrochen"; updateTile(t); }
+      updateRow(row);
+    }
+  }
+  running = false; showRunningUI(false);
+  finishSummary(cancelled);
+  notify(cancelled ? "Lauf abgebrochen — fertige Bilder bleiben" : "Auto-Flow 2 fertig", cancelled ? "info" : "success");
 }
 
 export function initAutoflow2() {
@@ -331,5 +374,6 @@ export function initAutoflow2() {
   wireDropzoneMulti($("af2Drop"), addFiles);
   wirePaste($("panel-auto2"), (f) => addFiles([f]));
   if ($("af2Start")) $("af2Start").addEventListener("click", run);
+  if ($("af2Cancel")) $("af2Cancel").addEventListener("click", requestCancel);
   if ($("af2ZipAll")) $("af2ZipAll").addEventListener("click", zipAll);
 }
