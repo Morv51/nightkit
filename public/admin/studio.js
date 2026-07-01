@@ -16,6 +16,7 @@ function showStudio() {
   import("./mode2.js").then((m) => m.initMode2 && m.initMode2()).catch(() => {});
   import("./mode1.js").then((m) => m.initMode1 && m.initMode1()).catch(() => {});
   import("./autoflow.js").then((m) => m.initAutoflow && m.initAutoflow()).catch(() => {});
+  import("./autoflow2.js").then((m) => m.initAutoflow2 && m.initAutoflow2()).catch(() => {});
 }
 
 async function unlock(e) {

@@ -34,7 +34,8 @@
       <div class="studio-tabs" id="tabs">
         <button class="studio-tab active" type="button" data-tab="mode1">Flyer → Template</button>
         <button class="studio-tab" type="button" data-tab="mode2">Moodboard → Prompt</button>
-        <button class="studio-tab" type="button" data-tab="auto">Auto-Flow <span class="tab-beta">Beta</span></button>
+        <button class="studio-tab" type="button" data-tab="auto">Auto-Flow 1 <span class="tab-beta">Beta</span></button>
+        <button class="studio-tab" type="button" data-tab="auto2">Auto-Flow 2 <span class="tab-beta">Beta</span></button>
       </div>
       <button class="rbtn rbtn-ghost studio-lock" id="lockBtn" type="button" title="Sperren">⊘ Sperren</button>
     </header>
@@ -221,6 +222,43 @@
           </div>
 
           <div class="batch-list" id="afList"></div>
+        </div>
+      </section>
+
+      <section class="studio-panel" id="panel-auto2" data-tab="auto2" hidden>
+        <div class="studio-single">
+          <div class="st-card">
+            <div class="st-head">Auto-Flow 2 · Inspiration <span class="beta-badge">BETA</span></div>
+            <div class="st-mini-note">Wie Auto-Flow 1, aber das Ergebnis <b>löst sich bewusst vom Original</b>. Der hochgeladene Flyer dient nur als <b>lose Stil-Inspiration</b> (grobe Stimmung, Genre, ungefähre Farbwelt, Typo-Charakter) — <b>NICHT</b> als Vorlage: Komposition, Layout, Motiv und Aufbau werden neu und eigenständig gestaltet. Gedacht für <b>fremde</b> Flyer als grobe Inspiration. Sonst identisch: <b>1 Hauptflyer + 9 Varianten (10 Bilder)</b>, OpenAI GPT Image, 9:16, Wort-Entschärfung, timeout-sicher, blockierte überspringen, Multi-Upload, ZIP-Downloads.</div>
+          </div>
+
+          <div class="st-card">
+            <div class="st-head">1 · Inspirations-Flyer (ein oder mehrere)</div>
+            <label class="st-drop" id="af2Drop">
+              <input type="file" id="af2File" accept="image/png,image/jpeg,image/webp" multiple hidden>
+              <span id="af2DropLabel">Flyer hierher ziehen, einfügen (⌘/Ctrl+V) oder klicken — ein oder mehrere · PNG/JPG/WebP, ≤10&nbsp;MB je Bild</span>
+            </label>
+            <div class="batch-thumbs" id="af2Thumbs" hidden></div>
+          </div>
+
+          <div class="st-card">
+            <div class="st-head">2 · Start</div>
+            <div class="st-row">
+              <button class="rbtn rbtn-primary" id="af2Start" type="button">▶ Generieren</button>
+              <span class="af-time" id="af2Progress"></span>
+            </div>
+            <div class="st-mini-note">Gleiche Engine wie Auto-Flow 1 (<b>Sonnet</b> + <b>OpenAI GPT Image</b>), nur die Referenz-Bindung ist <b>lockerer</b>: eigenständiges Ergebnis statt Nachbau. Je Flyer 10 Bilder, nacheinander.</div>
+          </div>
+
+          <div class="st-card" id="af2SummaryCard" hidden>
+            <div class="st-head">Übersicht</div>
+            <div class="af-summary-row">
+              <div class="af-summary" id="af2Summary"></div>
+              <button class="rbtn rbtn-primary" id="af2ZipAll" type="button" disabled>⬇ Alles herunterladen (ZIP)</button>
+            </div>
+          </div>
+
+          <div class="batch-list" id="af2List"></div>
         </div>
       </section>
     </main>
