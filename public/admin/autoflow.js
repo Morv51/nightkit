@@ -1,18 +1,21 @@
-// Auto-Flow (Beta) — Flyer-Erstellung über die OpenAI-Bild-API (GPT Image), EINZIGE
-// Engine. Sprachmodell fest = Sonnet. Ein ODER mehrere Bilder: je Bild Analyse +
-// Prompt (bestehende Modus-2-Route, nur aufgerufen) → asynchrone OpenAI-Generierung
-// mit Polling (timeout-sicher, kein 502). Ein blockiertes/fehlerhaftes Bild bricht
-// den Stapel NICHT ab — es wird übersprungen; am Ende die Erfolgsquote. Der
-// produktive Ideogram-Befüllflow im Haupt-Tool bleibt unberührt.
+// Auto-Flow (Beta) — je hochgeladenem Flyer automatisch 1 HAUPTFLYER + 6 VARIANTEN
+// (7 Bilder), alle über die OpenAI-Bild-API (GPT Image). Nutzt NUR bestehende
+// Routen (nichts neu gebaut): /admin/analyze (Stil-Anker + Haupt-Prompt, Sonnet),
+// /admin/auto-variants (6 Varianten-Prompts aus demselben Anker, variiert in Farbe/
+// Motiv/Layout), /admin/auto-generate (je Bild, mit Referenzbild als Stilanker,
+// wort-entschärft, asynchron mit Polling = timeout-sicher). Ein blockiertes/
+// fehlgeschlagenes Einzelbild bricht den Satz NICHT ab. Der produktive Ideogram-
+// Befüllflow im Haupt-Tool bleibt unberührt.
 
 import { post, getToken } from "./studioApi.js";
 import { fileToDataUrl, downloadDataUrl, toJpeg, wireDropzoneMulti, wirePaste, notify } from "./studioUi.js";
 
 const $ = (id) => document.getElementById(id);
-const MODEL = "sonnet"; // Sprachmodell FEST auf Sonnet
+const MODEL = "sonnet";     // Sprachmodell FEST auf Sonnet
+const VARIANTS = 6;         // je Flyer 6 Varianten
 
 let files = [];   // [{ name, dataUrl }]
-let packs = [];   // [{ idx, dataUrl, status, image, ms, reason }]
+let packs = [];   // [{ idx, label, kind:"main"|"variant", dataUrl, prompt, sentPrompt, status, image, ms, reason }]
 let running = false;
 
 // ── Upload (ein oder mehrere) ────────────────────────────────────
@@ -36,36 +39,41 @@ function renderThumbs() {
   });
   row.hidden = !files.length;
   $("afDropLabel").textContent = files.length
-    ? files.length + " Bild(er) gewählt — weitere hinzufügen oder unten starten"
+    ? files.length + " Bild(er) gewählt — je Bild werden Hauptflyer + " + VARIANTS + " Varianten erzeugt"
     : "Flyer hierher ziehen, einfügen (⌘/Ctrl+V) oder klicken — ein oder mehrere · PNG/JPG/WebP, ≤10 MB je Bild";
 }
 
-// Inhaltliche Ablehnung ("blockiert") von technischem Fehler unterscheiden.
 function isBlocked(msg) {
   return /safety|moderation|content.?polic|rejected|blocked|\[sexual\]|not allowed|violat/i.test(msg || "");
 }
 
-// ── Pakete (ein Block je Bild: Original + Ergebnis, gleiche Nummer) ──
-function renderPacks() {
-  const list = $("afList"); list.innerHTML = "";
-  packs.forEach((p) => list.appendChild(packCard(p)));
+// ── Kopieren (+ "Kopiert ✓") ──
+function fallbackCopy(text, done) {
+  const ta = document.createElement("textarea");
+  ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try { document.execCommand("copy"); done(); } catch { notify("Kopieren nicht möglich — bitte manuell markieren", "error"); }
+  ta.remove();
 }
-function packCard(p) {
+function copyText(text, btn) {
+  const restore = btn.textContent;
+  const ok = () => { btn.textContent = "Kopiert ✓"; btn.classList.add("copied"); setTimeout(() => { btn.textContent = restore; btn.classList.remove("copied"); }, 1600); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(ok).catch(() => fallbackCopy(text, ok));
+  else fallbackCopy(text, ok);
+}
+
+// ── Ein Paket (= ein Ergebnisbild): Kopf + Ergebnis + Prompt ──
+function appendPack(p) {
   const card = document.createElement("div"); card.className = "batch-pack"; card.dataset.idx = p.idx;
   const head = document.createElement("div"); head.className = "batch-pack-head";
-  head.innerHTML = '<span class="batch-pack-num">Flyer ' + p.idx +
-    '</span><span class="batch-status" id="afStatus' + p.idx + '">wartet</span>';
-  const bodyEl = document.createElement("div"); bodyEl.className = "batch-pack-body";
-  const orig = document.createElement("div"); orig.className = "batch-pack-img";
-  const oi = document.createElement("img"); oi.src = p.dataUrl; oi.alt = "Original " + p.idx;
-  orig.appendChild(oi);
-  const resCol = document.createElement("div"); resCol.className = "batch-pack-prompt"; resCol.id = "afRes" + p.idx;
+  const num = document.createElement("span"); num.className = "batch-pack-num"; num.textContent = p.label;
+  const st = document.createElement("span"); st.className = "batch-status"; st.id = "afStatus" + p.idx; st.textContent = "wartet";
+  head.appendChild(num); head.appendChild(st);
+  const resCol = document.createElement("div"); resCol.className = "af-result-col"; resCol.id = "afRes" + p.idx;
   resCol.innerHTML = '<div class="af-res-wait">… wartet …</div>';
-  bodyEl.appendChild(orig); bodyEl.appendChild(resCol);
-  const promptBox = document.createElement("div");
-  promptBox.className = "af-pack-prompt"; promptBox.id = "afPromptBox" + p.idx; promptBox.hidden = true;
-  card.appendChild(head); card.appendChild(bodyEl); card.appendChild(promptBox);
-  return card;
+  const promptBox = document.createElement("div"); promptBox.className = "af-pack-prompt"; promptBox.id = "afPromptBox" + p.idx; promptBox.hidden = true;
+  card.appendChild(head); card.appendChild(resCol); card.appendChild(promptBox);
+  $("afList").appendChild(card);
 }
 function setStatus(idx, state, text) {
   const el = $("afStatus" + idx);
@@ -81,10 +89,7 @@ function setResult(idx, image, secs) {
   const png = document.createElement("button"); png.type = "button"; png.className = "rbtn rbtn-primary"; png.textContent = "⬇ PNG";
   png.addEventListener("click", () => downloadDataUrl(image, "auto-flow-" + idx + ".png"));
   const jpg = document.createElement("button"); jpg.type = "button"; jpg.className = "rbtn rbtn-ghost"; jpg.textContent = "⬇ JPG";
-  jpg.addEventListener("click", async () => {
-    try { downloadDataUrl(await toJpeg(image), "auto-flow-" + idx + ".jpg"); }
-    catch (e) { notify(e.message, "error"); }
-  });
+  jpg.addEventListener("click", async () => { try { downloadDataUrl(await toJpeg(image), "auto-flow-" + idx + ".jpg"); } catch (e) { notify(e.message, "error"); } });
   const t = document.createElement("div"); t.className = "af-time"; t.textContent = "· generiert in " + secs + " s";
   row.appendChild(png); row.appendChild(jpg);
   col.appendChild(img); col.appendChild(row); col.appendChild(t);
@@ -96,35 +101,14 @@ function setReason(idx, blocked, reason) {
   box.textContent = (blocked ? "⚠ Blockiert (Inhaltsfilter): " : "✗ Fehler: ") + reason;
   col.appendChild(box);
 }
-
-// Kopieren + kurze "Kopiert ✓"-Bestätigung.
-function fallbackCopy(text, done) {
-  const ta = document.createElement("textarea");
-  ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
-  document.body.appendChild(ta); ta.focus(); ta.select();
-  try { document.execCommand("copy"); done(); } catch { notify("Kopieren nicht möglich — bitte manuell markieren", "error"); }
-  ta.remove();
-}
-function copyText(text, btn) {
-  const restore = btn.textContent;
-  const ok = () => { btn.textContent = "Kopiert ✓"; btn.classList.add("copied"); setTimeout(() => { btn.textContent = restore; btn.classList.remove("copied"); }, 1600); };
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(ok).catch(() => fallbackCopy(text, ok));
-  else fallbackCopy(text, ok);
-}
-
-// GENAU den an die API gesendeten (entschärften) Prompt anzeigen + kopierbar —
-// vollständig (Textfeld, scrollbar, nicht abgeschnitten), auch im Block-Fall.
+// GENAU den an die API gesendeten (entschärften) Prompt anzeigen + kopierbar.
 function setPrompt(idx, prompt) {
   const box = $("afPromptBox" + idx);
   if (!box || !prompt) return;
-  box.hidden = false;
-  box.innerHTML = "";
-  const label = document.createElement("div");
-  label.className = "af-pp-label"; label.textContent = "Verwendeter Prompt (exakt an die API gesendet)";
-  const ta = document.createElement("textarea");
-  ta.className = "st-prompt af-pp-text"; ta.readOnly = true; ta.rows = 10; ta.value = prompt;
-  const btn = document.createElement("button");
-  btn.type = "button"; btn.className = "rbtn rbtn-ghost af-pp-copy"; btn.textContent = "📋 Prompt kopieren";
+  box.hidden = false; box.innerHTML = "";
+  const label = document.createElement("div"); label.className = "af-pp-label"; label.textContent = "Verwendeter Prompt (exakt an die API gesendet)";
+  const ta = document.createElement("textarea"); ta.className = "st-prompt af-pp-text"; ta.readOnly = true; ta.rows = 8; ta.value = prompt;
+  const btn = document.createElement("button"); btn.type = "button"; btn.className = "rbtn rbtn-ghost af-pp-copy"; btn.textContent = "📋 Prompt kopieren";
   btn.addEventListener("click", () => copyText(prompt, btn));
   box.appendChild(label); box.appendChild(ta); box.appendChild(btn);
 }
@@ -147,26 +131,16 @@ async function pollJob(jobId, startedAt, idx) {
   throw new Error("Zeitüberschreitung — über 6 Minuten gedauert.");
 }
 
-// ── Ein Flyer: Analyse → Prompt → Generierung. Fängt eigene Fehler ab. ──
-async function processOne(p) {
-  setStatus(p.idx, "running", "Analyse + Prompt …");
-  let prompt;
-  try {
-    const r = await post("/admin/analyze", { images: [p.dataUrl], refType: "single", model: MODEL });
-    prompt = r && r.prompt;
-    if (!prompt) throw new Error("Kein Prompt erhalten");
-  } catch (e) {
-    p.status = "error"; p.reason = e.message;
-    setStatus(p.idx, "error", "✗ Fehler"); setReason(p.idx, false, e.message);
-    return;
-  }
+// ── Ein Bild generieren (Referenzbild als Stilanker + der Prompt des Pakets).
+//    Fängt eigene Fehler ab → der Satz läuft immer weiter. ──
+async function generatePack(p) {
   setStatus(p.idx, "running", "generiert …");
   const t0 = Date.now();
   try {
-    const start = await post("/admin/auto-generate", { image: p.dataUrl, prompt });
+    const start = await post("/admin/auto-generate", { image: p.dataUrl, prompt: p.prompt });
     if (!start || !start.jobId) throw new Error("Kein Auftrag gestartet");
-    p.sentPrompt = start.prompt || prompt;   // EXAKT der (entschärfte) Prompt, der an die API ging
-    setPrompt(p.idx, p.sentPrompt);          // sofort sichtbar — bleibt auch, wenn danach blockiert wird
+    p.sentPrompt = start.prompt || p.prompt;   // EXAKT der (entschärfte) Prompt
+    setPrompt(p.idx, p.sentPrompt);            // sofort sichtbar (bleibt auch im Block-Fall)
     const job = await pollJob(start.jobId, t0, p.idx);
     if (!job.image) throw new Error("Kein Bild erhalten");
     const secs = job.ms ? Math.round(job.ms / 1000) : Math.round((Date.now() - t0) / 1000);
@@ -180,32 +154,87 @@ async function processOne(p) {
   }
 }
 
-function updateProgress(done, total) { $("afProgress").textContent = done + " von " + total + " verarbeitet"; }
+function setPhase(text) { $("afProgress").textContent = text; }
+function newPack(label, kind, dataUrl, prompt) {
+  const p = { idx: packs.length + 1, label, kind, dataUrl, prompt, sentPrompt: "", status: "pending", image: "", ms: 0, reason: "" };
+  packs.push(p); appendPack(p); return p;
+}
 function showSummary() {
-  const ok = packs.filter((p) => p.status === "done").length;
+  const mains = packs.filter((p) => p.kind === "main");
+  const vars = packs.filter((p) => p.kind === "variant");
+  const okVar = vars.filter((p) => p.status === "done").length;
+  const okMain = mains.filter((p) => p.status === "done").length;
   const blocked = packs.filter((p) => p.status === "blocked").length;
   const err = packs.filter((p) => p.status === "error").length;
-  let s = ok + " von " + packs.length + " erfolgreich";
+  let s;
+  if (mains.length === 1) {
+    const m = mains[0].status;
+    s = "Hauptflyer " + (m === "done" ? "✓" : m === "blocked" ? "⚠ blockiert" : "✗ Fehler") +
+      " + " + okVar + " von " + vars.length + " Varianten erfolgreich";
+  } else {
+    s = (okMain + okVar) + " von " + packs.length + " Bildern erfolgreich";
+  }
   if (blocked) s += " · " + blocked + " blockiert";
   if (err) s += " · " + err + " Fehler";
   $("afSummary").textContent = s;
   $("afSummaryCard").hidden = false;
 }
 
-// ── Lauf: nacheinander; ein blockiertes/fehlerhaftes Bild bricht NICHT ab ──
+// ── Lauf: je Flyer Hauptflyer + 6 Varianten; nacheinander, robust ──
 async function run() {
   if (running) return;
   if (!files.length) return notify("Erst Flyer hochladen", "info");
   running = true; $("afStart").disabled = true;
-  packs = files.map((f, i) => ({ idx: i + 1, dataUrl: f.dataUrl, status: "pending", image: "", ms: 0, reason: "" }));
-  renderPacks();
+  packs = [];
+  $("afList").innerHTML = "";
   $("afSummaryCard").hidden = true;
-  const total = packs.length; let done = 0;
-  updateProgress(0, total);
-  for (const p of packs) {
-    await processOne(p); // fängt Fehler selbst ab → Schleife läuft weiter
-    done++; updateProgress(done, total);
+  const multi = files.length > 1;
+
+  for (let fi = 0; fi < files.length; fi++) {
+    const f = files[fi];
+    const pre = multi ? "Flyer " + (fi + 1) + " · " : "";
+    const tag = multi ? "Flyer " + (fi + 1) + ": " : "";
+
+    // 1) Stil-Analyse + Haupt-Prompt (Sonnet, mit Wort-Entschärfung serverseitig)
+    const mainPack = newPack(pre + "Hauptflyer", "main", f.dataUrl, "");
+    setStatus(mainPack.idx, "running", "Analyse + Prompt …");
+    setPhase(tag + "Stil-Analyse + Prompt …");
+    let dna, mainPrompt;
+    try {
+      const r = await post("/admin/analyze", { images: [f.dataUrl], refType: "single", model: MODEL });
+      dna = r && r.dna; mainPrompt = r && r.prompt;
+      if (!mainPrompt) throw new Error("Kein Prompt erhalten");
+    } catch (e) {
+      mainPack.status = "error"; mainPack.reason = e.message;
+      setStatus(mainPack.idx, "error", "✗ Fehler"); setReason(mainPack.idx, false, e.message);
+      continue; // Analyse gescheitert → dieser Flyer wird übersprungen
+    }
+
+    // 2) Haupt-Flyer generieren
+    setPhase(tag + "Hauptflyer generieren …");
+    mainPack.prompt = mainPrompt;
+    await generatePack(mainPack);
+
+    // 3) 6 Varianten-Prompts über den bestehenden Varianten-Generator
+    setPhase(tag + "Varianten-Prompts …");
+    let variants = [];
+    try {
+      const vr = await post("/admin/auto-variants", { dna, count: VARIANTS, refType: "single", model: MODEL });
+      variants = (vr && vr.variants) || [];
+    } catch (e) {
+      notify(tag + "Varianten-Prompts fehlgeschlagen: " + e.message, "error");
+    }
+
+    // 4) Jede Variante generieren (Referenzbild als Stilanker mit)
+    for (let vi = 0; vi < variants.length; vi++) {
+      const lab = variants[vi].label ? " — " + variants[vi].label : "";
+      const vp = newPack(pre + "Variante " + (vi + 1) + lab, "variant", f.dataUrl, variants[vi].prompt);
+      setPhase(tag + "generiere Variante " + (vi + 1) + " von " + variants.length + " …");
+      await generatePack(vp);
+    }
   }
+
+  setPhase("");
   showSummary();
   running = false; $("afStart").disabled = false;
   notify("Auto-Flow fertig", "success");
@@ -214,8 +243,7 @@ async function run() {
 export function initAutoflow() {
   const file = $("afFile");
   if (file) file.addEventListener("change", () => {
-    const picked = Array.from(file.files); // synchron kopieren, DANN value leeren
-    file.value = "";
+    const picked = Array.from(file.files); file.value = "";
     if (picked.length) addFiles(picked);
   });
   wireDropzoneMulti($("afDrop"), addFiles);

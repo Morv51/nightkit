@@ -191,7 +191,7 @@
         <div class="studio-single">
           <div class="st-card">
             <div class="st-head">Auto-Flow <span class="beta-badge">BETA</span></div>
-            <div class="st-mini-note">Vollautomatische Flyer-Erstellung: EINEN oder MEHRERE Referenz-Flyer hochladen → je Flyer automatisch Analyse + Prompt (<b>Sonnet</b>) → Bildgenerierung über die <b>OpenAI-Bild-API (GPT Image)</b>, dein Flyer als Stil-Referenz, 9:16. Der Prompt wird gegen Filter-<b>Fehlalarme</b> wort-entschärft (nur bei legitimen Inhalten, keine Regelumgehung). Bei mehreren Bildern wird ein blockiertes <b>übersprungen</b> und am Ende die <b>Erfolgsquote</b> gezeigt. Upload, da die App in der Cloud läuft.</div>
+            <div class="st-mini-note">Ein Upload → automatisch <b>1 Hauptflyer + 6 Varianten (7 Bilder)</b>: gleicher Stil, variiert in Farbe, Motiv/Personen und Layout. Analyse + Prompt (<b>Sonnet</b>) → Bildgenerierung über die <b>OpenAI-Bild-API (GPT Image)</b>, dein Flyer als Stil-Referenz, 9:16; Prompt gegen Filter-<b>Fehlalarme</b> wort-entschärft (nur legitime Inhalte, keine Regelumgehung). Mehrere Flyer gehen auch (je Flyer 7 Bilder). Ein blockiertes/fehlgeschlagenes Einzelbild bricht den Satz <b>NICHT</b> ab — am Ende die <b>Erfolgsquote</b>. Upload, da die App in der Cloud läuft.</div>
           </div>
 
           <div class="st-card">
@@ -209,7 +209,7 @@
               <button class="rbtn rbtn-primary" id="afStart" type="button">▶ Generieren</button>
               <span class="af-time" id="afProgress"></span>
             </div>
-            <div class="st-mini-note">Sprachmodell fest: <b>Sonnet</b>. Bildmodell: <b>OpenAI GPT Image</b> (einzige Engine, moderation „low"). Läuft je Bild nacheinander; die Generierung ist timeout-sicher (asynchron mit Polling, kann bis ~2 Min je Bild dauern).</div>
+            <div class="st-mini-note">Sprachmodell fest: <b>Sonnet</b>. Bildmodell: <b>OpenAI GPT Image</b> (einzige Engine, moderation „low"). Je Flyer entstehen 7 Bilder (Hauptflyer + 6 Varianten), nacheinander — das dauert entsprechend (jede Generierung bis ~2 Min, timeout-sicher per Polling). Fortschritt und Erfolgsquote siehst du unten.</div>
           </div>
 
           <div class="st-card" id="afSummaryCard" hidden>
