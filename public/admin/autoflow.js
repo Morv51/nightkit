@@ -9,7 +9,7 @@ import { fileToDataUrl, downloadDataUrl, wireDropzoneMulti, wirePaste, notify } 
 
 const $ = (id) => document.getElementById(id);
 const MODEL = "sonnet";
-const VARIANTS = 6;
+const VARIANTS = 9;
 
 let files = [];   // [{ name, dataUrl }]
 let rows = [];    // [{ idx, fnum, prefix, dataUrl, tiles:[tile] }]
@@ -275,7 +275,7 @@ async function run() {
   $("afSummaryCard").hidden = false;
   const multi = files.length > 1;
   const N = files.length;
-  const TOTAL = 1 + VARIANTS; // Hauptflyer + Varianten = 7 Bilder je Flyer
+  const TOTAL = 1 + VARIANTS; // Hauptflyer + Varianten = 10 Bilder je Flyer
 
   for (let fi = 0; fi < files.length; fi++) {
     const f = files[fi]; const fnum = fi + 1;
