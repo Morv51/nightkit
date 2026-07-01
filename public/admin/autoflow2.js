@@ -165,7 +165,12 @@ function renderTileInner(el, t) {
     el.appendChild(acts);
   } else if (t.status === "blocked" || t.status === "error" || t.status === "cancelled") {
     const mk = document.createElement("div"); mk.className = "af-tile-mark"; mk.title = t.reason || "";
-    mk.textContent = t.status === "blocked" ? "⚠ blockiert" : t.status === "cancelled" ? "⊘ abgebrochen" : "✗ Fehler"; el.appendChild(mk);
+    const head = document.createElement("div"); head.className = "af-tile-mark-h";
+    head.textContent = t.status === "blocked" ? "⚠ blockiert" : t.status === "cancelled" ? "⊘ abgebrochen" : "✗ Fehler";
+    mk.appendChild(head);
+    // Genauen Grund im Klartext ZEIGEN (nicht nur im Tooltip), damit die Ursache sichtbar ist.
+    if (t.reason && t.status !== "cancelled") { const rz = document.createElement("div"); rz.className = "af-tile-mark-r"; rz.textContent = t.reason; mk.appendChild(rz); }
+    el.appendChild(mk);
     if (t.sentPrompt) { const acts = document.createElement("div"); acts.className = "af-tile-acts"; acts.appendChild(iconBtn("📋", "Prompt kopieren", (b) => copyText(t.sentPrompt, b))); el.appendChild(acts); }
   } else {
     const ph = document.createElement("div"); ph.className = "af-tile-ph"; ph.textContent = t.status === "running" ? "…" : ""; el.appendChild(ph);
@@ -283,6 +288,8 @@ async function genTile(row, tile) {
     tile.status = "done"; tile.image = job.image; tile.ms = job.ms ? Math.round(job.ms / 1000) : Math.round((Date.now() - t0) / 1000);
   } catch (e) {
     tile.status = isBlocked(e.message) ? "blocked" : "error"; tile.reason = e.message;
+    // Grund auch als Meldung sichtbar machen (Klartext: Filter / Timeout / API-Fehler).
+    notify((tile.status === "blocked" ? "Blockiert (Inhaltsfilter): " : "Fehler bei „" + tile.label + "“: ") + e.message, "error");
   }
   updateTile(tile);
 }
@@ -322,7 +329,7 @@ async function run() {
     setPhase(tag + "Stil-Analyse + Prompt …"); setRowStat(row, "Analyse …");
     let dna, mainPrompt;
     try {
-      const r = await post("/admin/analyze", { images: [f.dataUrl], refType: "single", model: MODEL, loose: true, abstract: (pathMode === "far") });
+      const r = await post("/admin/analyze", { images: [f.dataUrl], refType: "single", model: MODEL, loose: (pathMode === "near") });
       dna = r && r.dna; mainPrompt = r && r.prompt; if (!mainPrompt) throw new Error("Kein Prompt erhalten");
     } catch (e) {
       for (const t of row.tiles) { t.status = "error"; t.reason = e.message; updateTile(t); }
@@ -338,7 +345,7 @@ async function run() {
     // 3) 6 Varianten-Prompts (bestehender Generator)
     setPhase(tag + "Varianten-Prompts …");
     let variants = [];
-    try { const vr = await post("/admin/auto-variants", { dna, count: VARIANTS, refType: "single", model: MODEL, loose: true, abstract: (pathMode === "far") }); variants = (vr && vr.variants) || []; }
+    try { const vr = await post("/admin/auto-variants", { dna, count: VARIANTS, refType: "single", model: MODEL, loose: (pathMode === "near") }); variants = (vr && vr.variants) || []; }
     catch (e) { notify(tag + "Varianten-Prompts fehlgeschlagen: " + e.message, "error"); }
 
     // 4) Varianten generieren
