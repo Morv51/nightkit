@@ -15,6 +15,7 @@ let files = [];   // [{ name, dataUrl }]
 let rows = [];    // [{ idx, fnum, prefix, dataUrl, tiles:[tile] }]
 let running = false;
 let cancelled = false;   // Abbrechen angefordert → keine neuen Bilder mehr starten
+let runStamp = "";       // Zeitstempel je Lauf → eindeutige Datei-/Ordnernamen beim Download
 let pathMode = "near";   // Pfad A ("near", mit Bild) | Pfad B ("far", nur Text-Beschreibung)
 
 // ── Upload ───────────────────────────────────────────────────────
@@ -139,8 +140,9 @@ function openLightbox(tile) {
 function closeLightbox() { const ov = $("af2Lightbox"); if (ov) ov.hidden = true; }
 
 // ── Kacheln ──────────────────────────────────────────────────────
+function stamp() { const d = new Date(), p = (n) => String(n).padStart(2, "0"); return "" + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + "-" + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()); }
 function tileFilename(t) { return t.kind === "main" ? "hauptflyer.png" : "variante-" + t.num + ".png"; }
-function downloadTile(t) { if (t.image) downloadDataUrl(t.image, "auto-flow-2-flyer-" + t.fnum + "-" + tileFilename(t)); }
+function downloadTile(t) { if (t.image) downloadDataUrl(t.image, runStamp + "-af2-flyer-" + t.fnum + "-" + tileFilename(t)); }
 function iconBtn(icon, title, onClick) {
   const b = document.createElement("button"); b.type = "button"; b.className = "af-icon-btn"; b.title = title; b.textContent = icon;
   b.addEventListener("click", (e) => { e.stopPropagation(); onClick(b); });
@@ -206,14 +208,16 @@ function updateRow(row) {
 function zipRow(row) {
   const done = row.tiles.filter((t) => t.status === "done" && t.image);
   if (!done.length) return notify("Keine fertigen Bilder in dieser Zeile", "info");
-  downloadBlob(makeZip(done.map((t) => ({ name: tileFilename(t), bytes: dataUrlToBytes(t.image) }))), "auto-flow-2-flyer-" + row.fnum + ".zip");
+  const folder = "af2-flyer-" + row.fnum + "-" + runStamp;
+  downloadBlob(makeZip(done.map((t) => ({ name: folder + "/" + tileFilename(t), bytes: dataUrlToBytes(t.image) }))), folder + ".zip");
 }
 function zipAll() {
+  const top = "auto-flow-2-" + runStamp;
   const entries = [];
   for (const row of rows) for (const t of row.tiles) if (t.status === "done" && t.image)
-    entries.push({ name: "flyer-" + row.fnum + "/" + tileFilename(t), bytes: dataUrlToBytes(t.image) });
+    entries.push({ name: top + "/flyer-" + row.fnum + "/" + tileFilename(t), bytes: dataUrlToBytes(t.image) });
   if (!entries.length) return notify("Noch keine fertigen Bilder", "info");
-  downloadBlob(makeZip(entries), "auto-flow-2-alle.zip");
+  downloadBlob(makeZip(entries), top + ".zip");
 }
 
 // ── Übersicht (oben) + Fortschritts-Phase ──
@@ -306,7 +310,7 @@ function mkTile(rowIdx, fnum, num, kind, badge) {
 async function run() {
   if (running) return;
   if (!files.length) return notify("Erst Flyer hochladen", "info");
-  running = true; cancelled = false; showRunningUI(true);
+  running = true; cancelled = false; runStamp = stamp(); showRunningUI(true);
   const _pe = document.querySelector('input[name="af2Path"]:checked') || $("af2Path");
   pathMode = (_pe && _pe.value === "far") ? "far" : "near";
   rows = []; $("af2List").innerHTML = ""; ensureLightbox();
