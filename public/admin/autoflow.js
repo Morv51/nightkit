@@ -139,9 +139,12 @@ function openLightbox(tile) {
 function closeLightbox() { const ov = $("afLightbox"); if (ov) ov.hidden = true; }
 
 // ── Kacheln ──────────────────────────────────────────────────────
-function stamp() { const d = new Date(), p = (n) => String(n).padStart(2, "0"); return "" + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + "-" + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()); }
+function stamp() { const d = new Date(), p = (n) => String(n).padStart(2, "0"); return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + "_" + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()); }
 function tileFilename(t) { return t.kind === "main" ? "hauptflyer.png" : "variante-" + t.num + ".png"; }
-function downloadTile(t) { if (t.image) downloadDataUrl(t.image, runStamp + "-flyer-" + t.fnum + "-" + tileFilename(t)); }
+// Eindeutiger Dateiname MIT Zeitstempel + Flyer-Kennung — genau dieser Name wird auch
+// INNERHALB der ZIPs verwendet, damit nach dem Entpacken nichts kollidiert.
+function uniqueName(t) { return "nightkit_" + runStamp + "_flyer" + t.fnum + "_" + tileFilename(t); }
+function downloadTile(t) { if (t.image) downloadDataUrl(t.image, uniqueName(t)); }
 function iconBtn(icon, title, onClick) {
   const b = document.createElement("button"); b.type = "button"; b.className = "af-icon-btn"; b.title = title; b.textContent = icon;
   b.addEventListener("click", (e) => { e.stopPropagation(); onClick(b); });
@@ -202,16 +205,14 @@ function updateRow(row) {
 function zipRow(row) {
   const done = row.tiles.filter((t) => t.status === "done" && t.image);
   if (!done.length) return notify("Keine fertigen Bilder in dieser Zeile", "info");
-  const folder = "flyer-" + row.fnum + "-" + runStamp;
-  downloadBlob(makeZip(done.map((t) => ({ name: folder + "/" + tileFilename(t), bytes: dataUrlToBytes(t.image) }))), folder + ".zip");
+  downloadBlob(makeZip(done.map((t) => ({ name: uniqueName(t), bytes: dataUrlToBytes(t.image) }))), "nightkit_" + runStamp + "_flyer" + row.fnum + ".zip");
 }
 function zipAll() {
-  const top = "auto-flow-" + runStamp;
   const entries = [];
   for (const row of rows) for (const t of row.tiles) if (t.status === "done" && t.image)
-    entries.push({ name: top + "/flyer-" + row.fnum + "/" + tileFilename(t), bytes: dataUrlToBytes(t.image) });
+    entries.push({ name: uniqueName(t), bytes: dataUrlToBytes(t.image) });
   if (!entries.length) return notify("Noch keine fertigen Bilder", "info");
-  downloadBlob(makeZip(entries), top + ".zip");
+  downloadBlob(makeZip(entries), "nightkit_" + runStamp + "_alle.zip");
 }
 
 // ── Übersicht (oben) + Fortschritts-Phase ──
