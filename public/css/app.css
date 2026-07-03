@@ -177,7 +177,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .tg-card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;opacity:0;transition:opacity .3s ease}
 .tg-card.loaded img{opacity:1}
 /* Skeleton-Shimmer pro Kachel, bis das Bild geladen ist */
-.tg-card:not(.loaded)::after{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent 20%,rgba(255,255,255,.05) 50%,transparent 80%);transform:translateX(-100%);animation:shimmer 1.4s ease-in-out infinite;pointer-events:none}
+.tg-card.loading:not(.loaded)::after{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent 20%,rgba(255,255,255,.05) 50%,transparent 80%);transform:translateX(-100%);animation:shimmer 1.4s ease-in-out infinite;pointer-events:none}
 .tg-card:hover{border-color:var(--color-accent);transform:scale(1.03);box-shadow:0 0 0 1px rgba(204,255,0,.4),0 10px 28px rgba(204,255,0,.16);z-index:1}
 @keyframes galCardIn{from{opacity:0}to{opacity:1}}
 
@@ -185,6 +185,33 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .tg-empty{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--color-text-muted);font-size:var(--font-size-sm);padding:var(--space-6)}
 .tg-empty[hidden]{display:none}
 #tgError{flex-direction:column;gap:12px}
+
+/* Kategorie-Übersicht (Standard-Start): Kacheln mit Cover + Name + Anzahl */
+.tg-grid--cats{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.tg-catcard{position:relative;border:1px solid var(--color-border);border-radius:var(--radius-md);overflow:hidden;background:var(--color-surface-2);cursor:pointer;display:flex;flex-direction:column;transition:border-color .2s,transform .2s,box-shadow .2s}
+.tg-catcard-thumb{position:relative;width:100%;aspect-ratio:9/16;background:var(--color-surface-3,#161616);overflow:hidden}
+.tg-catcard-thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.tg-catcard-meta{display:flex;align-items:baseline;justify-content:space-between;gap:var(--space-2);padding:var(--space-2) var(--space-3)}
+.tg-catcard-name{font-size:var(--font-size-sm);font-weight:var(--font-weight-semibold);color:var(--color-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tg-catcard-count{font-size:var(--font-size-xs);color:var(--color-text-dim);flex:0 0 auto}
+.tg-catcard:hover{border-color:var(--color-accent);transform:translateY(-2px);box-shadow:0 8px 24px rgba(204,255,0,.14)}
+.tg-catcard--all .tg-catcard-thumb::after{content:'ALLE';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:700;letter-spacing:.12em;font-size:var(--font-size-sm);color:#fff;background:rgba(0,0,0,.42)}
+
+/* Dichteres Flyer-Grid innerhalb einer Kategorie (mehr auf einen Blick) */
+.tg-grid--dense{grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:var(--space-3)}
+
+/* Zurück zur Kategorie-Übersicht */
+.tg-back{flex:0 0 auto;background:transparent;border:1px solid var(--color-border-strong,var(--color-border));border-radius:var(--radius-pill);color:var(--color-text);font-family:inherit;font-size:var(--font-size-xs);font-weight:var(--font-weight-semibold);padding:var(--space-1) var(--space-3);cursor:pointer;white-space:nowrap}
+.tg-back:hover{border-color:var(--color-accent);color:var(--color-accent)}
+
+/* Großansicht (Lightbox) — volle Auflösung + „Vorlage wählen" */
+.tg-lightbox{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.86);display:flex;align-items:center;justify-content:center;padding:24px}
+.tg-lightbox[hidden]{display:none}
+.tg-lb-inner{position:relative;max-width:92vw;max-height:92vh;display:flex;flex-direction:column;gap:12px;align-items:center}
+.tg-lb-img{max-width:92vw;max-height:78vh;border-radius:var(--radius-md);box-shadow:0 12px 48px rgba(0,0,0,.6)}
+.tg-lb-close{position:absolute;top:-14px;right:-14px;width:34px;height:34px;border-radius:50%;border:none;background:#fff;color:#111;font-size:16px;font-weight:700;cursor:pointer}
+.tg-lb-bar{display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:center}
+.tg-lb-name{color:#fff;font-size:var(--font-size-sm);font-weight:var(--font-weight-semibold)}
 
 .tg-foot{flex-shrink:0;font-size:var(--font-size-xs);color:var(--color-text-dim);text-align:center;line-height:var(--line-height-snug)}
 

@@ -63,7 +63,7 @@ export function applyCurrentTemplate() {
   const t = getCurrentTemplate();
   const thumb = $("tplCurrentThumb"), name = $("tplCurrentName");
   if (t) {
-    if (thumb) thumb.src = t.src;
+    if (thumb) thumb.src = t.thumb || t.src; // kleines Thumbnail reicht für den Chip
     if (name) name.textContent = t.name;
   }
   updateLivePreview();
@@ -115,8 +115,9 @@ export function renderPicker() {
     card.dataset.file = t.file;
     card.dataset.cat = t.category;
     card.dataset.name = (t.name || "").toLowerCase();
+    // Kleines Thumbnail statt Vollbild (Performance bei 500+).
     card.innerHTML =
-      '<div class="pk-thumb"><img src="' + t.src + '" alt="" loading="lazy"></div>' +
+      '<div class="pk-thumb"><img src="' + (t.thumb || t.src) + '" alt="" loading="lazy"></div>' +
       '<div class="pk-name"></div>';
     card.querySelector(".pk-name").textContent = t.name;
     card.addEventListener("click", () => selectTemplate(t.file));
@@ -131,49 +132,29 @@ function filterPicker() {
   const q = (search ? search.value : "").trim().toLowerCase();
   for (const card of document.querySelectorAll(".pk-card")) {
     const okCat = activeCategory === "Alle" || card.dataset.cat === activeCategory;
-    const okSearch = !q || card.dataset.name.includes(q);
+    const okSearch = !q || card.dataset.name.includes(q) || (card.dataset.cat || "").toLowerCase().includes(q);
     card.style.display = okCat && okSearch ? "" : "none";
   }
 }
 
-// ── Inline-Galerie (Empty State) ─────────────────────────────────
-// Skalierbar bei großen Bibliotheken: kuratierte "Beliebt"-Startauswahl,
-// Kategorie-Filter, Live-Suche und Lazy-Loading (Batches + IntersectionObserver).
-// Ein Klick nutzt dieselbe Auswahl-Logik wie der Modal-Picker (selectTemplate).
-const GALLERY_BATCH = 18;       // Templates pro Lade-Schritt
-const FEATURED_FALLBACK = 12;   // erste N, falls kein Template "featured" gesetzt ist
-let galleryCategory = "Beliebt";
+// ── Inline-Galerie (Empty State) — skaliert auf 500+ Flyer ────────
+// Start mit KATEGORIE-KACHELN (Cover + Name + Anzahl). Klick öffnet die Kategorie
+// und zeigt deren Flyer als dichtes, lazy nachladendes Grid; „← Kategorien" führt
+// zurück, „Alle" zeigt kategorieübergreifend. Suche (Name + Kategorie +
+// Schlagwort) und Kategorie-Pills wirken zusammen. Klick auf einen Flyer öffnet
+// die Großansicht (Lightbox) mit „Diese Vorlage wählen". Auswahl-Weg identisch
+// zum Modal-Picker (selectTemplate).
+const GALLERY_BATCH = 24;       // Flyer pro Lade-Schritt
+let galleryView = "categories"; // "categories" | "flyers"
+let galleryCategory = "Alle";   // aktive Kategorie in der Flyer-Ansicht
 let gallerySearch = "";
-let galleryList = [];           // aktuell gefilterte Liste
-let galleryShown = 0;           // bereits gerenderte Anzahl
+let galleryList = [];
+let galleryShown = 0;
 let galleryObserver = null;
 
-function galleryFeatured() {
-  const feat = state.templates.filter((t) => t.featured);
-  return feat.length ? feat : state.templates.slice(0, FEATURED_FALLBACK);
-}
-
-// Aktuelle Trefferliste: Suche hat Vorrang (Name + Kategorie), sonst der
-// gewählte Filter ("Beliebt" = kuratiert, "Alle" = komplett, sonst Kategorie).
-function galleryFiltered() {
-  const q = gallerySearch.trim().toLowerCase();
-  if (q) {
-    return state.templates.filter((t) =>
-      (t.name || "").toLowerCase().includes(q) || (t.category || "").toLowerCase().includes(q));
-  }
-  if (galleryCategory === "Beliebt") return galleryFeatured();
-  if (galleryCategory === "Alle") return state.templates;
-  return state.templates.filter((t) => t.category === galleryCategory);
-}
-
-// Thumbnails laden erst, wenn ihre Karte (fast) im echten Sichtfeld ist — geprüft
-// über die tatsächliche Bildschirmposition (getBoundingClientRect), NICHT über
-// native loading="lazy" oder IntersectionObserver. Beide hängen am nächsten
-// Scroll-Container; auf Mobil scrollt aber die SEITE (nicht das Grid), und das
-// overflow:auto-Grid stört die Berechnung — auf iOS Safari blieben dadurch
-// Thumbnails leer ("nicht alle Templates laden"). Die Positionsprüfung greift
-// unabhängig davon, was scrollt — Mobil wie Desktop. Wichtig: 57 MB Bilder dürfen
-// NICHT auf einmal geladen werden, daher echtes Nachladen beim Scrollen.
+// Thumbnails laden erst, wenn ihre Karte (fast) im Sichtfeld ist — über die echte
+// Bildschirmposition (getBoundingClientRect), unabhängig davon, was scrollt (Seite
+// auf Mobil, Grid auf Desktop). Wichtig, damit nicht alle Bilder auf einmal laden.
 let pendingImgs = [];
 function loadVisibleGalleryImgs() {
   if (!pendingImgs.length) return;
@@ -184,6 +165,9 @@ function loadVisibleGalleryImgs() {
     if (r.bottom > -margin && r.top < vh + margin && img.dataset.src) {
       img.src = img.dataset.src;
       img.removeAttribute("data-src");
+      // Skeleton-Shimmer erst JETZT (beim echten Laden) — nicht auf hunderten
+      // Off-Screen-Karten dauerlaufen lassen (Performance bei 500+).
+      const card = img.closest(".tg-card"); if (card) card.classList.add("loading");
     }
     return !!img.dataset.src; // noch ungeladen → in der Warteschlange behalten
   });
@@ -194,21 +178,126 @@ export function onGalleryScroll() {
   imgScrollRaf = requestAnimationFrame(() => { imgScrollRaf = 0; loadVisibleGalleryImgs(); });
 }
 
-function galleryCard(t, i) {
+// Kleines, lazy geladenes Thumbnail (data-src → src erst im Sichtfeld). Nutzt das
+// optimierte /api/thumb, nicht die volle Auflösung.
+function lazyThumb(t) {
+  const img = document.createElement("img");
+  img.alt = t.name || "";
+  img.loading = "lazy";
+  img.dataset.src = t.thumb || t.src;
+  pendingImgs.push(img);
+  return img;
+}
+
+// Repräsentatives Bild einer Kategorie (featured zuerst, sonst das erste).
+function categoryCover(cat) {
+  const inCat = state.templates.filter((t) => t.category === cat);
+  return inCat.find((t) => t.featured) || inCat[0] || null;
+}
+
+// Aktuelle Flyer-Trefferliste: Kategorie-Filter UND Suche (Name + Kategorie +
+// Schlagworte) kombiniert. Das Schlagwort-Feld ist für die spätere Befüllung da.
+function galleryFlyersList() {
+  const q = gallerySearch.trim().toLowerCase();
+  let list = galleryCategory === "Alle" ? state.templates
+    : state.templates.filter((t) => t.category === galleryCategory);
+  if (q) list = list.filter((t) =>
+    (t.name || "").toLowerCase().includes(q) ||
+    (t.category || "").toLowerCase().includes(q) ||
+    (t.keywords || []).some((k) => String(k).toLowerCase().includes(q)));
+  return list;
+}
+
+// ── Kategorie-Übersicht (Standard-Start) ──
+function renderCategories() {
+  const grid = $("tgGrid"), cats = $("tgCats"), empty = $("tgEmpty"), count = $("tgCount");
+  if (!grid) return;
+  if (cats) { cats.innerHTML = ""; cats.hidden = true; }
+  if (empty) empty.hidden = true;
+  if (count) count.textContent = state.templates.length + " Vorlagen · " + state.categories.length + " Kategorien";
+  pendingImgs = [];
+  grid.classList.add("tg-grid--cats");
+  grid.classList.remove("tg-grid--dense");
+  grid.style.display = "";
+  grid.scrollTop = 0;
+  grid.innerHTML = "";
+  const entries = [
+    { category: "Alle", cover: state.templates[0], count: state.templates.length, all: true },
+    ...state.categories.map((c) => ({
+      category: c, cover: categoryCover(c), count: state.templates.filter((t) => t.category === c).length,
+    })),
+  ];
+  const frag = document.createDocumentFragment();
+  for (const e of entries) {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "tg-catcard" + (e.all ? " tg-catcard--all" : "");
+    card.dataset.cat = e.category;
+    const thumb = document.createElement("div");
+    thumb.className = "tg-catcard-thumb";
+    if (e.cover) thumb.appendChild(lazyThumb(e.cover));
+    const meta = document.createElement("div");
+    meta.className = "tg-catcard-meta";
+    meta.innerHTML = '<span class="tg-catcard-name"></span><span class="tg-catcard-count"></span>';
+    meta.querySelector(".tg-catcard-name").textContent = e.category;
+    meta.querySelector(".tg-catcard-count").textContent = e.count;
+    card.appendChild(thumb);
+    card.appendChild(meta);
+    card.addEventListener("click", () => openCategory(e.category));
+    frag.appendChild(card);
+  }
+  grid.appendChild(frag);
+  loadVisibleGalleryImgs();
+}
+
+function openCategory(cat) {
+  galleryView = "flyers";
+  galleryCategory = cat;
+  gallerySearch = "";
+  const s = $("tgSearch"); if (s) s.value = "";
+  renderFlyers();
+}
+function backToCategories() {
+  galleryView = "categories";
+  galleryCategory = "Alle";
+  gallerySearch = "";
+  const s = $("tgSearch"); if (s) s.value = "";
+  renderCategories();
+}
+
+// ── Flyer-Ansicht (dichtes Grid innerhalb einer Kategorie / Suche) ──
+function renderFlyersChrome() {
+  const cats = $("tgCats");
+  if (!cats) return;
+  cats.hidden = false;
+  cats.innerHTML = "";
+  const back = document.createElement("button");
+  back.type = "button";
+  back.className = "tg-back";
+  back.textContent = "← Kategorien";
+  cats.appendChild(back);
+  for (const c of ["Alle", ...state.categories]) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "tg-cat" + (c === galleryCategory ? " active" : "");
+    b.dataset.cat = c;
+    b.textContent = c;
+    cats.appendChild(b);
+  }
+}
+
+function flyerCard(t, i) {
   const card = document.createElement("button");
   card.type = "button";
   card.className = "tg-card";
   card.dataset.file = t.file;
-  card.style.animationDelay = Math.min(i * 18, 280) + "ms"; // schneller Stagger
-  const img = document.createElement("img");
-  img.alt = t.name || "";
+  card.style.animationDelay = Math.min(i * 12, 240) + "ms";
+  const img = lazyThumb(t);
   const done = () => card.classList.add("loaded"); // entfernt das Skeleton-Shimmer
   img.addEventListener("load", done, { once: true });
   img.addEventListener("error", done, { once: true });
-  img.dataset.src = t.src;       // src wird gesetzt, sobald die Karte ins Sichtfeld kommt
-  pendingImgs.push(img);
   card.appendChild(img);
-  card.addEventListener("click", () => selectTemplate(t.file));
+  card.addEventListener("click", () => openFlyerLightbox(t)); // Klick = Großansicht
   return card;
 }
 
@@ -217,18 +306,18 @@ function galleryRenderNext() {
   if (!grid) return;
   const slice = galleryList.slice(galleryShown, galleryShown + GALLERY_BATCH);
   const frag = document.createDocumentFragment();
-  slice.forEach((t, i) => frag.appendChild(galleryCard(t, galleryShown + i)));
+  slice.forEach((t, i) => frag.appendChild(flyerCard(t, galleryShown + i)));
   grid.appendChild(frag);
   galleryShown += slice.length;
   loadVisibleGalleryImgs(); // sofort die jetzt sichtbaren Thumbnails laden
   galleryObserve();
 }
 
-// IntersectionObserver am letzten gerenderten Element: lädt beim Heranscrollen
-// die nächste Charge nach. Wird bei jedem Filter-/Suchwechsel zurückgesetzt.
+// IntersectionObserver am letzten Element: lädt beim Heranscrollen die nächste
+// Charge nach. Wird bei jedem Filter-/Suchwechsel zurückgesetzt.
 function galleryObserve() {
   if (galleryObserver) { galleryObserver.disconnect(); galleryObserver = null; }
-  if (galleryShown >= galleryList.length) return; // alles gerendert
+  if (galleryShown >= galleryList.length) return;
   const grid = $("tgGrid");
   const last = grid && grid.lastElementChild;
   if (!last || typeof IntersectionObserver === "undefined") return;
@@ -241,17 +330,66 @@ function galleryObserve() {
   galleryObserver.observe(last);
 }
 
-// Filter/Suche anwenden: Liste neu bestimmen, Lazy-Counter zurück, erste Charge.
+// Flyer-Liste anwenden: Treffer bestimmen, Lazy-Counter zurück, erste Charge.
 function galleryApply() {
-  galleryList = galleryFiltered();
+  galleryList = galleryFlyersList();
   galleryShown = 0;
   if (galleryObserver) { galleryObserver.disconnect(); galleryObserver = null; }
-  pendingImgs = []; // alte Warteschlange verwerfen; neue Karten füllen sie neu
-  const grid = $("tgGrid"), empty = $("tgEmpty");
+  pendingImgs = [];
+  const grid = $("tgGrid"), empty = $("tgEmpty"), count = $("tgCount");
   if (grid) { grid.scrollTop = 0; grid.innerHTML = ""; grid.style.display = galleryList.length ? "" : "none"; }
   if (empty) empty.hidden = galleryList.length > 0;
+  if (count) {
+    const scope = gallerySearch.trim() ? '„' + gallerySearch.trim() + '"'
+      : (galleryCategory === "Alle" ? "Alle" : galleryCategory);
+    count.textContent = scope + " · " + galleryList.length;
+  }
   galleryRenderNext();
 }
+
+function renderFlyers() {
+  const grid = $("tgGrid");
+  if (grid) { grid.classList.remove("tg-grid--cats"); grid.classList.add("tg-grid--dense"); }
+  renderFlyersChrome();
+  galleryApply();
+}
+
+// Dispatcher: Kategorie-Übersicht oder Flyer-Ansicht.
+function galleryRender() {
+  if (galleryView === "categories") renderCategories();
+  else renderFlyers();
+}
+
+// ── Großansicht (Lightbox) — volle Auflösung + „Vorlage wählen" ──
+let flyerLightbox = null;
+function ensureFlyerLightbox() {
+  if (flyerLightbox) return flyerLightbox;
+  const ov = document.createElement("div");
+  ov.className = "tg-lightbox";
+  ov.id = "tgLightbox";
+  ov.hidden = true;
+  ov.innerHTML =
+    '<div class="tg-lb-inner">' +
+      '<button class="tg-lb-close" type="button" aria-label="Schließen">✕</button>' +
+      '<img class="tg-lb-img" alt="">' +
+      '<div class="tg-lb-bar"><span class="tg-lb-name"></span>' +
+        '<button class="rbtn rbtn-primary tg-lb-pick" type="button">Diese Vorlage wählen</button></div>' +
+    '</div>';
+  ov.addEventListener("click", (e) => {
+    if (e.target === ov || e.target.closest(".tg-lb-close")) closeFlyerLightbox();
+  });
+  document.body.appendChild(ov);
+  flyerLightbox = ov;
+  return ov;
+}
+function openFlyerLightbox(t) {
+  const ov = ensureFlyerLightbox();
+  ov.querySelector(".tg-lb-img").src = t.src; // volle Auflösung NUR hier
+  ov.querySelector(".tg-lb-name").textContent = t.name || "";
+  ov.querySelector(".tg-lb-pick").onclick = () => { closeFlyerLightbox(); selectTemplate(t.file); };
+  ov.hidden = false;
+}
+function closeFlyerLightbox() { if (flyerLightbox) flyerLightbox.hidden = true; }
 
 export function renderGallery() {
   if (!$("tgGrid")) return;
@@ -263,56 +401,54 @@ export function renderGallery() {
     if (err) err.hidden = false;
     const grid = $("tgGrid"); if (grid) { grid.innerHTML = ""; grid.style.display = "none"; }
     const empty = $("tgEmpty"); if (empty) empty.hidden = true;
+    const cats = $("tgCats"); if (cats) { cats.innerHTML = ""; cats.hidden = true; }
     const cnt = $("tgCount"); if (cnt) cnt.textContent = "";
     return;
   }
   if (err) err.hidden = true;
-  const count = $("tgCount");
-  if (count) count.textContent = state.templates.length ? state.templates.length + " Vorlagen" : "";
-  const cats = $("tgCats");
-  if (cats) {
-    cats.innerHTML = "";
-    for (const c of ["Beliebt", "Alle", ...state.categories]) {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "tg-cat" + (c === galleryCategory ? " active" : "");
-      b.dataset.cat = c;
-      b.textContent = c;
-      cats.appendChild(b);
-    }
-  }
-  galleryApply();
+  // Immer mit der Kategorie-Übersicht starten (nicht sofort alle Flyer).
+  galleryView = "categories";
+  galleryCategory = "Alle";
+  gallerySearch = "";
+  const s = $("tgSearch"); if (s) s.value = "";
+  galleryRender();
 }
 
-// Suche + Filter-Pills verdrahten (aus initPicker aufgerufen).
+// Suche + Filter-Pills + Zurück verdrahten (aus initPicker aufgerufen).
 export function bindGalleryControls() {
   const search = $("tgSearch");
-  if (search) search.addEventListener("input", () => { gallerySearch = search.value; galleryApply(); });
+  if (search) search.addEventListener("input", () => {
+    gallerySearch = search.value;
+    // Suche wechselt in die Flyer-Ansicht (kategorieübergreifend, wenn aus der Übersicht).
+    if (gallerySearch.trim() && galleryView === "categories") galleryView = "flyers";
+    galleryRender();
+  });
   const retry = $("tgRetry");
   if (retry) retry.addEventListener("click", () => reloadTemplates(retry));
-  // Thumbnails beim Scrollen nachladen — Capture auf window fängt sowohl das
-  // Seiten-Scrollen (Mobil) als auch das Grid-Scrollen (Desktop) ab.
+  // Thumbnails beim Scrollen nachladen — Capture auf window fängt Seiten- (Mobil)
+  // und Grid-Scrollen (Desktop).
   window.addEventListener("scroll", onGalleryScroll, true);
   window.addEventListener("resize", onGalleryScroll);
   // Mehr Karten nachladen, wenn das Grid nahe ans Ende scrollt (Desktop).
   const grid = $("tgGrid");
   if (grid) grid.addEventListener("scroll", () => {
-    if (galleryShown < galleryList.length && grid.scrollTop + grid.clientHeight >= grid.scrollHeight - 400) {
+    if (galleryView === "flyers" && galleryShown < galleryList.length &&
+        grid.scrollTop + grid.clientHeight >= grid.scrollHeight - 400) {
       galleryRenderNext();
     }
   });
   const cats = $("tgCats");
-  if (cats) {
-    cats.addEventListener("click", (e) => {
-      const b = e.target.closest(".tg-cat");
-      if (!b) return;
-      galleryCategory = b.dataset.cat;
-      gallerySearch = "";
-      const s = $("tgSearch"); if (s) s.value = ""; // Kategorie-Klick setzt die Suche zurück
-      for (const p of cats.querySelectorAll(".tg-cat")) p.classList.toggle("active", p === b);
-      galleryApply();
-    });
-  }
+  if (cats) cats.addEventListener("click", (e) => {
+    if (e.target.closest(".tg-back")) { backToCategories(); return; }
+    const b = e.target.closest(".tg-cat");
+    if (!b) return;
+    galleryCategory = b.dataset.cat;
+    for (const p of cats.querySelectorAll(".tg-cat")) p.classList.toggle("active", p === b);
+    galleryApply(); // Suchbegriff bleibt erhalten → Kategorie + Suche kombinierbar
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && flyerLightbox && !flyerLightbox.hidden) closeFlyerLightbox();
+  });
 }
 
 export function openPicker() {

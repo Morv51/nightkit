@@ -10,6 +10,7 @@ const replicate             = require("./lib/replicate");
 const fal                   = require("./lib/fal");
 const jobs                  = require("./lib/jobs");
 const templates             = require("./lib/templates");
+const thumbs                = require("./lib/thumbs");
 const { createServer: createStatic } = require("./lib/static");
 const { proxy }             = require("./lib/proxy");
 const { webmToMp4 }         = require("./lib/convert");
@@ -426,13 +427,39 @@ router.get("/api/templates", (_req, res) => {
     name: t.name,
     category: t.category,
     featured: t.featured,
+    // Schlagworte pro Flyer: Struktur für die spätere Befüllung (jetzt meist leer).
+    // Die Suche durchsucht dieses Feld bereits mit.
+    keywords: t.keywords || [],
     // Pfad pro Segment URL-encodieren (Ordnernamen mit Leerzeichen/„&").
     src: "/templates/" + t.file.split("/").map(encodeURIComponent).join("/"),
+    // Optimiertes Vorschau-Thumbnail (klein, ~360px) fürs Grid. Volle Auflösung
+    // (src) nur in der Großansicht.
+    thumb: "/api/thumb?w=360&file=" + encodeURIComponent(t.file),
   }));
   // Liste immer frisch laden — nie eine veraltete (evtl. leere) Version aus dem
   // Browser-/Proxy-Cache ausliefern (kann sonst eine leere Galerie verursachen).
   res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
   sendJson(res, 200, { templates: list, categories: templates.categories() });
+});
+
+// Optimiertes Thumbnail eines Templates (kleines JPEG, gecacht). Skaliert die
+// Galerie auf 500+ Flyer, ohne die vollen Bilder zu laden. w ∈ {180,360,720}.
+router.get("/api/thumb", async (req, res) => {
+  const q = req.urlQuery || {};
+  const file = q.file || ""; // urlQuery ist bereits dekodiert (URLSearchParams)
+  if (!file) { res.writeHead(400); return res.end("file required"); }
+  try {
+    const buf = await thumbs.getThumb(file, q.w);
+    res.setHeader("Content-Type", "image/jpeg");
+    res.setHeader("Content-Length", buf.length);
+    res.setHeader("Cache-Control", "public, max-age=86400"); // Thumbnails sind stabil
+    res.writeHead(200);
+    res.end(buf);
+  } catch (e) {
+    console.error("thumb error:", e.message);
+    res.writeHead(404);
+    res.end("thumb not available");
+  }
 });
 
 router.post("/api/convert", async (req, res) => {
