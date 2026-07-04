@@ -450,7 +450,7 @@ router.get("/api/thumb", async (req, res) => {
   if (!file) { res.writeHead(400); return res.end("file required"); }
   try {
     const buf = await thumbs.getThumb(file, q.w);
-    res.setHeader("Content-Type", "image/jpeg");
+    res.setHeader("Content-Type", "image/webp");
     res.setHeader("Content-Length", buf.length);
     res.setHeader("Cache-Control", "public, max-age=86400"); // Thumbnails sind stabil
     res.writeHead(200);
