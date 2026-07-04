@@ -36,6 +36,7 @@
         <button class="studio-tab" type="button" data-tab="mode2">Moodboard → Prompt</button>
         <button class="studio-tab" type="button" data-tab="auto">Auto-Flow 1 <span class="tab-beta">Beta</span></button>
         <button class="studio-tab" type="button" data-tab="auto2">Auto-Flow 2 <span class="tab-beta">Beta</span></button>
+        <button class="studio-tab" type="button" data-tab="keywords">Schlagworte</button>
       </div>
       <button class="rbtn rbtn-ghost studio-lock" id="lockBtn" type="button" title="Sperren">⊘ Sperren</button>
     </header>
@@ -278,6 +279,39 @@
           </div>
 
           <div class="batch-list" id="af2List"></div>
+        </div>
+      </section>
+
+      <section class="studio-panel" id="panel-keywords" data-tab="keywords" hidden>
+        <div class="studio-single">
+          <div class="st-card">
+            <div class="st-head">Schlagworte <span class="kw-count" id="kwCount"></span></div>
+            <div class="st-mini-note">Verschlagwortet die Flyer automatisch per <b>Sonnet</b> (Motiv, Farbwelt, Stimmung/Stil, Person) und speichert sie dauerhaft in <b>templates/keywords.json</b>. Die Schlagworte erscheinen in der App als <b>Filter-Chips</b> innerhalb einer Kategorie und werden von der <b>Suche</b> mitdurchsucht. Einzelne Flyer kannst du unten von Hand nachbessern (Chip ✕ löschen, „+ Schlagwort" hinzufügen) oder mit ↻ neu verschlagworten. <b>Wichtig:</b> Nach dem Stapel-Lauf „keywords.json herunterladen" und ins Repo committen, sonst gehen die Schlagworte beim nächsten Deploy verloren.</div>
+          </div>
+
+          <div class="st-card">
+            <div class="st-head">1 · Automatisch verschlagworten (Stapel)</div>
+            <div class="st-row">
+              <button class="rbtn rbtn-primary" id="kwTagAll" type="button">▶ Alle verschlagworten</button>
+              <button class="rbtn rbtn-danger" id="kwCancel" type="button" hidden>Abbrechen</button>
+              <label class="kw-force"><input type="checkbox" id="kwForce"> auch bereits verschlagwortete neu</label>
+              <span class="af-time" id="kwProgress"></span>
+            </div>
+            <div class="st-mini-note">Läuft nacheinander (je Flyer wenige Sekunden), überspringt schon verschlagwortete und speichert jedes Ergebnis sofort — ein Abbruch verliert nichts. Bei ~206 Flyern dauert der erste Lauf ein paar Minuten; das Tab muss offen bleiben.</div>
+            <div class="st-row" style="margin-top:10px">
+              <button class="rbtn rbtn-ghost" id="kwDownload" type="button">⬇ keywords.json herunterladen</button>
+            </div>
+          </div>
+
+          <div class="st-card">
+            <div class="st-head">2 · Nachbessern <span class="kw-count" id="kwShown"></span></div>
+            <div class="st-row">
+              <select class="st-select" id="kwCat" aria-label="Kategorie"></select>
+              <label class="kw-force"><input type="checkbox" id="kwUntagged"> nur ohne Schlagworte</label>
+              <input type="search" class="zone-text" id="kwSearch" placeholder="Filtern (Name/Schlagwort)…" style="flex:1;min-width:160px">
+            </div>
+            <div class="kw-list" id="kwList"></div>
+          </div>
         </div>
       </section>
     </main>

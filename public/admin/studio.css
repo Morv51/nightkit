@@ -583,3 +583,22 @@ html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: aut
 @media (max-width: 860px) {
   .studio-grid { grid-template-columns: 1fr; }
 }
+
+/* ── Schlagworte-Werkzeug ────────────────────────────────────────── */
+.kw-count { font-size: 12px; font-weight: 600; color: var(--color-text-muted, #888); margin-left: 8px; }
+.kw-force { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--color-text-muted, #aaa); white-space: nowrap; cursor: pointer; }
+.kw-force input { accent-color: var(--color-accent, #ccff00); }
+.kw-list { margin-top: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; max-height: 62vh; overflow-y: auto; padding-right: 4px; }
+.kw-card { display: flex; gap: 10px; border: 1px solid var(--color-border, #222); border-radius: 10px; padding: 8px; background: var(--card-inset, #0d0d0d); }
+.kw-thumb { flex: 0 0 54px; width: 54px; height: 96px; object-fit: cover; border-radius: 6px; background: #111; display: block; }
+.kw-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.kw-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.kw-name { font-size: 12px; font-weight: 600; color: var(--color-text, #fff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kw-retag { flex: 0 0 auto; width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--color-border, #333); background: transparent; color: var(--color-text-muted, #aaa); font-size: 13px; cursor: pointer; }
+.kw-retag:hover { border-color: var(--color-accent, #ccff00); color: var(--color-accent, #ccff00); }
+.kw-chips { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.kw-chip { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; padding: 2px 4px 2px 8px; border-radius: 100px; background: rgba(204,255,0,.1); border: 1px solid rgba(204,255,0,.35); color: var(--color-text, #eee); }
+.kw-x { width: 15px; height: 15px; border: none; border-radius: 50%; background: rgba(255,255,255,.12); color: #fff; font-size: 11px; line-height: 1; cursor: pointer; padding: 0; }
+.kw-x:hover { background: #dc2626; }
+.kw-add { width: 96px; font-size: 11px; padding: 3px 8px; background: var(--color-surface-2, #1a1a1a); border: 1px dashed var(--color-border, #333); border-radius: 100px; color: var(--color-text, #fff); outline: none; }
+.kw-add:focus { border-color: var(--color-accent, #ccff00); border-style: solid; }

@@ -136,6 +136,8 @@ function createGallery(cfg) {
   const el = (id) => (id ? document.getElementById(id) : null);
   const BATCH = 24;
   let view = "categories", category = "Alle", search = "", list = [], shown = 0, observer = null, pendingImgs = [];
+  const activeKw = new Set(); // aktive Schlagwort-Filter-Chips (kombinierbar, UND-Logik)
+  let kwbarEl = null;         // Chip-Leiste (lazy erzeugt, als Geschwister nach cfg.cats)
 
   function loadVisible() {
     if (!pendingImgs.length) return;
@@ -164,6 +166,11 @@ function createGallery(cfg) {
   function flyersList() {
     const q = search.trim().toLowerCase();
     let l = category === "Alle" ? state.templates : state.templates.filter((t) => t.category === category);
+    // Schlagwort-Chips: jeder aktive Chip MUSS im Flyer stecken (UND / kombinierbar).
+    if (activeKw.size) l = l.filter((t) => {
+      const ks = (t.keywords || []).map((k) => String(k).toLowerCase());
+      return [...activeKw].every((a) => ks.includes(a));
+    });
     if (q) l = l.filter((t) =>
       (t.name || "").toLowerCase().includes(q) ||
       (t.category || "").toLowerCase().includes(q) ||
@@ -171,11 +178,51 @@ function createGallery(cfg) {
     return l;
   }
 
+  // Häufigste Schlagworte der aktuellen Kategorie (für die Filter-Chips).
+  function topKeywords() {
+    const scope = category === "Alle" ? state.templates : state.templates.filter((t) => t.category === category);
+    const freq = new Map();
+    for (const t of scope) for (const k of (t.keywords || [])) {
+      const w = String(k).toLowerCase(); if (!w) continue;
+      freq.set(w, (freq.get(w) || 0) + 1);
+    }
+    return [...freq.entries()].sort((a, b) => b[1] - a[1]).slice(0, 14).map((e) => e[0]);
+  }
+  function ensureKwbar() {
+    if (kwbarEl) return kwbarEl;
+    const cats = el(cfg.cats);
+    if (!cats || !cats.parentNode) return null;
+    kwbarEl = document.createElement("div");
+    kwbarEl.className = "tg-kwbar";
+    cats.parentNode.insertBefore(kwbarEl, cats.nextSibling); // zwischen Kategorie-Pills und Grid
+    return kwbarEl;
+  }
+  function renderKwbar() {
+    const bar = ensureKwbar();
+    if (!bar) return;
+    const chips = [...new Set([...topKeywords(), ...activeKw])]; // aktive immer sichtbar
+    if (!chips.length) { bar.hidden = true; bar.innerHTML = ""; return; }
+    bar.hidden = false; bar.innerHTML = "";
+    for (const w of chips) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "tg-kw" + (activeKw.has(w) ? " active" : "");
+      b.textContent = w;
+      b.addEventListener("click", () => {
+        if (activeKw.has(w)) activeKw.delete(w); else activeKw.add(w);
+        renderKwbar();
+        applyFlyers();
+      });
+      bar.appendChild(b);
+    }
+  }
+
   // ── Kategorie-Übersicht (Einstieg) ──
   function renderCategories() {
     const grid = el(cfg.grid), cats = el(cfg.cats), empty = el(cfg.empty);
     if (!grid) return;
     if (cats) { cats.innerHTML = ""; cats.hidden = true; }
+    if (kwbarEl) { kwbarEl.hidden = true; kwbarEl.innerHTML = ""; }
     if (empty) empty.hidden = true;
     setCount(state.templates.length + " Vorlagen · " + state.categories.length + " Kategorien");
     pendingImgs = [];
@@ -214,12 +261,12 @@ function createGallery(cfg) {
   }
 
   function openCategory(cat) {
-    view = "flyers"; category = cat; search = "";
+    view = "flyers"; category = cat; search = ""; activeKw.clear();
     const s = el(cfg.search); if (s) s.value = "";
     renderFlyers();
   }
   function backToCategories() {
-    view = "categories"; category = "Alle"; search = "";
+    view = "categories"; category = "Alle"; search = ""; activeKw.clear();
     const s = el(cfg.search); if (s) s.value = "";
     renderCategories();
   }
@@ -298,6 +345,7 @@ function createGallery(cfg) {
     const grid = el(cfg.grid);
     if (grid) { grid.classList.add("tg-grid"); grid.classList.remove("tg-grid--cats"); grid.classList.add("tg-grid--dense"); }
     renderChrome();
+    renderKwbar();
     applyFlyers();
   }
 
@@ -319,7 +367,7 @@ function createGallery(cfg) {
     }
     if (err) err.hidden = true;
     // Immer mit der Kategorie-Übersicht starten.
-    view = "categories"; category = "Alle"; search = "";
+    view = "categories"; category = "Alle"; search = ""; activeKw.clear();
     const s = el(cfg.search); if (s) s.value = "";
     dispatch();
   }

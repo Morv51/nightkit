@@ -17,6 +17,7 @@ function showStudio() {
   import("./mode1.js").then((m) => m.initMode1 && m.initMode1()).catch(() => {});
   import("./autoflow.js").then((m) => m.initAutoflow && m.initAutoflow()).catch(() => {});
   import("./autoflow2.js").then((m) => m.initAutoflow2 && m.initAutoflow2()).catch(() => {});
+  import("./keywords.js").then((m) => m.initKeywords && m.initKeywords()).catch(() => {});
 }
 
 async function unlock(e) {
