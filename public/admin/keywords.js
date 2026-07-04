@@ -35,21 +35,25 @@ async function tagAll() {
   if (!todo.length) { setStatus("Nichts zu tun — alle bereits verschlagwortet."); return; }
   running = true; cancelled = false;
   $("kwTagAll").disabled = true; $("kwCancel").hidden = false;
-  let done = 0, fail = 0;
+  let done = 0, fail = 0, empty = 0, firstErr = "";
   for (const t of todo) {
     if (cancelled) break;
     setStatus("Verschlagworte " + (done + 1) + " von " + todo.length + " … (" + t.name + ")");
     try {
       const r = await post("/admin/tag-one", { file: t.file, force });
+      const ks = r.keywords || [];
       const it = items.find((x) => x.file === t.file);
-      if (it) it.keywords = r.keywords || [];
-    } catch (e) { fail++; }
+      if (it) it.keywords = ks;
+      if (!ks.length) empty++;
+    } catch (e) { fail++; if (!firstErr) firstErr = e.message; }
     done++;
     updateHeader();
   }
   running = false; $("kwTagAll").disabled = false; $("kwCancel").hidden = true;
-  setStatus((cancelled ? "Abgebrochen — " : "Fertig — ") + taggedCount() + " von " + items.length +
-    " verschlagwortet" + (fail ? " · " + fail + " Fehler" : ""));
+  let msg = (cancelled ? "Abgebrochen — " : "Fertig — ") + taggedCount() + " von " + items.length + " verschlagwortet";
+  if (fail) msg += " · " + fail + " Fehler" + (firstErr ? " (z. B.: " + firstErr + ")" : "");
+  if (empty) msg += " · " + empty + " ohne Ergebnis";
+  setStatus(msg);
   render();
 }
 
