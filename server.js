@@ -543,6 +543,14 @@ server.timeout = 120000;
 server.listen(PORT, () => {
   jobs.startSweeper();
   console.log(`NightKit on port ${PORT}`);
+  // Optionaler, EINMALIGER R2-Verbindungstest beim Start, nur wenn R2_SELFTEST=1.
+  // Additiv + isoliert: nicht-blockierend (fire-and-forget), faengt alles ab und
+  // kann den Start/Betrieb NIE stoeren. Ohne R2_SELFTEST=1 passiert gar nichts.
+  // Beruehrt weder edit-Flow (Ideogram) noch Auto-Flow 1/2.
+  if (process.env.R2_SELFTEST === "1") {
+    try { require("./test-r2").runR2SelfTest().catch(() => {}); }
+    catch (e) { console.log("[R2-SELFTEST] ERGEBNIS: FEHLER: Test nicht startbar: " + (e && e.message ? e.message : e)); }
+  }
 });
 
 function shutdown() {
