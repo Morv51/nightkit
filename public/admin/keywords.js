@@ -130,6 +130,36 @@ async function download() {
   } catch (e) { notify("Export fehlgeschlagen: " + e.message, "error"); }
 }
 
+// Diagnose: EINEN Flyer taggen und sichtbar zeigen, was das Modell liefert UND ob
+// es in der Bibliothek ankommt (persistiert). Ein Klick → eindeutiges Ergebnis.
+async function testOne() {
+  const out = $("kwTestOut"); if (!out) return;
+  out.hidden = false; out.textContent = "Teste … (kann ein paar Sekunden dauern)";
+  const t = items.find((x) => !(x.keywords && x.keywords.length)) || items[0];
+  if (!t) { out.textContent = "Keine Flyer geladen."; return; }
+  try {
+    const r = await post("/admin/tag-one", { file: t.file, force: true });
+    let saved = [];
+    try {
+      const chk = await (await fetch("/api/templates", { cache: "no-store" })).json();
+      saved = ((chk.templates || []).find((x) => x.file === t.file) || {}).keywords || [];
+    } catch {}
+    const it = items.find((x) => x.file === t.file); if (it) it.keywords = saved;
+    updateHeader(); render();
+    out.textContent =
+      "Flyer: " + t.name + "\n" +
+      "Modell-Antwort: " + JSON.stringify(r.keywords || []) + "\n" +
+      "In der Bibliothek gespeichert: " + JSON.stringify(saved) + "\n" +
+      (saved.length
+        ? "→ ✓ Funktioniert! Jetzt „Alle verschlagworten“ starten."
+        : (r.keywords && r.keywords.length
+            ? "→ ⚠ Modell liefert Schlagworte, aber sie werden NICHT gespeichert (Schreibrechte/Pfad)."
+            : "→ ⚠ Modell liefert KEINE Schlagworte."));
+  } catch (e) {
+    out.textContent = "Flyer: " + t.name + "\n✗ FEHLER: " + e.message;
+  }
+}
+
 export async function initKeywords() {
   const panel = $("panel-keywords"); if (!panel) return;
   try { await loadList(); } catch (e) { setStatus("Liste konnte nicht geladen werden: " + e.message); return; }
@@ -146,6 +176,7 @@ export async function initKeywords() {
   if ($("kwTagAll")) $("kwTagAll").addEventListener("click", tagAll);
   if ($("kwCancel")) $("kwCancel").addEventListener("click", () => { if (running) { cancelled = true; setStatus("Abbrechen …"); } });
   if ($("kwDownload")) $("kwDownload").addEventListener("click", download);
+  if ($("kwTest")) $("kwTest").addEventListener("click", testOne);
   updateHeader();
   render();
 }

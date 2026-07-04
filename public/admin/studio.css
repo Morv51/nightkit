@@ -602,3 +602,5 @@ html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: aut
 .kw-x:hover { background: #dc2626; }
 .kw-add { width: 96px; font-size: 11px; padding: 3px 8px; background: var(--color-surface-2, #1a1a1a); border: 1px dashed var(--color-border, #333); border-radius: 100px; color: var(--color-text, #fff); outline: none; }
 .kw-add:focus { border-color: var(--color-accent, #ccff00); border-style: solid; }
+.kw-testout { margin-top: 10px; padding: 10px 12px; border: 1px solid var(--color-border, #333); border-radius: 8px; background: #0a0a0a; color: var(--color-text, #eee); font-size: 12px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.kw-testout[hidden] { display: none; }
