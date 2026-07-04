@@ -31,8 +31,12 @@ async function tagAll() {
   if (running) return;
   await loadList();
   const force = $("kwForce") && $("kwForce").checked;
-  const todo = force ? items.slice() : items.filter((t) => !(t.keywords && t.keywords.length));
-  if (!todo.length) { setStatus("Nichts zu tun — alle bereits verschlagwortet."); return; }
+  // Umfang = die unten gewählte Kategorie (oder alle) → zuerst eine Kategorie testbar.
+  const cat = $("kwCat") ? $("kwCat").value : "__all";
+  const scope = cat === "__all" ? items : items.filter((t) => t.category === cat);
+  const scopeLabel = cat === "__all" ? "alle Kategorien" : "„" + cat + "“";
+  const todo = force ? scope.slice() : scope.filter((t) => !(t.keywords && t.keywords.length));
+  if (!todo.length) { setStatus("Nichts zu tun in " + scopeLabel + " — alle bereits verschlagwortet."); return; }
   running = true; cancelled = false;
   $("kwTagAll").disabled = true; $("kwCancel").hidden = false;
   let done = 0, fail = 0, empty = 0, firstErr = "";
@@ -50,7 +54,8 @@ async function tagAll() {
     updateHeader();
   }
   running = false; $("kwTagAll").disabled = false; $("kwCancel").hidden = true;
-  let msg = (cancelled ? "Abgebrochen — " : "Fertig — ") + taggedCount() + " von " + items.length + " verschlagwortet";
+  const scopeTagged = scope.filter((t) => t.keywords && t.keywords.length).length;
+  let msg = (cancelled ? "Abgebrochen — " : "Fertig — ") + scopeTagged + " von " + scope.length + " verschlagwortet (" + scopeLabel + ")";
   if (fail) msg += " · " + fail + " Fehler" + (firstErr ? " (z. B.: " + firstErr + ")" : "");
   if (empty) msg += " · " + empty + " ohne Ergebnis";
   setStatus(msg);

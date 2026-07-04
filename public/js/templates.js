@@ -181,12 +181,19 @@ function createGallery(cfg) {
   // Häufigste Schlagworte der aktuellen Kategorie (für die Filter-Chips).
   function topKeywords() {
     const scope = category === "Alle" ? state.templates : state.templates.filter((t) => t.category === category);
+    const n = scope.length || 1;
     const freq = new Map();
-    for (const t of scope) for (const k of (t.keywords || [])) {
-      const w = String(k).toLowerCase(); if (!w) continue;
-      freq.set(w, (freq.get(w) || 0) + 1);
+    for (const t of scope) for (const k of new Set((t.keywords || []).map((x) => String(x).toLowerCase()))) {
+      if (!k) continue;
+      freq.set(k, (freq.get(k) || 0) + 1);
     }
-    return [...freq.entries()].sort((a, b) => b[1] - a[1]).slice(0, 14).map((e) => e[0]);
+    // Nur UNTERSCHEIDENDE Chips: von mind. 2 Flyern geteilt, aber NICHT auf über 80 %
+    // aller Flyer (Allerwelts-Tags unterscheiden nicht → werden nicht als Filter angeboten).
+    return [...freq.entries()]
+      .filter(([, c]) => c >= 2 && c / n <= 0.8)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 16)
+      .map((e) => e[0]);
   }
   function ensureKwbar() {
     if (kwbarEl) return kwbarEl;
