@@ -210,6 +210,10 @@ function createGallery(cfg) {
     const chips = [...new Set([...topKeywords(), ...activeKw])]; // aktive immer sichtbar
     if (!chips.length) { bar.hidden = true; bar.innerHTML = ""; return; }
     bar.hidden = false; bar.innerHTML = "";
+    // Kleines „Filter"-Label, damit die Tag-Zeile klar von der Kategorie-Leiste darüber getrennt ist.
+    const label = document.createElement("span");
+    label.className = "tg-kw-label"; label.textContent = "Filter";
+    bar.appendChild(label);
     for (const w of chips) {
       const b = document.createElement("button");
       b.type = "button";
