@@ -349,15 +349,16 @@ async function run() {
 
     // 3) 6 Varianten-Prompts (bestehender Generator)
     setPhase(tag + "Varianten-Prompts …");
-    let variants = [];
+    let variants = [], varErr = "";
     try { const vr = await post("/admin/auto-variants", { dna, count: VARIANTS, refType: "single", model: MODEL, loose: (pathMode === "near") }); variants = (vr && vr.variants) || []; }
-    catch (e) { notify(tag + "Varianten-Prompts fehlgeschlagen: " + e.message, "error"); }
+    catch (e) { varErr = e.message; notify(tag + "Varianten-Prompts fehlgeschlagen: " + e.message, "error"); }
 
     // 4) Varianten generieren
     for (let k = 0; k < VARIANTS; k++) {
       if (cancelled) break;
       const t = row.tiles[k + 1];
-      if (!variants[k]) { t.status = "error"; t.reason = "Keine Variante erzeugt"; updateTile(t); updateRow(row); updateOverview(); continue; }
+      // Echten Grund zeigen (z. B. „Varianten fehlgeschlagen: …") statt nur generisch.
+      if (!variants[k]) { t.status = "error"; t.reason = varErr || "Keine Variante erzeugt"; updateTile(t); updateRow(row); updateOverview(); continue; }
       t.prompt = variants[k].prompt;
       setPhase(tag + "generiere Bild " + (k + 2) + " von " + TOTAL + " (Variante " + (k + 1) + ") …");
       await genTile(row, t); updateRow(row); updateOverview();
