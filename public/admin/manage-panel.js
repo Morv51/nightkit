@@ -100,7 +100,7 @@ function renderShell(p) {
   wireEvents(p);
 }
 
-function tileHTML(t, kind) {
+function tileHTML(t, kind, index) {
   const cat = kind === "trash"
     ? '<div class="ct">Kategorie: ' + esc(t.folderCategory) + "</div>"
     : '<div class="ct">' + (t.overridden ? '<span class="ov">→</span> ' + esc(t.category) : esc(t.category)) + "</div>";
@@ -108,10 +108,20 @@ function tileHTML(t, kind) {
     ? '<button class="rbtn rbtn-ghost" data-act="restore" data-file="' + esc(t.file) + '">Wiederherstellen</button>'
     : '<button class="rbtn rbtn-ghost" data-act="move" data-file="' + esc(t.file) + '">Verschieben</button>' +
       '<button class="rbtn rbtn-danger" data-act="hide" data-file="' + esc(t.file) + '">Löschen</button>';
+  // Order-Leiste nur im Sortier-Modus (Einzelkategorie): Ziehgriff, Positionsfeld, Pfeile.
+  const orderBar = kind === "order"
+    ? '<div class="mng-orderbar">' +
+        '<span class="mng-drag" draggable="true" title="Ziehen zum Umsortieren">⠿</span>' +
+        '<input class="mng-pos" type="number" min="1" value="' + index + '" title="Position eingeben, dann Enter">' +
+        '<button class="mng-obtn" data-ob="front" type="button" title="An den Anfang">⤒</button>' +
+        '<button class="mng-obtn" data-ob="end" type="button" title="Ans Ende">⤓</button>' +
+      "</div>"
+    : "";
   // Grosse Ansicht via R2-faehige Route (/api/thumb w=720 -> Quelle aus R2 mit Repo-Rueckfall).
   const big = "/api/thumb?w=720&file=" + encodeURIComponent(t.file);
-  return '<div class="mng-tile">' +
-    '<div class="tw" data-big="' + esc(big) + '" data-name="' + esc(t.name) + '"><img loading="lazy" src="' + esc(t.thumb) + '" alt=""></div>' +
+  return '<div class="mng-tile" data-file="' + esc(t.file) + '">' +
+    orderBar +
+    '<div class="tw" data-big="' + esc(big) + '" data-name="' + esc(t.name) + '"><img loading="lazy" draggable="false" src="' + esc(t.thumb) + '" alt=""></div>' +
     '<div class="m"><div class="nm" title="Klicken zum Umbenennen" data-editname data-file="' + esc(t.file) + '" data-cur="' + esc(t.name) + '">' + esc(t.name) + '</div>' + cat + "</div>" +
     '<div class="acts">' + acts + "</div></div>";
 }
@@ -130,14 +140,28 @@ function renderCatnav() {
 }
 
 function renderGrid() {
-  const by = visibleByCat();
   const grid = q("#mngGrid");
-  const cats = state.filter === null ? catList() : (by[state.filter] ? [state.filter] : []);
-  if (!cats.length) { grid.innerHTML = '<div class="mng-empty">Keine sichtbaren Templates.</div>'; return; }
-  grid.innerHTML = cats.map((c) =>
-    '<div class="mng-catblock"><h3>' + esc(c) + " · " + by[c].length + "</h3>" +
-    '<div class="mng-grid">' + by[c].map((t) => tileHTML(t, "manage")).join("") + "</div></div>"
-  ).join("");
+  const by = visibleByCat();
+  // "Alle": gruppiert wie bisher, keine Sortierung (Umsortieren geht pro Kategorie).
+  if (state.filter === null) {
+    const cats = catList();
+    if (!cats.length) { grid.innerHTML = '<div class="mng-empty">Keine sichtbaren Templates.</div>'; return; }
+    grid.innerHTML = cats.map((c) =>
+      '<div class="mng-catblock"><h3>' + esc(c) + " · " + by[c].length + "</h3>" +
+      '<div class="mng-grid">' + by[c].map((t) => tileHTML(t, "manage")).join("") + "</div></div>"
+    ).join("");
+    return;
+  }
+  // Einzelkategorie: Sortier-Ansicht mit Drag and Drop, Positionsfeldern und Zurücksetzen.
+  const cat = state.filter;
+  const items = by[cat] || [];
+  if (!items.length) { grid.innerHTML = '<div class="mng-empty">Keine sichtbaren Templates.</div>'; return; }
+  grid.innerHTML =
+    '<div class="mng-orderhead"><span class="mng-orderhint">Ziehen zum Umsortieren, oder Positionsfeld und Pfeile nutzen. Position 1 ist oben links, dann zeilenweise. Die Reihenfolge gilt genauso in der User-App.</span>' +
+    '<button class="rbtn rbtn-ghost" id="mngOrderReset" type="button">Reihenfolge zurücksetzen</button></div>' +
+    '<div class="mng-grid mng-sortable" id="mngSortable" data-cat="' + esc(cat) + '">' +
+    items.map((t, i) => tileHTML(t, "order", i + 1)).join("") + "</div>";
+  wireSortable();
 }
 
 function renderTrash() {
@@ -225,6 +249,105 @@ function openLightbox(big, name) {
 }
 function closeLightbox() { q("#mngLb").classList.remove("show"); q("#mngLbImg").src = ""; }
 
+// ── Sortieren innerhalb einer Kategorie (Drag and Drop + Positionsfelder) ──
+let dragEl = null;
+let saveTimer = null;
+
+function wireSortable() {
+  const grid = q("#mngSortable");
+  if (!grid) return;
+  const resetBtn = q("#mngOrderReset");
+  if (resetBtn) resetBtn.addEventListener("click", () => resetOrder(grid.dataset.cat));
+  grid.addEventListener("dragstart", (e) => {
+    const h = e.target.closest(".mng-drag");
+    if (!h) { e.preventDefault(); return; }        // nur am Ziehgriff starten
+    dragEl = h.closest(".mng-tile");
+    dragEl.classList.add("dragging");
+    e.dataTransfer.effectAllowed = "move";
+    try { e.dataTransfer.setData("text/plain", dragEl.dataset.file); } catch (_) {}
+    try { e.dataTransfer.setDragImage(dragEl, 24, 24); } catch (_) {}
+  });
+  grid.addEventListener("dragover", (e) => {
+    if (!dragEl) return;
+    e.preventDefault();
+    const after = getDragAfter(grid, e.clientX, e.clientY);
+    if (after == null) grid.appendChild(dragEl);
+    else if (after !== dragEl) grid.insertBefore(dragEl, after);
+  });
+  grid.addEventListener("dragend", () => {
+    if (!dragEl) return;
+    dragEl.classList.remove("dragging");
+    dragEl = null;
+    renumber(grid);
+    scheduleSave(grid);
+  });
+}
+
+// Nachbar-Kachel, VOR die eingefügt wird (nächste in Leserichtung nach dem Cursor).
+function getDragAfter(grid, x, y) {
+  const tiles = [...grid.querySelectorAll(".mng-tile:not(.dragging)")];
+  let best = null, bestDist = Infinity;
+  for (const tile of tiles) {
+    const b = tile.getBoundingClientRect();
+    const cx = b.left + b.width / 2, cy = b.top + b.height / 2;
+    const after = (cy > y + 1) || (Math.abs(cy - y) <= b.height / 2 && cx > x);
+    if (!after) continue;
+    const d = Math.hypot(cx - x, cy - y);
+    if (d < bestDist) { bestDist = d; best = tile; }
+  }
+  return best;
+}
+
+// Positionsfelder 1..n neu setzen (ausser das gerade fokussierte, damit Tippen nicht stört).
+function renumber(grid) {
+  [...grid.querySelectorAll(".mng-tile")].forEach((tile, i) => {
+    const inp = tile.querySelector(".mng-pos");
+    if (inp && document.activeElement !== inp) inp.value = String(i + 1);
+  });
+}
+
+// Gebündeltes Speichern: nach kurzer Pause EINMAL schreiben (nicht bei jedem Mini-Schritt).
+function scheduleSave(grid) {
+  grid.classList.add("mng-dirty");
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    const cat = grid.dataset.cat;
+    const paths = [...grid.querySelectorAll(".mng-tile")].map((t) => t.dataset.file);
+    saveOrderNow(cat, paths, grid);
+  }, 700);
+}
+
+async function saveOrderNow(cat, paths, grid) {
+  try {
+    await post("/admin/manage/order", { category: cat, order: paths });
+    grid.classList.remove("mng-dirty", "mng-error");
+    toast("Reihenfolge gespeichert", "good");
+    await reload(); // frische Daten; die Anzeige-Reihenfolge bleibt identisch
+  } catch (e) {
+    if (e.message === "401") return;
+    grid.classList.add("mng-error");
+    toast("Reihenfolge NICHT gespeichert: " + e.message, "err"); // Ansicht bleibt erhalten
+  }
+}
+
+async function resetOrder(cat) {
+  if (!confirm('Manuelle Reihenfolge für „' + cat + '" zurücksetzen?\nDanach gilt wieder die Standardsortierung.')) return;
+  try { await post("/admin/manage/order/reset", { category: cat }); toast("Reihenfolge zurückgesetzt", "good"); await reload(); }
+  catch (e) { if (e.message !== "401") toast(e.message, "err"); }
+}
+
+// Eine Kachel gezielt an eine Position setzen (Positionsfeld) oder an Anfang/Ende (Pfeile).
+function moveTileTo(grid, tile, target) {
+  const others = [...grid.querySelectorAll(".mng-tile")].filter((t) => t !== tile);
+  let n = parseInt(target, 10);
+  if (isNaN(n) || n < 1) n = 1;
+  if (n > others.length + 1) n = others.length + 1;
+  const ref = others[n - 1] || null;
+  grid.insertBefore(tile, ref);
+  renumber(grid);
+  scheduleSave(grid);
+}
+
 function wireEvents(p) {
   q("#mngReload").addEventListener("click", reload);
   p.addEventListener("click", (e) => {
@@ -238,6 +361,12 @@ function wireEvents(p) {
     if (tw) { openLightbox(tw.dataset.big, tw.dataset.name); return; }
     const nm = e.target.closest("[data-editname]");
     if (nm) { openNameEdit(nm.dataset.file, nm.dataset.cur); return; }
+    const ob = e.target.closest("[data-ob]");
+    if (ob) {
+      const grid = q("#mngSortable"), tile = ob.closest(".mng-tile");
+      if (grid && tile) moveTileTo(grid, tile, ob.dataset.ob === "front" ? 1 : 999999);
+      return;
+    }
     const act = e.target.closest("button[data-act]");
     if (act) {
       const file = act.dataset.file;
@@ -246,6 +375,16 @@ function wireEvents(p) {
       else if (act.dataset.act === "move") openMove(file);
       return;
     }
+  });
+  // Positionsfeld: bei Änderung (Blur) die Kachel an die getippte Position setzen.
+  p.addEventListener("change", (e) => {
+    const inp = e.target.closest(".mng-pos");
+    if (!inp) return;
+    const grid = q("#mngSortable"), tile = inp.closest(".mng-tile");
+    if (grid && tile) moveTileTo(grid, tile, inp.value);
+  });
+  p.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { const inp = e.target.closest(".mng-pos"); if (inp) { e.preventDefault(); inp.blur(); } }
   });
   // Modals / Lightbox schliessen
   q("#mngMoveCancel").addEventListener("click", () => q("#mngMove").classList.remove("show"));

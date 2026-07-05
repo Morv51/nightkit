@@ -565,6 +565,9 @@ server.listen(PORT, () => {
     // Upload-Registry (neue R2-only Templates) + Anzeigename-Overlay vorwaermen.
     try { require("./lib/admin/uploads").prime().catch(() => {}); }
     catch (e) { console.log("[UPLOAD] Start-Prime fehlgeschlagen: " + (e && e.message ? e.message : e)); }
+    // Reihenfolge-Overlay (manuelle Sortierung pro Kategorie) vorwaermen.
+    try { require("./lib/admin/order").prime().catch(() => {}); }
+    catch (e) { console.log("[ADMIN-ORDER] Start-Prime fehlgeschlagen: " + (e && e.message ? e.message : e)); }
   }
   // Optionaler, EINMALIGER R2-Verbindungstest beim Start, nur wenn R2_SELFTEST=1.
   // Additiv + isoliert: nicht-blockierend (fire-and-forget), faengt alles ab und
