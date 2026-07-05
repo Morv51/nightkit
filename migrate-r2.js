@@ -30,7 +30,7 @@ const {
   PutObjectCommand,
   ListObjectsV2Command,
 } = require("@aws-sdk/client-s3");
-const { readS3Env, makeR2Client, fehlerText } = require("./test-r2");
+const { readS3Env, makeR2Client, fehlerText } = require("./lib/r2");
 const templates = require("./lib/templates"); // nur lesend: list(), TEMPLATES_DIR
 
 const PRAEFIX = "[R2-MIGRATE]";

@@ -11,6 +11,7 @@ const fal                   = require("./lib/fal");
 const jobs                  = require("./lib/jobs");
 const templates             = require("./lib/templates");
 const thumbs                = require("./lib/thumbs");
+const templateSource        = require("./lib/templateSource"); // zentrale Lese-Schicht (repo/r2)
 const { createServer: createStatic } = require("./lib/static");
 const { proxy }             = require("./lib/proxy");
 const { webmToMp4 }         = require("./lib/convert");
@@ -449,7 +450,7 @@ router.get("/api/thumb", async (req, res) => {
   const file = q.file || ""; // urlQuery ist bereits dekodiert (URLSearchParams)
   if (!file) { res.writeHead(400); return res.end("file required"); }
   try {
-    const buf = await thumbs.getThumb(file, q.w);
+    const buf = await templateSource.getThumbnail(file, q.w);
     res.setHeader("Content-Type", "image/webp");
     res.setHeader("Content-Length", buf.length);
     res.setHeader("Cache-Control", "public, max-age=86400"); // Thumbnails sind stabil
@@ -509,7 +510,10 @@ async function runIdeogramJob(jobId, ev, file) {
 
   let imgBuffer;
   try {
-    imgBuffer = templates.loadBuffer(file);
+    // Template-Bytes über die zentrale Lese-Schicht (Repo-Standard, R2 nur wenn
+    // TEMPLATE_SOURCE="r2", mit automatischem Repo-Rückfall). Die edit-Logik
+    // darunter (ideogram.edit) bleibt unverändert.
+    imgBuffer = await templateSource.getTemplateFile(file);
   } catch (e) {
     throw new Error("Template not found: " + e.message);
   }
@@ -543,6 +547,12 @@ server.timeout = 120000;
 server.listen(PORT, () => {
   jobs.startSweeper();
   console.log(`NightKit on port ${PORT}`);
+  // Aktive Template-Lesequelle protokollieren (repo Standard, r2 nur wenn gesetzt)
+  // und bei r2 die keywords.json vorwaermen. Nicht-blockierend, faengt alles ab.
+  try {
+    templateSource.logStartupSource();
+    templateSource.primeKeywords().catch(() => {});
+  } catch (e) { console.log("[R2-READ] Startlog fehlgeschlagen: " + (e && e.message ? e.message : e)); }
   // Optionaler, EINMALIGER R2-Verbindungstest beim Start, nur wenn R2_SELFTEST=1.
   // Additiv + isoliert: nicht-blockierend (fire-and-forget), faengt alles ab und
   // kann den Start/Betrieb NIE stoeren. Ohne R2_SELFTEST=1 passiert gar nichts.
