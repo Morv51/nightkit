@@ -226,6 +226,7 @@
       <div class="studio-subnav" data-group="auto" hidden>
         <button class="studio-subtab active" type="button" data-group="auto" data-sub="auto">Auto-Flow 1</button>
         <button class="studio-subtab" type="button" data-group="auto" data-sub="auto2">Auto-Flow 2</button>
+        <button class="studio-subtab" type="button" data-group="auto" data-sub="auto3">Auto-Flow 3</button>
       </div>
       <section class="studio-panel" id="panel-auto" data-tab="auto" data-sub="auto" hidden>
         <div class="studio-single">
@@ -317,6 +318,61 @@
           </div>
 
           <div class="batch-list" id="af2List"></div>
+        </div>
+      </section>
+
+      <section class="studio-panel" id="panel-auto3" data-tab="auto" data-sub="auto3" hidden>
+        <div class="studio-single">
+          <div class="st-card">
+            <div class="st-head">Auto-Flow 3 · nur Hauptbilder, Mehrfach-Upload</div>
+            <div class="st-mini-note">Schlanke Batch-Variante von <b>Auto-Flow 2</b>: pro hochgeladenem Template GENAU <b>ein Hauptbild</b> (die 9 Varianten entfallen). Gleiche Engine und Logik wie Flow 2 (<b>Sonnet</b>-Analyse + <b>OpenAI GPT Image</b>, Wort-Entschärfung, 9:16, feste Regeln), gleiche zwei Copyright-Pfade (unten, EINMAL für den ganzen Batch gewählt). Mehrere Templates rein, N Hauptflyer raus (z. B. 10 Templates → 10 Hauptflyer). Blockierte werden übersprungen, der Batch läuft weiter.</div>
+          </div>
+
+          <div class="st-card">
+            <div class="st-head">1 · Templates (ein oder mehrere)</div>
+            <label class="st-drop" id="af3Drop">
+              <input type="file" id="af3File" accept="image/png,image/jpeg,image/webp" multiple hidden>
+              <span id="af3DropLabel">Templates hierher ziehen, einfügen (⌘/Ctrl+V) oder klicken — ein oder mehrere · PNG/JPG/WebP, ≤10&nbsp;MB je Bild</span>
+            </label>
+            <div class="batch-thumbs" id="af3Thumbs" hidden></div>
+          </div>
+
+          <div class="st-card">
+            <div class="st-head">2 · Abstand zum Original — Pfad wählen (einmal für den Batch)</div>
+            <div class="af2-pathsel" role="radiogroup" aria-label="Abstands-Pfad">
+              <label class="af2-pathopt">
+                <input type="radio" name="af3Path" value="near" checked>
+                <span class="af2-pathopt-t">Nah (Pfad A)</span>
+                <span class="af2-pathopt-d">Bild-Referenz geht mit, bewusster Abstand</span>
+              </label>
+              <label class="af2-pathopt">
+                <input type="radio" name="af3Path" value="far">
+                <span class="af2-pathopt-t">Weit (Pfad B)</span>
+                <span class="af2-pathopt-d">detaillierte Beschreibung, nur ohne Bild</span>
+              </label>
+            </div>
+            <div class="st-mini-note">Identisch zu Auto-Flow 2. <b>Nah (Pfad A):</b> dein Template geht als Bild mit, der Prompt verbietet aber ausdrücklich das Übernehmen konkreter Elemente. <b>Weit (Pfad B):</b> detaillierte Stil-Beschreibung, das Referenzbild wird aber <b>nicht</b> mitgeschickt.</div>
+          </div>
+
+          <div class="st-card">
+            <div class="st-head">3 · Start</div>
+            <div class="st-row">
+              <button class="rbtn rbtn-primary" id="af3Start" type="button">▶ Hauptbilder generieren</button>
+              <button class="rbtn rbtn-danger" id="af3Cancel" type="button" hidden>■ Abbrechen</button>
+              <span class="af-time" id="af3Progress"></span>
+            </div>
+            <div class="st-mini-note">Je Template ein Bild, nacheinander. Läuft ein Lauf, kannst du ihn mit <b>Abbrechen</b> stoppen — schon fertige Bilder bleiben erhalten.</div>
+          </div>
+
+          <div class="st-card" id="af3SummaryCard" hidden>
+            <div class="st-head">Übersicht</div>
+            <div class="af-summary-row">
+              <div class="af-summary" id="af3Summary"></div>
+              <button class="rbtn rbtn-primary" id="af3ZipAll" type="button" disabled>⬇ Alles herunterladen (ZIP)</button>
+            </div>
+          </div>
+
+          <div class="batch-list" id="af3List"></div>
         </div>
       </section>
 

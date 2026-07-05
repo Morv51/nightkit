@@ -88,6 +88,7 @@ function showStudio() {
   import("./variants.js").then((m) => m.initVariants && m.initVariants()).catch(() => {});
   import("./autoflow.js").then((m) => m.initAutoflow && m.initAutoflow()).catch(() => {});
   import("./autoflow2.js").then((m) => m.initAutoflow2 && m.initAutoflow2()).catch(() => {});
+  import("./autoflow3.js").then((m) => m.initAutoflow3 && m.initAutoflow3()).catch(() => {});
   import("./keywords.js").then((m) => m.initKeywords && m.initKeywords()).catch(() => {});
   import("./manage-panel.js").then((m) => m.initManage && m.initManage()).catch(() => {});
   import("./upload-panel.js").then((m) => m.initUpload && m.initUpload()).catch(() => {});
