@@ -68,21 +68,42 @@ function renderPrompts(prompts, incomplete) {
     (incomplete ? '<div class="vp-warn">Es kamen weniger als 10 Prompts zurück. Du kannst oben erneut auslösen.</div>' : "");
   const blocks = prompts.map((p, i) =>
     '<div class="vp-block"><div class="vp-block-head"><span class="vp-num">Variante ' + (i + 1) + "</span>" +
+    '<span class="vp-done">✓ kopiert</span>' +
     '<button class="rbtn rbtn-ghost vp-copy" data-i="' + i + '" type="button">Kopieren</button></div>' +
     '<div class="vp-text">' + esc(p) + "</div></div>").join("");
   $("vpResults").innerHTML = head + '<div class="vp-list">' + blocks + "</div>";
 }
 
-async function copy(text, btn) {
-  try {
-    await navigator.clipboard.writeText(text);
-    if (btn) { const t = btn.textContent; btn.textContent = "Kopiert ✓"; setTimeout(() => { btn.textContent = t; }, 1200); }
-  } catch (e) { notify("Kopieren nicht möglich", "error"); }
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); return true; }
+  catch (e) { notify("Kopieren nicht möglich", "error"); return false; }
 }
 
-function onResultClick(e) {
+// Kurzes Klick-Feedback am Button (Text wechselt kurz), Original einmalig gemerkt.
+function flash(btn) {
+  if (!btn) return;
+  if (!btn.dataset.orig) btn.dataset.orig = btn.textContent;
+  btn.textContent = "Kopiert ✓";
+  clearTimeout(btn._t); btn._t = setTimeout(() => { btn.textContent = btn.dataset.orig; }, 1200);
+}
+
+async function onResultClick(e) {
   const all = e.target.closest("#vpCopyAll");
-  if (all) { copy(currentPrompts.map((p, i) => "Variante " + (i + 1) + ":\n" + p).join("\n\n---\n\n"), all); return; }
+  if (all) {
+    const ok = await copyText(currentPrompts.map((p, i) => "Variante " + (i + 1) + ":\n" + p).join("\n\n---\n\n"));
+    if (!ok) return;
+    flash(all);
+    // "Alle kopieren" markiert alle Blöcke als kopiert (nur diese Ansicht).
+    $("vpResults").querySelectorAll(".vp-block").forEach((b) => b.classList.add("vp-copied"));
+    return;
+  }
   const c = e.target.closest(".vp-copy");
-  if (c) { copy(currentPrompts[+c.dataset.i] || "", c); return; }
+  if (c) {
+    const ok = await copyText(currentPrompts[+c.dataset.i] || "");
+    if (!ok) return;
+    flash(c);
+    const block = c.closest(".vp-block");
+    if (block) block.classList.add("vp-copied"); // bleibende Markierung, erneut kopieren bleibt möglich
+    return;
+  }
 }

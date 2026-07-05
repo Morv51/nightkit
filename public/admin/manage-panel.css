@@ -205,6 +205,13 @@
 #panel-variants .vp-warn { color: #ffcf8a; font-size: var(--font-size-sm); margin: 0 0 12px; }
 #panel-variants .vp-list { display: flex; flex-direction: column; gap: 10px; }
 #panel-variants .vp-block { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); overflow: hidden; }
-#panel-variants .vp-block-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; background: var(--color-surface-2); border-bottom: 1px solid var(--color-border); }
-#panel-variants .vp-num { font-size: var(--font-size-sm); font-weight: 600; color: var(--color-accent); }
+#panel-variants .vp-block-head { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--color-surface-2); border-bottom: 1px solid var(--color-border); }
+#panel-variants .vp-num { font-size: var(--font-size-sm); font-weight: 600; color: var(--color-accent); margin-right: auto; }
+/* Bleibende "kopiert"-Markierung (nur diese Ansicht/Sitzung, nichts gespeichert). */
+#panel-variants .vp-done { display: none; align-items: center; gap: 4px; font-size: var(--font-size-xs); font-weight: 600; color: var(--color-accent); }
+#panel-variants .vp-block.vp-copied .vp-done { display: inline-flex; }
+#panel-variants .vp-block.vp-copied { opacity: .6; transition: opacity .15s; }
+#panel-variants .vp-block.vp-copied:hover { opacity: 1; } /* beim Hover wieder voll lesbar */
+#panel-variants .vp-block.vp-copied .vp-num { color: var(--color-text-muted); }
+#panel-variants .vp-block.vp-copied .vp-block-head { border-left: 3px solid var(--color-accent); padding-left: 9px; }
 #panel-variants .vp-text { padding: 12px 14px; font-size: var(--font-size-sm); line-height: 1.55; color: var(--color-text); white-space: pre-wrap; word-break: break-word; }
