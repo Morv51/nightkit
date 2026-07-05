@@ -18,6 +18,8 @@ function showStudio() {
   import("./autoflow.js").then((m) => m.initAutoflow && m.initAutoflow()).catch(() => {});
   import("./autoflow2.js").then((m) => m.initAutoflow2 && m.initAutoflow2()).catch(() => {});
   import("./keywords.js").then((m) => m.initKeywords && m.initKeywords()).catch(() => {});
+  // Bestandsverwaltung (additiv). Blendet ihren Tab nur ein, wenn ADMIN_TOOLS an ist.
+  import("./manage-panel.js").then((m) => m.initManage && m.initManage()).catch(() => {});
 }
 
 async function unlock(e) {

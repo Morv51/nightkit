@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="/styles/base.css">
   <link rel="stylesheet" href="/css/app.css">
   <link rel="stylesheet" href="/admin/studio.css">
+  <link rel="stylesheet" href="/admin/manage-panel.css">
 </head>
 <body class="studio-body">
 
@@ -37,6 +38,7 @@
         <button class="studio-tab" type="button" data-tab="auto">Auto-Flow 1 <span class="tab-beta">Beta</span></button>
         <button class="studio-tab" type="button" data-tab="auto2">Auto-Flow 2 <span class="tab-beta">Beta</span></button>
         <button class="studio-tab" type="button" data-tab="keywords">Schlagworte</button>
+        <button class="studio-tab" type="button" data-tab="manage" hidden>Bestandsverwaltung</button>
       </div>
       <button class="rbtn rbtn-ghost studio-lock" id="lockBtn" type="button" title="Sperren">⊘ Sperren</button>
     </header>
@@ -316,6 +318,10 @@
           </div>
         </div>
       </section>
+
+      <!-- Bestandsverwaltung (additiv). Inhalt rendert manage-panel.js. Tab + Panel
+           bleiben verborgen, wenn ADMIN_TOOLS aus ist (Endpunkt 404). -->
+      <section class="studio-panel" id="panel-manage" data-tab="manage" hidden></section>
     </main>
   </div>
 

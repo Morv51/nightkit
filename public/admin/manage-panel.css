@@ -1,0 +1,119 @@
+/* Bestandsverwaltung als Studio-Panel. Nutzt die Studio-Design-Tokens
+   (tokens.css) und .rbtn-Buttons, damit es aus einem Guss wirkt. Alles unter
+   #panel-manage gescoped, damit nichts in andere Tabs blutet. */
+
+/* Mit dem zusätzlichen Tab darf die Studio-Tableiste bei schmaler Breite umbrechen
+   statt zu überlaufen (greift nur bei Bedarf; auf breiten Schirmen unverändert). */
+.studio-tabs { flex-wrap: wrap; row-gap: 4px; }
+
+#panel-manage { max-width: 1100px; margin: 0 auto; }
+
+/* Sub-Navigation Verwaltung / Papierkorb */
+#panel-manage .mng-sub {
+  display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--color-border); padding-bottom: 12px; margin-bottom: 16px;
+}
+#panel-manage .mng-subbtn {
+  background: var(--color-surface-2); color: var(--color-text-muted);
+  border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+  padding: 8px 14px; font: inherit; font-size: var(--font-size-sm); cursor: pointer;
+}
+#panel-manage .mng-subbtn.active { background: var(--color-accent); color: var(--color-accent-ink); border-color: transparent; font-weight: 600; }
+#panel-manage .mng-sub .spacer { margin-left: auto; }
+
+/* Kategorie-Navigation (Chips mit Anzahl + Stift) */
+#panel-manage .mng-catnav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+#panel-manage .mng-cat {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--color-surface-2); border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill); padding: 6px 6px 6px 14px; font-size: var(--font-size-sm);
+  color: var(--color-text); cursor: pointer;
+}
+#panel-manage .mng-cat:hover { border-color: var(--color-border-strong); }
+#panel-manage .mng-cat.active { background: var(--color-accent); color: var(--color-accent-ink); border-color: transparent; font-weight: 600; }
+#panel-manage .mng-cat .n { color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
+#panel-manage .mng-cat.active .n { color: var(--color-accent-ink); opacity: .7; }
+#panel-manage .mng-cat .pen {
+  border: 0; background: transparent; cursor: pointer; padding: 2px 6px; border-radius: var(--radius-pill);
+  color: inherit; opacity: .55; font-size: 13px; line-height: 1;
+}
+#panel-manage .mng-cat .pen:hover { opacity: 1; background: rgba(255,255,255,.08); }
+
+/* Grid + Kacheln */
+#panel-manage .mng-catblock { margin: 18px 0; }
+#panel-manage .mng-catblock h3 {
+  font-size: var(--font-size-sm); text-transform: uppercase; letter-spacing: .05em;
+  color: var(--color-text-muted); margin: 0 0 10px; border-bottom: 1px solid var(--color-border); padding-bottom: 6px;
+}
+#panel-manage .mng-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+#panel-manage .mng-tile {
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  border-radius: var(--radius-md); overflow: hidden; display: flex; flex-direction: column;
+}
+#panel-manage .mng-tile .tw { aspect-ratio: 9/16; background: #000; cursor: zoom-in; overflow: hidden; position: relative; }
+#panel-manage .mng-tile .tw img { width: 100%; height: 100%; object-fit: cover; display: block; }
+#panel-manage .mng-tile .tw::after {
+  content: "⤢"; position: absolute; right: 6px; bottom: 6px; font-size: 13px;
+  background: rgba(0,0,0,.55); color: #fff; border-radius: var(--radius-xs); padding: 1px 5px; opacity: 0; transition: .15s;
+}
+#panel-manage .mng-tile .tw:hover::after { opacity: 1; }
+#panel-manage .mng-tile .m { padding: 8px 10px; }
+#panel-manage .mng-tile .nm { font-size: var(--font-size-sm); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#panel-manage .mng-tile .ct { font-size: var(--font-size-xs); color: var(--color-text-muted); }
+#panel-manage .mng-tile .ct .ov { color: var(--color-accent); }
+#panel-manage .mng-tile .acts { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px 10px; margin-top: auto; }
+#panel-manage .mng-tile .acts .rbtn { width: 100%; padding: 7px 8px; font-size: 12.5px; }
+
+#panel-manage .mng-empty { color: var(--color-text-muted); text-align: center; padding: 50px 0; }
+#panel-manage .mng-hint { color: var(--color-text-muted); font-size: 12.5px; margin: 0 0 14px; }
+#panel-manage .mng-purge {
+  margin-top: 24px; border: 1px dashed var(--color-border-strong); border-radius: var(--radius-md);
+  padding: 14px 16px; color: var(--color-text-muted); font-size: var(--font-size-sm);
+}
+
+/* Lightbox */
+#panel-manage .mng-lb {
+  position: fixed; inset: 0; z-index: 1000; display: none;
+  align-items: center; justify-content: center; background: rgba(0,0,0,.85); padding: 24px;
+}
+#panel-manage .mng-lb.show { display: flex; }
+#panel-manage .mng-lb img { max-width: 92vw; max-height: 90vh; border-radius: var(--radius-md); box-shadow: var(--shadow-lg); }
+#panel-manage .mng-lb .x {
+  position: absolute; top: 18px; right: 22px; font-size: 26px; color: #fff; background: transparent;
+  border: 0; cursor: pointer; line-height: 1;
+}
+#panel-manage .mng-lb .cap { position: absolute; bottom: 18px; left: 0; right: 0; text-align: center; color: #ddd; font-size: var(--font-size-sm); }
+
+/* Modals (Verschieben / Umbenennen) */
+#panel-manage .mng-modal {
+  position: fixed; inset: 0; z-index: 1001; display: none;
+  align-items: center; justify-content: center; background: rgba(0,0,0,.6); padding: 16px;
+}
+#panel-manage .mng-modal.show { display: flex; }
+#panel-manage .mng-modal .card {
+  background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg);
+  padding: 22px; width: min(440px, 94vw); box-shadow: var(--shadow-lg);
+}
+#panel-manage .mng-modal h4 { margin: 0 0 4px; font-size: var(--font-size-md); font-family: var(--font-display); }
+#panel-manage .mng-modal .sub { color: var(--color-text-muted); font-size: var(--font-size-sm); margin: 0 0 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#panel-manage .mng-modal label { display: block; font-size: var(--font-size-xs); color: var(--color-text-muted); margin: 12px 0 5px; }
+#panel-manage .mng-modal select,
+#panel-manage .mng-modal input {
+  width: 100%; background: var(--color-surface-2); color: var(--color-text);
+  border: 1px solid var(--color-border-strong); border-radius: var(--radius-sm); padding: 9px 12px; font: inherit;
+}
+#panel-manage .mng-modal .or { text-align: center; color: var(--color-text-dim); font-size: var(--font-size-xs); margin: 12px 0 0; }
+#panel-manage .mng-modal .note { font-size: var(--font-size-xs); color: var(--color-text-muted); line-height: 1.5; margin: 14px 0 0; background: var(--color-surface-2); border-radius: var(--radius-sm); padding: 10px 12px; }
+#panel-manage .mng-modal .row { display: flex; gap: 8px; margin-top: 18px; }
+#panel-manage .mng-modal .row .rbtn { flex: 1; }
+#panel-manage .mng-modal .prog { font-size: var(--font-size-xs); color: var(--color-text-muted); margin-top: 10px; min-height: 16px; text-align: center; }
+
+/* Mini-Toast (unter dem Panel) */
+#panel-manage .mng-toast {
+  position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 1002;
+  background: var(--color-surface-2); border: 1px solid var(--color-border); color: var(--color-text);
+  padding: 10px 18px; border-radius: var(--radius-md); opacity: 0; pointer-events: none; transition: .25s; max-width: 90vw;
+}
+#panel-manage .mng-toast.show { opacity: 1; }
+#panel-manage .mng-toast.err { border-color: var(--color-danger); color: #ffd7da; }
+#panel-manage .mng-toast.good { border-color: var(--color-success); color: #d4f7db; }
