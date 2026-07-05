@@ -198,3 +198,13 @@
 #panel-upload .mng-toast.good { border-color: var(--color-success); color: #d4f7db; }
 #panel-upload .mng-toast.warn { border-color: #ffcf8a; color: #ffe8c4; }
 #panel-upload .mng-empty { color: var(--color-text-muted); text-align: center; padding: 50px 0; }
+
+/* ── Varianten-Prompts (#panel-variants, Prompting Tool 3. Werkzeug) ── */
+#panel-variants .vp-head { display: flex; align-items: center; gap: 12px; margin: 8px 0 12px; }
+#panel-variants .vp-count { color: var(--color-text-muted); font-size: var(--font-size-sm); margin-right: auto; }
+#panel-variants .vp-warn { color: #ffcf8a; font-size: var(--font-size-sm); margin: 0 0 12px; }
+#panel-variants .vp-list { display: flex; flex-direction: column; gap: 10px; }
+#panel-variants .vp-block { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); overflow: hidden; }
+#panel-variants .vp-block-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; background: var(--color-surface-2); border-bottom: 1px solid var(--color-border); }
+#panel-variants .vp-num { font-size: var(--font-size-sm); font-weight: 600; color: var(--color-accent); }
+#panel-variants .vp-text { padding: 12px 14px; font-size: var(--font-size-sm); line-height: 1.55; color: var(--color-text); white-space: pre-wrap; word-break: break-word; }

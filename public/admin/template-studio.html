@@ -49,6 +49,7 @@
       <div class="studio-subnav" data-group="prompting">
         <button class="studio-subtab active" type="button" data-group="prompting" data-sub="mode1">Flyer → Template</button>
         <button class="studio-subtab" type="button" data-group="prompting" data-sub="mode2">Moodboard → Prompt</button>
+        <button class="studio-subtab" type="button" data-group="prompting" data-sub="variants">Varianten-Prompts</button>
       </div>
       <section class="studio-panel active" id="panel-mode1" data-tab="prompting" data-sub="mode1">
         <div class="studio-single">
@@ -188,6 +189,30 @@
 
             <div class="variant-list" id="m2VariantList"></div>
           </div>
+        </div>
+      </section>
+
+      <!-- Prompting Tool, 3. Werkzeug: Varianten-Prompts (nur Text, keine Bilder).
+           EIN Sonnet-Aufruf -> 10 Prompts. Verdrahtung in variants.js. -->
+      <section class="studio-panel" id="panel-variants" data-tab="prompting" data-sub="variants" hidden>
+        <div class="studio-single">
+          <div class="st-card">
+            <div class="st-head">1 · Flyer als Referenz</div>
+            <label class="st-drop" id="vpDrop">
+              <input type="file" id="vpFile" accept="image/png,image/jpeg,image/webp" hidden>
+              <span id="vpDropLabel">Flyer hierher ziehen, einfügen (⌘/Ctrl+V) oder klicken — PNG/JPG/WebP, ≤10&nbsp;MB</span>
+            </label>
+            <img class="st-thumb" id="vpThumb" alt="" hidden>
+          </div>
+          <div class="st-card">
+            <div class="st-head">2 · 10 Varianten-Prompts erzeugen</div>
+            <div class="st-mini-note">EIN Sonnet-Aufruf analysiert den Flyer und liefert 10 Text-Prompts für Varianten desselben Flyers. Der Vibe (Stimmung, Genre, Bildsprache, Grundkomposition) bleibt strikt erhalten, variiert werden nur Farbwelt und Detailelemente. Keine echten Personen oder Marken, Texte als Platzhalter. Es werden KEINE Bilder erzeugt, nur Prompts.</div>
+            <div class="st-row" style="margin-top:10px">
+              <button class="rbtn rbtn-primary" id="vpGo" type="button" disabled>10 Prompts erzeugen</button>
+              <span class="af-time" id="vpStatus"></span>
+            </div>
+          </div>
+          <div id="vpResults"></div>
         </div>
       </section>
 
