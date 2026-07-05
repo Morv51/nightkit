@@ -1,16 +1,16 @@
 "use strict";
 
-// Isolierter Cloudflare R2 Verbindungstest.
+// Isolierter Cloudflare R2 Verbindungstest + geteilte S3-Helfer.
 //
-// - Exportiert runR2SelfTest(): schreibt, liest und loescht eine kleine Testdatei
-//   ueber die 5 S3_* Umgebungsvariablen. Loggt ALLES mit dem Praefix [R2-SELFTEST]
-//   und WIRFT NIE (alles in try/catch, Rueckgabe { ok, reason }). Dadurch kann der
-//   Aufruf beim Serverstart den Start niemals blockieren oder abstuerzen lassen.
-// - Bleibt eigenstaendig startbar:   node test-r2.js
+// - readS3Env()   : liest die 5 S3_* Variablen, meldet fehlende.
+// - makeR2Client(): EXAKT der eine Client-Aufbau (forcePathStyle true, region gleich
+//                   S3_REGION, also "auto"). Wird von Selftest UND Migration genutzt,
+//                   damit es keinen abweichenden Client gibt.
+// - runR2SelfTest(): schreibt, liest, vergleicht, loescht eine kleine Testdatei.
+//   Loggt mit Praefix [R2-SELFTEST], WIRFT NIE, gibt { ok, reason } zurueck.
 //
+// Eigenstaendig startbar:   node test-r2.js
 // Aendert keinen bestehenden Code (kein Ideogram edit-Flow, kein Auto-Flow 1/2).
-// Nutzt: S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_REGION
-// forcePathStyle true, region gleich dem Wert von S3_REGION (bei R2 "auto").
 
 const {
   S3Client,
@@ -23,6 +23,30 @@ const PRAEFIX = "[R2-SELFTEST]";
 const log = (msg) => { try { console.log(PRAEFIX + " " + msg); } catch (_) {} };
 const KEY = "_verbindungstest.txt";
 
+// Liest die 5 S3_* Variablen. env.missing listet fehlende (mit S3_ Praefix).
+function readS3Env() {
+  const env = {
+    ENDPOINT: process.env.S3_ENDPOINT || "",
+    BUCKET: process.env.S3_BUCKET || "",
+    ACCESS_KEY_ID: process.env.S3_ACCESS_KEY_ID || "",
+    SECRET_ACCESS_KEY: process.env.S3_SECRET_ACCESS_KEY || "",
+    REGION: process.env.S3_REGION || "",
+  };
+  env.missing = ["ENDPOINT", "BUCKET", "ACCESS_KEY_ID", "SECRET_ACCESS_KEY", "REGION"]
+    .filter((k) => !env[k]).map((k) => "S3_" + k);
+  return env;
+}
+
+// Der EINE Client-Aufbau (fuer Selftest und Migration identisch).
+function makeR2Client(env) {
+  return new S3Client({
+    region: env.REGION,          // exakt der Wert der Variable, bei R2 "auto"
+    endpoint: env.ENDPOINT,
+    forcePathStyle: true,        // fuer R2 / S3-kompatible Anbieter noetig
+    credentials: { accessKeyId: env.ACCESS_KEY_ID, secretAccessKey: env.SECRET_ACCESS_KEY },
+  });
+}
+
 function fehlerText(e) {
   const typ = e && e.name ? e.name : "unbekannt";
   const msg = e && e.message ? e.message : String(e);
@@ -34,38 +58,22 @@ async function tryDelete(client, bucket) {
   try { await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: KEY })); } catch (_) {}
 }
 
-// Fuehrt den kompletten Test aus. WIRFT NIE. Gibt { ok: boolean, reason: string } zurueck.
+// Fuehrt den kompletten Verbindungstest aus. WIRFT NIE. Gibt { ok, reason } zurueck.
 async function runR2SelfTest() {
   try {
-    const ENDPOINT = process.env.S3_ENDPOINT || "";
-    const BUCKET = process.env.S3_BUCKET || "";
-    const ACCESS_KEY_ID = process.env.S3_ACCESS_KEY_ID || "";
-    const SECRET_ACCESS_KEY = process.env.S3_SECRET_ACCESS_KEY || "";
-    const REGION = process.env.S3_REGION || "";
-
-    const fehlt = [];
-    if (!ENDPOINT) fehlt.push("S3_ENDPOINT");
-    if (!BUCKET) fehlt.push("S3_BUCKET");
-    if (!ACCESS_KEY_ID) fehlt.push("S3_ACCESS_KEY_ID");
-    if (!SECRET_ACCESS_KEY) fehlt.push("S3_SECRET_ACCESS_KEY");
-    if (!REGION) fehlt.push("S3_REGION");
-    if (fehlt.length) {
-      const reason = "Umgebungsvariablen fehlen: " + fehlt.join(", ");
+    const env = readS3Env();
+    if (env.missing.length) {
+      const reason = "Umgebungsvariablen fehlen: " + env.missing.join(", ");
       log("FEHLER: " + reason);
       log("ERGEBNIS: FEHLER: " + reason);
       return { ok: false, reason };
     }
 
-    log("Start. Endpoint " + ENDPOINT + " | Bucket " + BUCKET + " | Region " + REGION +
-      " | Key " + ACCESS_KEY_ID.slice(0, 4) + "..." + ACCESS_KEY_ID.slice(-4) + " (maskiert)");
+    log("Start. Endpoint " + env.ENDPOINT + " | Bucket " + env.BUCKET + " | Region " + env.REGION +
+      " | Key " + env.ACCESS_KEY_ID.slice(0, 4) + "..." + env.ACCESS_KEY_ID.slice(-4) + " (maskiert)");
 
-    const client = new S3Client({
-      region: REGION,          // exakt der Wert der Variable, bei R2 "auto"
-      endpoint: ENDPOINT,
-      forcePathStyle: true,    // fuer R2 / S3-kompatible Anbieter noetig
-      credentials: { accessKeyId: ACCESS_KEY_ID, secretAccessKey: SECRET_ACCESS_KEY },
-    });
-
+    const client = makeR2Client(env);
+    const BUCKET = env.BUCKET;
     const inhalt = "nightkit r2 verbindungstest " + new Date().toISOString();
 
     // (a) Schreiben
@@ -114,14 +122,13 @@ async function runR2SelfTest() {
     log("ERGEBNIS: ALLES OK");
     return { ok: true, reason: "" };
   } catch (e) {
-    // Letzte Sicherheit: unter keinen Umstaenden werfen.
     const reason = "Unerwarteter Fehler: " + fehlerText(e);
     log("ERGEBNIS: FEHLER: " + reason);
     return { ok: false, reason };
   }
 }
 
-module.exports = { runR2SelfTest };
+module.exports = { runR2SelfTest, readS3Env, makeR2Client, fehlerText };
 
 // Eigenstaendig startbar:   node test-r2.js
 if (require.main === module) {

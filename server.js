@@ -551,6 +551,14 @@ server.listen(PORT, () => {
     try { require("./test-r2").runR2SelfTest().catch(() => {}); }
     catch (e) { console.log("[R2-SELFTEST] ERGEBNIS: FEHLER: Test nicht startbar: " + (e && e.message ? e.message : e)); }
   }
+  // Optionale, EINMALIGE R2-Migration beim Start, nur wenn R2_MIGRATE=1. Kopiert
+  // Templates + Thumbnails + keywords.json/templates.json additiv nach R2 und aendert
+  // KEINEN Lesepfad. Ebenfalls nicht-blockierend, faengt alles ab, wirft nie. Ohne
+  // R2_MIGRATE=1 passiert gar nichts. Beruehrt edit-Flow / Auto-Flow 1/2 nicht.
+  if (process.env.R2_MIGRATE === "1") {
+    try { require("./migrate-r2").runR2Migration().catch(() => {}); }
+    catch (e) { console.log("[R2-MIGRATE] FERTIG: FEHLER: Migration nicht startbar: " + (e && e.message ? e.message : e)); }
+  }
 });
 
 function shutdown() {
