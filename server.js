@@ -42,6 +42,10 @@ const router = createRouter();
 // Routen. Verändert keine bestehende Route/Funktion. Siehe lib/studio/.
 require("./lib/studio/routes").register(router);
 
+// Admin-only Bestandsverwaltung (Ausblenden/Verschieben per Overlay, additiv,
+// isoliert). Nur aktiv bei ADMIN_TOOLS=1. Ändert keine bestehende Route. Siehe lib/admin/.
+require("./lib/admin/routes").register(router);
+
 router.post("/api/generate", async (req, res) => {
   if (!IDEOGRAM_KEY) return sendError(res, 500, "IDEOGRAM_API_KEY not configured");
 
@@ -553,6 +557,12 @@ server.listen(PORT, () => {
     templateSource.logStartupSource();
     templateSource.primeKeywords().catch(() => {});
   } catch (e) { console.log("[R2-READ] Startlog fehlgeschlagen: " + (e && e.message ? e.message : e)); }
+  // Admin-Overlays (Ausblenden/Kategorie) vorwaermen, nur wenn ADMIN_TOOLS=1.
+  // Nicht-blockierend; bis geladen gelten leere Overlays (alles sichtbar).
+  if (process.env.ADMIN_TOOLS === "1") {
+    try { require("./lib/admin/overlays").prime().catch(() => {}); }
+    catch (e) { console.log("[ADMIN-OVL] Start-Prime fehlgeschlagen: " + (e && e.message ? e.message : e)); }
+  }
   // Optionaler, EINMALIGER R2-Verbindungstest beim Start, nur wenn R2_SELFTEST=1.
   // Additiv + isoliert: nicht-blockierend (fire-and-forget), faengt alles ab und
   // kann den Start/Betrieb NIE stoeren. Ohne R2_SELFTEST=1 passiert gar nichts.
