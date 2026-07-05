@@ -20,6 +20,8 @@ function showStudio() {
   import("./keywords.js").then((m) => m.initKeywords && m.initKeywords()).catch(() => {});
   // Bestandsverwaltung (additiv). Blendet ihren Tab nur ein, wenn ADMIN_TOOLS an ist.
   import("./manage-panel.js").then((m) => m.initManage && m.initManage()).catch(() => {});
+  // Uploader (additiv). Blendet seinen Tab nur ein, wenn ADMIN_TOOLS an ist.
+  import("./upload-panel.js").then((m) => m.initUpload && m.initUpload()).catch(() => {});
 }
 
 async function unlock(e) {

@@ -110,7 +110,7 @@ function tileHTML(t, kind) {
   const big = "/api/thumb?w=720&file=" + encodeURIComponent(t.file);
   return '<div class="mng-tile">' +
     '<div class="tw" data-big="' + esc(big) + '" data-name="' + esc(t.name) + '"><img loading="lazy" src="' + esc(t.thumb) + '" alt=""></div>' +
-    '<div class="m"><div class="nm" title="' + esc(t.name) + '">' + esc(t.name) + '</div>' + cat + "</div>" +
+    '<div class="m"><div class="nm" title="Klicken zum Umbenennen" data-editname data-file="' + esc(t.file) + '" data-cur="' + esc(t.name) + '">' + esc(t.name) + '</div>' + cat + "</div>" +
     '<div class="acts">' + acts + "</div></div>";
 }
 
@@ -234,6 +234,8 @@ function wireEvents(p) {
     if (catEl) { state.filter = catEl.dataset.cat === "__all__" ? null : catEl.dataset.cat; renderCatnav(); renderGrid(); return; }
     const tw = e.target.closest(".tw");
     if (tw) { openLightbox(tw.dataset.big, tw.dataset.name); return; }
+    const nm = e.target.closest("[data-editname]");
+    if (nm) { openNameEdit(nm.dataset.file, nm.dataset.cur); return; }
     const act = e.target.closest("button[data-act]");
     if (act) {
       const file = act.dataset.file;
@@ -253,4 +255,15 @@ function wireEvents(p) {
   q("#mngLbX").addEventListener("click", closeLightbox);
   q("#mngLb").addEventListener("click", (e) => { if (e.target === q("#mngLb")) closeLightbox(); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") { closeLightbox(); q("#mngMove").classList.remove("show"); q("#mngRenameM").classList.remove("show"); } });
+  // Nach einem Upload (anderes Panel) die Verwaltung neu laden, damit neue Templates erscheinen.
+  document.addEventListener("nk-templates-changed", reload);
+}
+
+// Anzeigenamen per Klick ändern (schreibt ins Anzeigename-Overlay; Pfad/Keywords/
+// edit-Flow bleiben unberührt). Leerer Name -> zurück zu templates.json/Dateiname.
+async function openNameEdit(file, cur) {
+  const nn = prompt("Anzeigename ändern:", cur || "");
+  if (nn === null || nn === cur) return;
+  try { await post("/admin/manage/name", { file, name: nn }); toast("Name gespeichert", "good"); await reload(); }
+  catch (e) { if (e.message !== "401") toast(e.message, "err"); }
 }

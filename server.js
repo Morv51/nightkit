@@ -562,6 +562,9 @@ server.listen(PORT, () => {
   if (process.env.ADMIN_TOOLS === "1") {
     try { require("./lib/admin/overlays").prime().catch(() => {}); }
     catch (e) { console.log("[ADMIN-OVL] Start-Prime fehlgeschlagen: " + (e && e.message ? e.message : e)); }
+    // Upload-Registry (neue R2-only Templates) + Anzeigename-Overlay vorwaermen.
+    try { require("./lib/admin/uploads").prime().catch(() => {}); }
+    catch (e) { console.log("[UPLOAD] Start-Prime fehlgeschlagen: " + (e && e.message ? e.message : e)); }
   }
   // Optionaler, EINMALIGER R2-Verbindungstest beim Start, nur wenn R2_SELFTEST=1.
   // Additiv + isoliert: nicht-blockierend (fire-and-forget), faengt alles ab und
