@@ -18,6 +18,7 @@ const { webmToMp4 }         = require("./lib/convert");
 const { createRouter }      = require("./lib/router");
 const auth                  = require("./lib/auth");
 const caption               = require("./lib/caption");
+const usage                 = require("./lib/admin/usage"); // Nutzungs-Zähler (nachrangig, nie blockierend)
 const { readJson, readBody, sendJson, sendError, applyCors } = require("./lib/http");
 
 const PORT            = process.env.PORT || 3000;
@@ -130,6 +131,7 @@ router.post("/api/remove", async (req, res) => {
       imageDataUrl: body.image,
       maskDataUrl: body.mask,
     });
+    try { usage.count("replicate_remove"); } catch (_) {} // Nutzungs-Zähler, nachrangig
     const dl = await ideogram.download(url); // generischer Bild-Download (Buffer)
     sendJson(res, 200, { image: `data:${dl.contentType};base64,${dl.buffer.toString("base64")}` });
 
@@ -191,6 +193,7 @@ router.post("/api/adjust-text", async (req, res) => {
       imageBuffer: image.buffer,
       maskBuffer: mask.buffer,
     });
+    try { usage.count("ideogram_editmasked"); } catch (_) {} // Nutzungs-Zähler, nachrangig
     const dl = await ideogram.download(url);
     sendJson(res, 200, { image: `data:${dl.contentType};base64,${dl.buffer.toString("base64")}` });
     if (user) auth.incrementGenerations(user.id);
@@ -288,6 +291,7 @@ router.post("/api/reframe", async (req, res) => {
       top: 0,
       bottom: 0,
     });
+    try { usage.count("fal_outpaint"); } catch (_) {} // Nutzungs-Zähler, nachrangig
     const dl = await ideogram.download(url); // generischer Bild-Download (Buffer)
     sendJson(res, 200, { image: `data:${dl.contentType};base64,${dl.buffer.toString("base64")}` });
   } catch (e) {
@@ -398,6 +402,7 @@ router.post("/api/caption", async (req, res) => {
 
   try {
     const text = await caption.generateCaption(body);
+    try { usage.count("claude_caption"); } catch (_) {} // Nutzungs-Zähler, nachrangig
     sendJson(res, 200, { caption: text });
   } catch (e) {
     console.error("caption error:", e.message);
@@ -527,6 +532,7 @@ async function runIdeogramJob(jobId, ev, file) {
     prompt,
     imageBuffer: imgBuffer,
   });
+  try { usage.count("ideogram_edit"); } catch (_) {} // Nutzungs-Zähler, nachrangig
 
   jobs.set(jobId, { status: "done", url });
   console.log(`Job ${jobId} done`);
@@ -568,6 +574,9 @@ server.listen(PORT, () => {
     // Reihenfolge-Overlay (manuelle Sortierung pro Kategorie) vorwaermen.
     try { require("./lib/admin/order").prime().catch(() => {}); }
     catch (e) { console.log("[ADMIN-ORDER] Start-Prime fehlgeschlagen: " + (e && e.message ? e.message : e)); }
+    // Nutzungs-Zähler vorwaermen (nachrangig; nie blockierend, faengt alles ab).
+    try { usage.prime().catch(() => {}); }
+    catch (e) { console.log("[USAGE] Start-Prime fehlgeschlagen: " + (e && e.message ? e.message : e)); }
   }
   // Optionaler, EINMALIGER R2-Verbindungstest beim Start, nur wenn R2_SELFTEST=1.
   // Additiv + isoliert: nicht-blockierend (fire-and-forget), faengt alles ab und
@@ -590,7 +599,11 @@ server.listen(PORT, () => {
 function shutdown() {
   console.log("Shutting down…");
   jobs.stopSweeper();
-  server.close(() => process.exit(0));
+  // Nutzungs-Zähler best-effort persistieren, aber NIE hängen bleiben (max. 2,5 s).
+  Promise.race([
+    Promise.resolve().then(() => usage.flush()).catch(() => {}),
+    new Promise((r) => setTimeout(r, 2500)),
+  ]).finally(() => server.close(() => process.exit(0)));
 }
 process.on("SIGTERM", shutdown);
 process.on("SIGINT",  shutdown);

@@ -215,3 +215,34 @@
 #panel-variants .vp-block.vp-copied .vp-num { color: var(--color-text-muted); }
 #panel-variants .vp-block.vp-copied .vp-block-head { border-left: 3px solid var(--color-accent); padding-left: 9px; }
 #panel-variants .vp-text { padding: 12px 14px; font-size: var(--font-size-sm); line-height: 1.55; color: var(--color-text); white-space: pre-wrap; word-break: break-word; }
+
+/* ── Nutzungs-Dashboard (#panel-usage) ── */
+#panel-usage { max-width: 900px; margin: 0 auto; }
+#panel-usage .us-note { color: var(--color-text-muted); font-size: var(--font-size-sm); line-height: 1.55; margin-bottom: 16px; }
+#panel-usage .us-empty { color: var(--color-text-muted); text-align: center; padding: 50px 0; }
+#panel-usage .us-cards { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+#panel-usage .us-card { flex: 1; min-width: 180px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 14px 16px; }
+#panel-usage .us-k { font-size: var(--font-size-xs); color: var(--color-text-muted); text-transform: uppercase; letter-spacing: .04em; }
+#panel-usage .us-v { font-size: var(--font-size-xl); font-weight: 700; font-family: var(--font-display); margin-top: 4px; color: var(--color-accent); }
+#panel-usage .us-v.us-since { font-size: var(--font-size-sm); font-family: var(--font-body); font-weight: 500; color: var(--color-text); }
+#panel-usage .us-sub { font-size: var(--font-size-2xs); color: var(--color-text-dim); margin-top: 2px; }
+#panel-usage .us-tablewrap { overflow-x: auto; border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+#panel-usage .us-table { width: 100%; border-collapse: collapse; font-size: var(--font-size-sm); }
+#panel-usage .us-table th { text-align: left; padding: 10px 12px; background: var(--color-surface-2); color: var(--color-text-muted); font-weight: 600; font-size: var(--font-size-xs); border-bottom: 1px solid var(--color-border); white-space: nowrap; }
+#panel-usage .us-table th.r, #panel-usage .us-table td.r { text-align: right; }
+#panel-usage .us-table td { padding: 9px 12px; border-bottom: 1px solid var(--color-border); }
+#panel-usage .us-table tr:last-child td { border-bottom: 0; }
+#panel-usage .us-prov { color: var(--color-text-muted); }
+#panel-usage .us-count { font-variant-numeric: tabular-nums; font-weight: 600; }
+#panel-usage .us-cost { font-variant-numeric: tabular-nums; }
+#panel-usage .us-cur { color: var(--color-text-dim); margin-right: 2px; }
+#panel-usage .us-price { width: 82px; text-align: right; background: var(--color-bg); color: var(--color-text); border: 1px solid var(--color-border-strong); border-radius: var(--radius-sm); padding: 4px 6px; font: inherit; font-size: 12.5px; -moz-appearance: textfield; }
+#panel-usage .us-price::-webkit-outer-spin-button, #panel-usage .us-price::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+#panel-usage .us-links { margin: 16px 0; font-size: var(--font-size-sm); color: var(--color-text-muted); }
+#panel-usage .us-links a { color: var(--color-accent); }
+#panel-usage .us-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+#panel-usage .us-hint { color: var(--color-text-dim); font-size: var(--font-size-xs); }
+#panel-usage .mng-toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 1002; background: var(--color-surface-2); border: 1px solid var(--color-border); color: var(--color-text); padding: 10px 18px; border-radius: var(--radius-md); opacity: 0; pointer-events: none; transition: .25s; }
+#panel-usage .mng-toast.show { opacity: 1; }
+#panel-usage .mng-toast.err { border-color: var(--color-danger); color: #ffd7da; }
+#panel-usage .mng-toast.good { border-color: var(--color-success); color: #d4f7db; }

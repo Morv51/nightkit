@@ -38,6 +38,7 @@
         <button class="studio-tab active" type="button" data-tab="prompting">Prompting Tool</button>
         <button class="studio-tab" type="button" data-tab="auto">Auto-Flow</button>
         <button class="studio-tab" type="button" data-tab="keywords">Schlagworte verwalten</button>
+        <button class="studio-tab" type="button" data-tab="usage" hidden>Nutzung</button>
       </div>
       <button class="rbtn rbtn-ghost studio-lock" id="lockBtn" type="button" title="Sperren">⊘ Sperren</button>
     </header>
@@ -418,6 +419,10 @@
       <!-- Uploader (additiv). Inhalt rendert upload-panel.js. Tab + Panel bleiben
            verborgen, wenn ADMIN_TOOLS aus ist. Legt nur NEUE Templates an. -->
       <section class="studio-panel" id="panel-upload" data-tab="upload" hidden></section>
+
+      <!-- Nutzungs-Dashboard (additiv). Inhalt rendert usage-panel.js. Tab + Panel
+           bleiben verborgen, wenn ADMIN_TOOLS aus ist. Nur Anzeige, keine Kernfunktion. -->
+      <section class="studio-panel" id="panel-usage" data-tab="usage" hidden></section>
     </main>
   </div>
 
