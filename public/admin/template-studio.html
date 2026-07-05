@@ -33,20 +33,24 @@
     <header class="studio-top">
       <div class="studio-brand">✶ NightKit <span>Template Studio</span></div>
       <div class="studio-tabs" id="tabs">
-        <button class="studio-tab active" type="button" data-tab="mode1">Flyer → Template</button>
-        <button class="studio-tab" type="button" data-tab="mode2">Moodboard → Prompt</button>
-        <button class="studio-tab" type="button" data-tab="auto">Auto-Flow 1 <span class="tab-beta">Beta</span></button>
-        <button class="studio-tab" type="button" data-tab="auto2">Auto-Flow 2 <span class="tab-beta">Beta</span></button>
-        <button class="studio-tab" type="button" data-tab="keywords">Schlagworte</button>
         <button class="studio-tab" type="button" data-tab="manage" hidden>Bestandsverwaltung</button>
-        <button class="studio-tab" type="button" data-tab="upload" hidden>Upload</button>
+        <button class="studio-tab" type="button" data-tab="upload" hidden>Template Uploader</button>
+        <button class="studio-tab active" type="button" data-tab="prompting">Prompting Tool</button>
+        <button class="studio-tab" type="button" data-tab="auto">Auto-Flow</button>
+        <button class="studio-tab" type="button" data-tab="keywords">Schlagworte verwalten</button>
       </div>
       <button class="rbtn rbtn-ghost studio-lock" id="lockBtn" type="button" title="Sperren">⊘ Sperren</button>
     </header>
 
     <main class="studio-main">
       <!-- Modus 1: Flyer → Prompt (reiner PROMPT-Generator, keine Bildgenerierung) -->
-      <section class="studio-panel active" id="panel-mode1" data-tab="mode1">
+      <!-- Prompting Tool: Unterauswahl zwischen Flyer→Template und Moodboard→Prompt.
+           Die beiden Panels (IDs unverändert) bleiben funktional wie bisher. -->
+      <div class="studio-subnav" data-group="prompting">
+        <button class="studio-subtab active" type="button" data-group="prompting" data-sub="mode1">Flyer → Template</button>
+        <button class="studio-subtab" type="button" data-group="prompting" data-sub="mode2">Moodboard → Prompt</button>
+      </div>
+      <section class="studio-panel active" id="panel-mode1" data-tab="prompting" data-sub="mode1">
         <div class="studio-single">
           <div class="st-card">
             <div class="st-head">1 · Flyer</div>
@@ -98,7 +102,7 @@
         </div>
       </section>
       <!-- Modus 2: Referenz(en) → Prompt (reiner PROMPT-Generator, wie Modus 1) -->
-      <section class="studio-panel" id="panel-mode2" data-tab="mode2" hidden>
+      <section class="studio-panel" id="panel-mode2" data-tab="prompting" data-sub="mode2" hidden>
         <div class="studio-single">
           <div class="st-card">
             <div class="st-head">1 · Referenzen</div>
@@ -192,7 +196,13 @@
            blockierte werden übersprungen, am Ende Erfolgsquote. Nutzt die
            bestehende Modus-2-Analyse/Prompt-Logik (nur aufgerufen). Der produktive
            Ideogram-Befüllflow im Haupt-Tool bleibt unberührt. -->
-      <section class="studio-panel" id="panel-auto" data-tab="auto" hidden>
+      <!-- Auto-Flow: Unterauswahl zwischen Auto-Flow 1 und Auto-Flow 2. Die beiden
+           Panels (IDs unverändert) bleiben funktional wie bisher. -->
+      <div class="studio-subnav" data-group="auto" hidden>
+        <button class="studio-subtab active" type="button" data-group="auto" data-sub="auto">Auto-Flow 1</button>
+        <button class="studio-subtab" type="button" data-group="auto" data-sub="auto2">Auto-Flow 2</button>
+      </div>
+      <section class="studio-panel" id="panel-auto" data-tab="auto" data-sub="auto" hidden>
         <div class="studio-single">
           <div class="st-card">
             <div class="st-head">Auto-Flow <span class="beta-badge">BETA</span></div>
@@ -230,7 +240,7 @@
         </div>
       </section>
 
-      <section class="studio-panel" id="panel-auto2" data-tab="auto2" hidden>
+      <section class="studio-panel" id="panel-auto2" data-tab="auto" data-sub="auto2" hidden>
         <div class="studio-single">
           <div class="st-card">
             <div class="st-head">Auto-Flow 2 · Inspiration <span class="beta-badge">BETA</span></div>

@@ -51,7 +51,9 @@ export async function initManage() {
   state.data = data;
   renderShell(p);
   renderAll();
-  if (location.hash === "#manage" && tabBtn) tabBtn.click();
+  // Bei ADMIN_TOOLS=1 ist die Bestandsverwaltung der Standard-Tab. studio.js zieht das
+  // nach (respektiert #manage-Anker und eine bereits getroffene Nutzerwahl).
+  document.dispatchEvent(new CustomEvent("nk-admin-ready"));
 }
 
 async function reload() {
