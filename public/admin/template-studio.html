@@ -271,7 +271,7 @@
         <div class="studio-single">
           <div class="st-card">
             <div class="st-head">Auto-Flow 2 · Inspiration <span class="beta-badge">BETA</span></div>
-            <div class="st-mini-note">Wie Auto-Flow 1, aber das Ergebnis <b>löst sich bewusst vom Original</b> — gedacht für <b>fremde</b> Flyer als Inspiration. Zwei Pfade (unten wählbar): <b>Nah (Pfad A)</b> schickt dein Bild mit, hält aber im Prompt bewusst Abstand; <b>Weit (Pfad B)</b> nutzt <b>dieselbe detaillierte Beschreibung wie Flow 1</b>, schickt das Bild aber <b>nicht</b> mit (Abstand allein durch das fehlende Bild). Sonst identisch: <b>1 Hauptflyer + 9 Varianten (10 Bilder)</b>, OpenAI GPT Image, 9:16, Wort-Entschärfung, timeout-sicher, blockierte überspringen, Multi-Upload, ZIP-Downloads.</div>
+            <div class="st-mini-note">Wie Auto-Flow 1, aber das Ergebnis <b>löst sich bewusst vom Original</b> — gedacht für <b>fremde</b> Flyer als Inspiration. Zwei Pfade (unten wählbar): <b>Nah (Pfad A)</b> schickt dein Bild mit, hält aber im Prompt bewusst Abstand; <b>Weit (Pfad B)</b> nutzt <b>dieselbe detaillierte Beschreibung wie Flow 1</b>, schickt das Bild aber <b>nicht</b> mit (Abstand allein durch das fehlende Bild). Sonst identisch: <b>1 Hauptflyer + wählbar 1 bis 10 Varianten (Standard 9)</b>, OpenAI GPT Image, 9:16, Wort-Entschärfung, timeout-sicher, blockierte überspringen, Multi-Upload, ZIP-Downloads.</div>
           </div>
 
           <div class="st-card">
@@ -302,12 +302,17 @@
 
           <div class="st-card">
             <div class="st-head">3 · Start</div>
+            <div class="st-slider-row af2-varrow">
+              <label for="af2VarCount">Anzahl <b>Varianten</b> zusätzlich zum Hauptflyer: <b id="af2VarVal">9</b> <span class="af2-varrange">(1 bis 10)</span></label>
+              <input type="range" class="st-slider" id="af2VarCount" min="1" max="10" step="1" value="9">
+              <div class="st-mini-note">Es entsteht <b>immer 1 Hauptflyer</b>, dazu die gewählte Anzahl Varianten. Jede zusätzliche Variante ist ein weiterer <b>GPT-Image-Aufruf</b>, mehr Varianten bedeuten also mehr Kosten und etwas mehr Zeit.</div>
+            </div>
             <div class="st-row">
               <button class="rbtn rbtn-primary" id="af2Start" type="button">▶ Generieren</button>
               <button class="rbtn rbtn-danger" id="af2Cancel" type="button" hidden>■ Abbrechen</button>
               <span class="af-time" id="af2Progress"></span>
             </div>
-            <div class="st-mini-note">Gleiche Engine wie Auto-Flow 1 (<b>Sonnet</b> + <b>OpenAI GPT Image</b>). Je Flyer 10 Bilder, nacheinander. Läuft ein Lauf, kannst du ihn mit <b>Abbrechen</b> stoppen — schon fertige Bilder bleiben erhalten.</div>
+            <div class="st-mini-note">Gleiche Engine wie Auto-Flow 1 (<b>Sonnet</b> + <b>OpenAI GPT Image</b>). Je Flyer <b>1 Hauptflyer plus die gewählte Anzahl Varianten</b>, nacheinander. Läuft ein Lauf, kannst du ihn mit <b>Abbrechen</b> stoppen, schon fertige Bilder bleiben erhalten.</div>
           </div>
 
           <div class="st-card" id="af2SummaryCard" hidden>

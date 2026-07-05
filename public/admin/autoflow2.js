@@ -18,6 +18,15 @@ let cancelled = false;   // Abbrechen angefordert → keine neuen Bilder mehr st
 let runStamp = "";       // Zeitstempel je Lauf → eindeutige Datei-/Ordnernamen beim Download
 let pathMode = "near";   // Pfad A ("near", mit Bild) | Pfad B ("far", nur Text-Beschreibung)
 
+// Gewählte Anzahl VARIANTEN (zusätzlich zum EINEN Hauptflyer). Schieberegler #af2VarCount,
+// strikt 1..10. Fehlt der Regler oder ist der Wert ungültig, gilt VARIANTS (9) → ein Lauf
+// ohne Auswahl verhält sich exakt wie bisher. Das Hauptbild wird immer erzeugt, unabhängig.
+function variantCount() {
+  const el = $("af2VarCount");
+  const n = el ? parseInt(el.value, 10) : NaN;
+  return (Number.isFinite(n) && n >= 1 && n <= 10) ? n : VARIANTS;
+}
+
 // ── Upload ───────────────────────────────────────────────────────
 async function addFiles(fileList) {
   for (const f of fileList) {
@@ -39,7 +48,7 @@ function renderThumbs() {
   });
   row.hidden = !files.length;
   $("af2DropLabel").textContent = files.length
-    ? files.length + " Bild(er) gewählt — je Bild Hauptflyer + " + VARIANTS + " Varianten"
+    ? files.length + " Bild(er) gewählt, je Bild Hauptflyer + " + variantCount() + " Variante(n)"
     : "Flyer hierher ziehen, einfügen (⌘/Ctrl+V) oder klicken — ein oder mehrere · PNG/JPG/WebP, ≤10 MB je Bild";
 }
 
@@ -318,7 +327,8 @@ async function run() {
   $("af2SummaryCard").hidden = false;
   const multi = files.length > 1;
   const N = files.length;
-  const TOTAL = 1 + VARIANTS; // Hauptflyer + Varianten = 10 Bilder je Flyer
+  const nVar = variantCount();  // gewählte Anzahl Varianten (1..10), Standard 9 — für den ganzen Lauf fixiert
+  const TOTAL = 1 + nVar;       // Hauptflyer + Varianten
 
   for (let fi = 0; fi < files.length; fi++) {
     if (cancelled) break;
@@ -326,7 +336,7 @@ async function run() {
     const rowIdx = rows.length;
     const row = { idx: rowIdx, fnum, prefix: multi ? "Flyer " + fnum : "Flyer", dataUrl: f.dataUrl, tiles: [] };
     row.tiles.push(mkTile(rowIdx, fnum, 0, "main", "Haupt"));
-    for (let k = 1; k <= VARIANTS; k++) row.tiles.push(mkTile(rowIdx, fnum, k, "variant", String(k)));
+    for (let k = 1; k <= nVar; k++) row.tiles.push(mkTile(rowIdx, fnum, k, "variant", String(k)));
     rows.push(row); appendRow(row); updateOverview();
     const tag = multi ? "Flyer " + fnum + " von " + N + " · " : "";
 
@@ -350,11 +360,11 @@ async function run() {
     // 3) 6 Varianten-Prompts (bestehender Generator)
     setPhase(tag + "Varianten-Prompts …");
     let variants = [], varErr = "";
-    try { const vr = await post("/admin/auto-variants", { dna, count: VARIANTS, refType: "single", model: MODEL, loose: (pathMode === "near") }); variants = (vr && vr.variants) || []; }
+    try { const vr = await post("/admin/auto-variants", { dna, count: nVar, refType: "single", model: MODEL, loose: (pathMode === "near") }); variants = (vr && vr.variants) || []; }
     catch (e) { varErr = e.message; notify(tag + "Varianten-Prompts fehlgeschlagen: " + e.message, "error"); }
 
     // 4) Varianten generieren
-    for (let k = 0; k < VARIANTS; k++) {
+    for (let k = 0; k < nVar; k++) {
       if (cancelled) break;
       const t = row.tiles[k + 1];
       // Echten Grund zeigen (z. B. „Varianten fehlgeschlagen: …") statt nur generisch.
@@ -387,6 +397,11 @@ export function initAutoflow2() {
   });
   wireDropzoneMulti($("af2Drop"), addFiles);
   wirePaste($("panel-auto2"), (f) => addFiles([f]));
+  const vc = $("af2VarCount");
+  if (vc) vc.addEventListener("input", () => {
+    const lab = $("af2VarVal"); if (lab) lab.textContent = vc.value;
+    if (files.length) renderThumbs();   // Datei-Meldung mit der neuen Zahl aktualisieren
+  });
   if ($("af2Start")) $("af2Start").addEventListener("click", run);
   if ($("af2Cancel")) $("af2Cancel").addEventListener("click", requestCancel);
   if ($("af2ZipAll")) $("af2ZipAll").addEventListener("click", zipAll);

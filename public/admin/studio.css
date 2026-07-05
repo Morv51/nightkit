@@ -226,6 +226,8 @@ html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: aut
 }
 .st-slider-row { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--muted, rgba(245,245,240,0.6)); }
 .st-slider { width: 100%; accent-color: var(--color-accent, #ccff00); }
+.af2-varrow #af2VarVal { color: var(--color-accent, #ccff00); font-variant-numeric: tabular-nums; }
+.af2-varrow .af2-varrange { opacity: 0.6; }
 
 .st-prompt {
   width: 100%;
