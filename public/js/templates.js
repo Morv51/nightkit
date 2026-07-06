@@ -23,6 +23,7 @@ export async function loadTemplates() {
       const data = await getTemplates();
       state.templates = data.templates;
       state.categories = data.categories;
+      state.categoryCovers = data.categoryCovers || {};
       if (!state.currentTemplateFile && state.templates[0]) {
         state.currentTemplateFile = state.templates[0].file;
       }
@@ -86,9 +87,13 @@ export function selectTemplate(file) {
 }
 
 // ── Gemeinsame Galerie-Komponente ────────────────────────────────
-// Repräsentatives Bild einer Kategorie (featured zuerst, sonst das erste).
+// Repräsentatives Bild einer Kategorie. Vorrang hat ein im Admin bewusst gesetztes
+// Aushängeschild (state.categoryCovers, serverseitig schon auf sichtbar + richtige
+// Kategorie geprüft). Ist keins gesetzt, exakt wie bisher: featured zuerst, sonst das erste.
 function categoryCover(cat) {
   const inCat = state.templates.filter((t) => t.category === cat);
+  const coverFile = state.categoryCovers && state.categoryCovers[cat];
+  if (coverFile) { const c = inCat.find((t) => t.file === coverFile); if (c) return c; }
   return inCat.find((t) => t.featured) || inCat[0] || null;
 }
 

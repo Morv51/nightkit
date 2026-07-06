@@ -17,6 +17,7 @@ export const state = {
   // templates
   templates: [],
   categories: [],
+  categoryCovers: {}, // Kategorie -> Template-Pfad (Admin-Aushaengeschild; leer = Standard)
   currentTemplateFile: null,
 
   // logo

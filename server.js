@@ -12,6 +12,7 @@ const jobs                  = require("./lib/jobs");
 const templates             = require("./lib/templates");
 const thumbs                = require("./lib/thumbs");
 const templateSource        = require("./lib/templateSource"); // zentrale Lese-Schicht (repo/r2)
+const categoryCover         = require("./lib/admin/categoryCover"); // Kategorie-Cover-Overlay (nur ADMIN_TOOLS)
 const { createServer: createStatic } = require("./lib/static");
 const { proxy }             = require("./lib/proxy");
 const { webmToMp4 }         = require("./lib/convert");
@@ -432,7 +433,8 @@ router.get("/api/proxy", (req, res) => {
 });
 
 router.get("/api/templates", (_req, res) => {
-  const list = templates.list().map((t) => ({
+  const raw = templates.list();
+  const list = raw.map((t) => ({
     file: t.file,
     name: t.name,
     category: t.category,
@@ -452,7 +454,9 @@ router.get("/api/templates", (_req, res) => {
   // Liste immer frisch laden — nie eine veraltete (evtl. leere) Version aus dem
   // Browser-/Proxy-Cache ausliefern (kann sonst eine leere Galerie verursachen).
   res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-  sendJson(res, 200, { templates: list, categories: templates.categories() });
+  // Kategorie-Cover-Overlay (nur ADMIN_TOOLS=1; sonst leer -> App wie heute). Gueltig
+  // nur, wenn das gewaehlte Template sichtbar und in dieser Kategorie ist.
+  sendJson(res, 200, { templates: list, categories: templates.categories(), categoryCovers: categoryCover.resolveCovers(raw) });
 });
 
 // Optimiertes Thumbnail eines Templates (kleines JPEG, gecacht). Skaliert die
@@ -610,6 +614,9 @@ server.listen(PORT, () => {
     // Reihenfolge-Overlay (manuelle Sortierung pro Kategorie) vorwaermen.
     try { require("./lib/admin/order").prime().catch(() => {}); }
     catch (e) { console.log("[ADMIN-ORDER] Start-Prime fehlgeschlagen: " + (e && e.message ? e.message : e)); }
+    // Kategorie-Cover-Overlay (Aushaengeschild pro Kategorie) vorwaermen.
+    try { categoryCover.prime().catch(() => {}); }
+    catch (e) { console.log("[ADMIN-COVER] Start-Prime fehlgeschlagen: " + (e && e.message ? e.message : e)); }
     // Nutzungs-Zähler vorwaermen (nachrangig; nie blockierend, faengt alles ab).
     try { usage.prime().catch(() => {}); }
     catch (e) { console.log("[USAGE] Start-Prime fehlgeschlagen: " + (e && e.message ? e.message : e)); }

@@ -100,14 +100,25 @@ function renderShell(p) {
   wireEvents(p);
 }
 
+function isCoverTile(t, kind) {
+  return kind !== "trash" && !!(state.data.categoryCovers && state.data.categoryCovers[t.category] === t.file);
+}
+
 function tileHTML(t, kind, index) {
   const cat = kind === "trash"
     ? '<div class="ct">Kategorie: ' + esc(t.folderCategory) + "</div>"
     : '<div class="ct">' + (t.overridden ? '<span class="ov">→</span> ' + esc(t.category) : esc(t.category)) + "</div>";
+  const isCover = isCoverTile(t, kind);
+  // Aushängeschild-Umschalter: gesetzt -> Zurücksetzen (Standard), sonst setzen.
+  const coverBtn = kind === "trash" ? ""
+    : isCover
+    ? '<button class="rbtn mng-coverbtn is-cover" data-act="cover-reset" data-cat="' + esc(t.category) + '" title="Ist Kategoriebild — klicken für Standard">★ Kategoriebild</button>'
+    : '<button class="rbtn rbtn-ghost mng-coverbtn" data-act="cover" data-file="' + esc(t.file) + '" data-cat="' + esc(t.category) + '" title="Als Kategoriebild dieser Kategorie setzen">☆ Kategoriebild</button>';
   const acts = kind === "trash"
     ? '<button class="rbtn rbtn-ghost" data-act="restore" data-file="' + esc(t.file) + '">Wiederherstellen</button>'
     : '<button class="rbtn rbtn-ghost" data-act="move" data-file="' + esc(t.file) + '">Verschieben</button>' +
-      '<button class="rbtn rbtn-danger" data-act="hide" data-file="' + esc(t.file) + '">Löschen</button>';
+      '<button class="rbtn rbtn-danger" data-act="hide" data-file="' + esc(t.file) + '">Löschen</button>' +
+      coverBtn;
   // Order-Leiste nur im Sortier-Modus (Einzelkategorie): Ziehgriff, Positionsfeld, Pfeile.
   const orderBar = kind === "order"
     ? '<div class="mng-orderbar">' +
@@ -119,9 +130,10 @@ function tileHTML(t, kind, index) {
     : "";
   // Grosse Ansicht via R2-faehige Route (/api/thumb w=720 -> Quelle aus R2 mit Repo-Rueckfall).
   const big = "/api/thumb?w=720&file=" + encodeURIComponent(t.file);
-  return '<div class="mng-tile" data-file="' + esc(t.file) + '">' +
+  const coverBadge = isCover ? '<span class="mng-coverbadge" title="Kategoriebild">★</span>' : "";
+  return '<div class="mng-tile' + (isCover ? " is-cover" : "") + '" data-file="' + esc(t.file) + '">' +
     orderBar +
-    '<div class="tw" data-big="' + esc(big) + '" data-name="' + esc(t.name) + '"><img loading="lazy" draggable="false" src="' + esc(t.thumb) + '" alt=""></div>' +
+    '<div class="tw" data-big="' + esc(big) + '" data-name="' + esc(t.name) + '">' + coverBadge + '<img loading="lazy" draggable="false" src="' + esc(t.thumb) + '" alt=""></div>' +
     '<div class="m"><div class="nm" title="Klicken zum Umbenennen" data-editname data-file="' + esc(t.file) + '" data-cur="' + esc(t.name) + '">' + esc(t.name) + '</div>' + cat + "</div>" +
     '<div class="acts">' + acts + "</div></div>";
 }
@@ -190,6 +202,15 @@ async function doHide(file) {
 }
 async function doRestore(file) {
   try { await post("/admin/manage/restore", { file }); toast("Wiederhergestellt", "good"); await reload(); }
+  catch (e) { if (e.message !== "401") toast(e.message, "err"); }
+}
+// Aushängeschild (Kategoriebild) setzen bzw. auf Standard zurücksetzen.
+async function doSetCover(file, category) {
+  try { await post("/admin/manage/cover", { file, category }); toast("Als Kategoriebild gesetzt", "good"); await reload(); }
+  catch (e) { if (e.message !== "401") toast(e.message, "err"); }
+}
+async function doResetCover(category) {
+  try { await post("/admin/manage/cover/reset", { category }); toast("Kategoriebild zurückgesetzt (Standard)", "good"); await reload(); }
   catch (e) { if (e.message !== "401") toast(e.message, "err"); }
 }
 
@@ -373,6 +394,8 @@ function wireEvents(p) {
       if (act.dataset.act === "hide") doHide(file);
       else if (act.dataset.act === "restore") doRestore(file);
       else if (act.dataset.act === "move") openMove(file);
+      else if (act.dataset.act === "cover") doSetCover(file, act.dataset.cat);
+      else if (act.dataset.act === "cover-reset") doResetCover(act.dataset.cat);
       return;
     }
   });

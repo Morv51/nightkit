@@ -175,7 +175,7 @@ export async function getTemplates() {
   const res = await fetch("/api/templates?t=" + Date.now(), { cache: "no-store" });
   if (!res.ok) throw new Error("Templates konnten nicht geladen werden.");
   const data = await res.json();
-  return { templates: data.templates || [], categories: data.categories || [] };
+  return { templates: data.templates || [], categories: data.categories || [], categoryCovers: data.categoryCovers || {} };
 }
 
 export function proxyUrl(externalUrl) {
