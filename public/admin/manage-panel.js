@@ -117,6 +117,7 @@ function tileHTML(t, kind, index) {
   const acts = kind === "trash"
     ? '<button class="rbtn rbtn-ghost" data-act="restore" data-file="' + esc(t.file) + '">Wiederherstellen</button>'
     : '<button class="rbtn rbtn-ghost" data-act="move" data-file="' + esc(t.file) + '">Verschieben</button>' +
+      '<button class="rbtn rbtn-ghost" data-act="download" data-file="' + esc(t.file) + '" title="Original in voller Auflösung herunterladen">⬇ Original</button>' +
       '<button class="rbtn rbtn-danger" data-act="hide" data-file="' + esc(t.file) + '">Löschen</button>' +
       coverBtn;
   // Order-Leiste nur im Sortier-Modus (Einzelkategorie): Ziehgriff, Positionsfeld, Pfeile.
@@ -203,6 +204,25 @@ async function doHide(file) {
 async function doRestore(file) {
   try { await post("/admin/manage/restore", { file }); toast("Wiederhergestellt", "good"); await reload(); }
   catch (e) { if (e.message !== "401") toast(e.message, "err"); }
+}
+// Sinnvoller Dateiname: Anzeigename (sonst technischer Basisname) + echte Bildendung.
+function downloadName(t) {
+  const ext = ((t.file || "").split(".").pop() || "jpg").toLowerCase();
+  const base = (t.name && t.name.trim()) || (t.file || "template").split("/").pop().replace(/\.[^.]+$/, "");
+  const safe = base.replace(/[\/\\:*?"<>|]+/g, "-").replace(/\s+/g, " ").trim() || "template";
+  return safe + "." + ext;
+}
+// Original in VOLLER Auflösung herunterladen über die vorhandene R2-fähige Route
+// (/api/template-image, gleiche Route wie Vorschau/Lightbox). Same-origin + download-
+// Attribut erzwingt das SPEICHERN (kein Öffnen im Tab) und setzt den Dateinamen. Nur
+// das reine Bild, keine Metadaten, kein ZIP. Ändert die Anzeige-Nutzung der Route nicht.
+function doDownload(file) {
+  const t = state.data.templates.find((x) => x.file === file);
+  if (!t) return;
+  const a = document.createElement("a");
+  a.href = "/api/template-image?file=" + encodeURIComponent(file);
+  a.download = downloadName(t);
+  document.body.appendChild(a); a.click(); a.remove();
 }
 // Aushängeschild (Kategoriebild) setzen bzw. auf Standard zurücksetzen.
 async function doSetCover(file, category) {
@@ -394,6 +414,7 @@ function wireEvents(p) {
       if (act.dataset.act === "hide") doHide(file);
       else if (act.dataset.act === "restore") doRestore(file);
       else if (act.dataset.act === "move") openMove(file);
+      else if (act.dataset.act === "download") doDownload(file);
       else if (act.dataset.act === "cover") doSetCover(file, act.dataset.cat);
       else if (act.dataset.act === "cover-reset") doResetCover(act.dataset.cat);
       return;
