@@ -165,6 +165,10 @@
   padding: 16px; margin-bottom: 14px;
 }
 #panel-upload .up-label { display: block; font-size: var(--font-size-sm); font-weight: 600; margin-bottom: 10px; }
+/* Drag-and-Drop-Zone (Schritt 1): dezente Umrandung, beim Drüberziehen Lime-Highlight. */
+#panel-upload .up-drop { transition: border-color .15s, background .15s; }
+#panel-upload .up-drop.dragover { border-color: var(--color-accent); background: rgba(204, 255, 0, 0.08); }
+#panel-upload .up-drophint { margin-top: 10px; font-size: var(--font-size-xs); color: var(--color-text-muted); }
 #panel-upload input[type="file"] { display: block; width: 100%; font: inherit; color: var(--color-text-muted); }
 #panel-upload input[type="file"]::file-selector-button {
   font: inherit; margin-right: 12px; padding: 8px 14px; border: 1px solid var(--color-border-strong);

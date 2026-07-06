@@ -6,6 +6,7 @@
 // Ist ADMIN_TOOLS aus, liefert /admin/manage/list 404 -> Tab bleibt verborgen.
 
 import { getToken, clearToken, post } from "./studioApi.js";
+import { wireDropzoneMulti } from "./studioUi.js";
 
 const WARN_AT = 20; // ab so vielen Dateien nachfragen
 let categories = [];
@@ -42,9 +43,10 @@ function renderShell(p) {
   p.innerHTML = [
     '<div class="up-wrap">',
     '  <div class="up-note">Lädt neue Flyer als Templates in R2 hoch: eindeutiger technischer Name, WebP-Thumbnail, optional automatische Verschlagwortung (Sonnet). Bestehende Templates werden nicht angefasst. Neue erscheinen sofort in der Bestandsverwaltung und der App.</div>',
-    '  <div class="up-card">',
+    '  <div class="up-card up-drop" id="upDrop">',
     '    <label class="up-label">1 · Bilddateien wählen (jpg, jpeg, png, webp, mehrere möglich)</label>',
     '    <input type="file" id="upFiles" accept="image/png,image/jpeg,image/webp" multiple>',
+    '    <div class="up-drophint">oder Dateien hierher ziehen und ablegen</div>',
     '    <div class="up-filelist" id="upFileList"></div>',
     '  </div>',
     '  <div class="up-card">',
@@ -140,11 +142,36 @@ async function start() {
   }
 }
 
+// Drag-and-Drop als ZWEITER Auswahlweg (der Dialog bleibt unverändert). Die abgelegten
+// Bilddateien werden in das bestehende Datei-Input gelegt und ein change-Event ausgelöst,
+// sodass exakt derselbe Auswahl- und Weiterverarbeitungspfad wie beim Dialog läuft. Nicht-
+// Bilddateien werden ignoriert (kurzer Hinweis). Die Upload-Verarbeitung bleibt unberührt.
+function isImageFile(f) {
+  return /^image\/(png|jpe?g|webp)$/i.test(f.type || "") || /\.(png|jpe?g|webp)$/i.test(f.name || "");
+}
+function onDropped(fileList) {
+  const all = Array.from(fileList || []);
+  const imgs = all.filter(isImageFile);
+  const rejected = all.length - imgs.length;
+  if (!imgs.length) { toast("Nur Bilddateien: jpg, jpeg, png, webp", "err"); return; }
+  const input = q("#upFiles");
+  try {
+    const dt = new DataTransfer();
+    imgs.forEach((f) => dt.items.add(f));
+    input.files = dt.files;                                        // gleicher Auswahl-Zustand wie der Dialog
+    input.dispatchEvent(new Event("change", { bubbles: true }));   // löst den bestehenden change-Pfad aus
+  } catch (_) {
+    files = imgs; renderFileList(); refreshStartState();          // Fallback: direkt, gleiche Weiterverarbeitung
+  }
+  if (rejected) toast(rejected + (rejected === 1 ? " Nicht-Bilddatei ignoriert" : " Nicht-Bilddateien ignoriert"), "warn");
+}
+
 function wire() {
   q("#upFiles").addEventListener("change", (e) => {
     files = Array.from(e.target.files || []);
     renderFileList(); refreshStartState();
   });
+  wireDropzoneMulti(q("#upDrop"), onDropped); // Drag-and-Drop auf die Schritt-1-Karte
   q("#upCat").addEventListener("change", refreshStartState);
   q("#upNewCat").addEventListener("input", refreshStartState);
   q("#upAutoTag").addEventListener("change", refreshStartState);
