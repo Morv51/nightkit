@@ -440,8 +440,11 @@ router.get("/api/templates", (_req, res) => {
     // Schlagworte pro Flyer: Struktur für die spätere Befüllung (jetzt meist leer).
     // Die Suche durchsucht dieses Feld bereits mit.
     keywords: t.keywords || [],
-    // Pfad pro Segment URL-encodieren (Ordnernamen mit Leerzeichen/„&").
-    src: "/templates/" + t.file.split("/").map(encodeURIComponent).join("/"),
+    // Grosse Vorschau + Lightbox ueber die R2-faehige Voll-Aufloesungs-Route
+    // (/api/template-image -> getTemplateFile, R2 mit Repo-Rueckfall), damit auch
+    // reine R2-Templates ihr grosses Bild zeigen. Anzeige-only; die Generierung
+    // nutzt weiterhin t.file, nicht src.
+    src: "/api/template-image?file=" + encodeURIComponent(t.file),
     // Optimiertes Vorschau-Thumbnail (klein, ~360px) fürs Grid. Volle Auflösung
     // (src) nur in der Großansicht.
     thumb: "/api/thumb?w=360&file=" + encodeURIComponent(t.file),
@@ -469,6 +472,39 @@ router.get("/api/thumb", async (req, res) => {
     console.error("thumb error:", e.message);
     res.writeHead(404);
     res.end("thumb not available");
+  }
+});
+
+// Endung -> Content-Type fuer die Voll-Aufloesungs-Bildroute (Templates sind jpg/png;
+// webp der Vollstaendigkeit halber). Unbekannt -> generischer Binaertyp.
+function imageMime(file) {
+  const ext = String(file || "").toLowerCase().split(".").pop();
+  if (ext === "png") return "image/png";
+  if (ext === "webp") return "image/webp";
+  if (ext === "jpg" || ext === "jpeg") return "image/jpeg";
+  return "application/octet-stream";
+}
+
+// Template in VOLLER Aufloesung ueber die R2-faehige Lese-Schicht (getTemplateFile:
+// R2 mit Repo-Rueckfall). Rein LESEND und additiv; aendert /api/thumb und die statische
+// /templates-Route NICHT. Fuer das grosse Vorschaubild + die Lightbox im edit-Flow,
+// damit auch reine R2-Templates (nicht im Repo) ihr grosses Bild zeigen. Pfad-Sicherheit
+// und Existenzpruefung erbt die Route komplett von getTemplateFile; bei Fehler 404.
+router.get("/api/template-image", async (req, res) => {
+  const q = req.urlQuery || {};
+  const file = q.file || ""; // urlQuery ist bereits dekodiert (URLSearchParams)
+  if (!file) { res.writeHead(400); return res.end("file required"); }
+  try {
+    const buf = await templateSource.getTemplateFile(file);
+    res.setHeader("Content-Type", imageMime(file));
+    res.setHeader("Content-Length", buf.length);
+    res.setHeader("Cache-Control", "public, max-age=86400"); // Original-Bytes sind stabil
+    res.writeHead(200);
+    res.end(buf);
+  } catch (e) {
+    console.error("template-image error:", e.message);
+    res.writeHead(404);
+    res.end("image not available");
   }
 });
 
