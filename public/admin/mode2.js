@@ -11,7 +11,8 @@ import { fileToDataUrl, notify, wireDropzoneMulti, wirePaste } from "./studioUi.
 const $ = (id) => document.getElementById(id);
 const MAX_REFS = 8;
 
-const state = { refs: [], refType: "moodboard", dna: null, varCount: 0 };
+// promptMode: "vibe" = Modus A (Standard, unveraendert), "independent" = Modus B (eigenstaendig).
+const state = { refs: [], refType: "moodboard", promptMode: "vibe", dna: null, varCount: 0 };
 
 function setBusy(on, msg) {
   $("m2Busy").hidden = !on;
@@ -67,6 +68,7 @@ async function analyze() {
       mode: "moodboard",
       images: state.refs.map((r) => r.dataUrl),
       refType: state.refType,
+      promptMode: state.promptMode, // Modus A (Standard) oder B (eigenstaendig)
       model: $("m2Model").value,
     });
     // NEUER Stil-Anker → alles Alte verwerfen: Varianten-Liste leeren UND die
@@ -92,7 +94,7 @@ async function analyze() {
 async function rebuildPrompt() {
   if (!state.dna) return notify("Erst eine Referenz analysieren", "info");
   try {
-    const { prompt } = await post("/admin/build-prompt", { dna: state.dna, refType: state.refType });
+    const { prompt } = await post("/admin/build-prompt", { dna: state.dna, refType: state.refType, promptMode: state.promptMode });
     $("m2Prompt").value = prompt;
     autoGrow();
     flashPrompt();
@@ -294,6 +296,14 @@ export function initMode2() {
   $("m2RefType").addEventListener("change", () => {
     state.refType = $("m2RefType").value;
     if (state.dna) rebuildPrompt(); // Hauptprompt an Referenzart anpassen
+  });
+
+  // Prompt-Modus A/B umschalten. Nur der Hauptprompt aendert sich; ist schon eine DNA
+  // da, wird der Prompt direkt neu gebaut (gleicher Ablauf wie beim Referenzart-Wechsel).
+  const pm = $("m2PromptMode");
+  if (pm) pm.addEventListener("change", () => {
+    state.promptMode = pm.value;
+    if (state.dna) rebuildPrompt();
   });
 
   $("m2Analyze").addEventListener("click", analyze);

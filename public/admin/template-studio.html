@@ -124,6 +124,12 @@
 
           <div class="st-card">
             <div class="st-head">2 · Analyse</div>
+            <label class="ref-row"><span>Prompt-Modus</span>
+              <select id="m2PromptMode" class="st-select">
+                <option value="vibe">Nah am Vibe (Standard)</option>
+                <option value="independent">Eigenständig (copyright-schonend)</option>
+              </select>
+            </label>
             <div class="st-row">
               <select class="st-select" id="m2Model" aria-label="Vision-Modell">
                 <option value="haiku">Haiku · schnell</option>
@@ -133,6 +139,8 @@
             </div>
             <div class="st-busy st-busy-inline" id="m2Busy" hidden><span class="cb-spin"></span><span id="m2BusyMsg">…</span></div>
             <div class="st-mini-note">Liest NUR die Stil-Sprache (Look, Farbwelt, Typo-Charakter, Textur, Stimmung) — keine konkreten Inhalte. Bei „Moodboard" wird die Collage-Struktur ignoriert, bei „Einzelnes Bild" darf es näher am Vorbild bleiben.</div>
+            <div class="st-mini-note"><b>Nah am Vibe</b> baut den Prompt wie bisher, nah an Stil und Aufbau der Referenz. <b>Eigenständig</b> nimmt nur Stimmung, Farbwelt, Thema und Energie auf und beschreibt eine eigenständige Bildidee, ohne Stil, Komposition oder Motive des Originals zu übernehmen.</div>
+            <div class="st-mini-note">Nutze nur Bilder, an denen du die Rechte hast, oder als Inspiration. Die erzeugten Prompts sind eigenständige Interpretationen.</div>
           </div>
 
           <!-- Das Herzstück: der fertige Club-Event-Flyer-Prompt zum Kopieren -->
