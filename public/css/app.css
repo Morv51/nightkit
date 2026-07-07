@@ -195,7 +195,20 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .tg-catcard-name{font-size:var(--font-size-sm);font-weight:var(--font-weight-semibold);color:var(--color-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tg-catcard-count{font-size:var(--font-size-xs);color:var(--color-text-dim);flex:0 0 auto}
 .tg-catcard:hover{border-color:var(--color-accent);transform:translateY(-2px);box-shadow:0 8px 24px rgba(204,255,0,.14)}
-.tg-catcard--all .tg-catcard-thumb::after{content:'ALLE';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:700;letter-spacing:.12em;font-size:var(--font-size-sm);color:#fff;background:rgba(0,0,0,.42)}
+.tg-catcard--all .tg-catcard-thumb::after{content:'ALLE';position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;font-weight:700;letter-spacing:.12em;font-size:var(--font-size-sm);color:#fff;background:rgba(0,0,0,.42)}
+/* Anzahl gut lesbar als dezente Pille auf dem Bild (Desktop + Mobile). */
+.tg-catcard-badge{position:absolute;left:8px;bottom:8px;z-index:4;background:rgba(0,0,0,.6);color:#fff;font-size:var(--font-size-xs);font-weight:var(--font-weight-semibold);line-height:1;padding:4px 8px;border-radius:var(--radius-full,999px);letter-spacing:.01em;pointer-events:none;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+/* Hover-Ueberblend-Ebenen ueber dem ruhenden Aushaengeschild (nur Desktop aktiv). Position
+   und Groesse erben sie von ".tg-catcard-thumb img"; hier nur Sichtbarkeit + Ueberblenden. */
+.tg-catcard-hoverimg{opacity:0;z-index:1;transition:opacity .55s ease;will-change:opacity}
+/* "Alle"-Kachel leicht hervorgehoben, ruhig im Stil (Akzent-Rahmen). */
+.tg-catcard--all{border-color:var(--color-accent);box-shadow:inset 0 0 0 1px var(--color-accent)}
+.tg-catcard--all:hover{border-color:var(--color-accent);box-shadow:inset 0 0 0 1px var(--color-accent),0 10px 28px rgba(204,255,0,.22)}
+/* Gesamtzahl prominent als Untertitel unter der Ueberschrift (Desktop + Mobile). */
+.tg-subtitle{margin:6px 0 0;font-size:var(--font-size-sm);color:var(--color-text-muted)}
+.tg-subtitle strong{color:var(--color-text);font-weight:var(--font-weight-bold)}
+.picker-subtitle{margin:-8px 0 14px;font-size:13px;color:var(--color-text-muted)}
+.picker-subtitle strong{color:var(--color-text);font-weight:700}
 
 /* Dichteres Flyer-Grid innerhalb einer Kategorie (mehr auf einen Blick) */
 .tg-grid--dense{grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:var(--space-3)}

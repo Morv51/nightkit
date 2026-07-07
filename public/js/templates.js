@@ -166,6 +166,43 @@ function createGallery(cfg) {
     return img;
   }
   function setCount(txt) { const c = el(cfg.count); if (c) c.textContent = txt; }
+  // Gesamtzahl als prominenter Untertitel unter der Ueberschrift (nur Kategorie-Uebersicht).
+  function setSubtitle(html, show) {
+    const s = el(cfg.subtitle); if (!s) return;
+    if (show) { s.innerHTML = html; s.hidden = false; } else { s.innerHTML = ""; s.hidden = true; }
+  }
+  // Sanfter Bild-Wechsel beim Hover (nur Desktop/Maus). Zwei gestapelte Ebenen ueber dem
+  // ruhenden Aushaengeschild, echtes Ueberblenden. Die Wechselbilder werden ERST beim
+  // ersten Hover geladen (nicht beim Seitenaufbau). Auf Touch wird das nie verdrahtet.
+  function wireHoverCycle(card, thumb, frames) {
+    let layers = null, front = 0, idx = 0, timer = null, hovering = false;
+    const revealNext = (url) => {
+      const back = layers[front ^ 1];
+      const reveal = () => {
+        if (!hovering) return; // nach dem Verlassen ein spaet geladenes Bild NICHT mehr einblenden
+        back.style.opacity = "1"; layers[front].style.opacity = "0"; front ^= 1;
+      };
+      if (back.dataset.url === url && back.complete) { reveal(); return; }
+      back.dataset.url = url; back.onload = reveal; back.src = url; // laedt erst hier (bei Bedarf)
+    };
+    const start = () => {
+      hovering = true;
+      if (!layers) {
+        layers = [document.createElement("img"), document.createElement("img")];
+        for (const L of layers) { L.className = "tg-catcard-hoverimg"; L.alt = ""; L.decoding = "async"; thumb.appendChild(L); }
+      }
+      idx = 0; revealNext(frames[0]);
+      clearInterval(timer);
+      timer = setInterval(() => { if (hovering) { idx = (idx + 1) % frames.length; revealNext(frames[idx]); } }, 1500);
+    };
+    const stop = () => {
+      hovering = false;
+      clearInterval(timer); timer = null;
+      if (layers) { layers[0].style.opacity = "0"; layers[1].style.opacity = "0"; } // zurueck zum Aushaengeschild
+    };
+    card.addEventListener("mouseenter", start);
+    card.addEventListener("mouseleave", stop);
+  }
 
   // Kategorie-Filter UND Suche (Name + Kategorie + Schlagworte) kombiniert.
   function flyersList() {
@@ -240,7 +277,9 @@ function createGallery(cfg) {
     if (cats) { cats.innerHTML = ""; cats.hidden = true; }
     if (kwbarEl) { kwbarEl.hidden = true; kwbarEl.innerHTML = ""; }
     if (empty) empty.hidden = true;
-    setCount(state.templates.length + " Vorlagen · " + state.categories.length + " Kategorien");
+    setCount(""); // Gesamtzahl steht jetzt prominent als Untertitel unter der Ueberschrift
+    setSubtitle("<strong>" + state.templates.length + " Flyer</strong> in " + state.categories.length + " Kategorien", true);
+    const canHover = !!(window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches);
     pendingImgs = [];
     grid.classList.add("tg-grid", "tg-grid--cats");
     grid.classList.remove("tg-grid--dense");
@@ -262,14 +301,27 @@ function createGallery(cfg) {
       const thumb = document.createElement("div");
       thumb.className = "tg-catcard-thumb";
       if (e.cover) thumb.appendChild(lazyThumb(e.cover));
+      // Anzahl gut lesbar als dezentes Badge auf der Kachel (Desktop UND Mobile).
+      const badge = document.createElement("span");
+      badge.className = "tg-catcard-badge";
+      badge.textContent = e.count + " Flyer";
+      thumb.appendChild(badge);
       const meta = document.createElement("div");
       meta.className = "tg-catcard-meta";
-      meta.innerHTML = '<span class="tg-catcard-name"></span><span class="tg-catcard-count"></span>';
+      meta.innerHTML = '<span class="tg-catcard-name"></span>';
       meta.querySelector(".tg-catcard-name").textContent = e.category;
-      meta.querySelector(".tg-catcard-count").textContent = e.count;
       card.appendChild(thumb);
       card.appendChild(meta);
       card.addEventListener("click", () => openCategory(e.category));
+      // Sanfter Bild-Wechsel beim Hover, nur Desktop/Maus. Wechselbilder DIESER Kategorie,
+      // Overlays beachtet: state.templates ist bereits ohne ausgeblendete und in gesetzter
+      // Reihenfolge. Erst beim ersten Hover geladen (siehe wireHoverCycle).
+      if (canHover) {
+        const inCat = e.all ? state.templates : state.templates.filter((t) => t.category === e.category);
+        const coverFile = e.cover && e.cover.file;
+        const frames = inCat.filter((t) => t.file !== coverFile).slice(0, 3).map((t) => t.thumb || t.src).filter(Boolean);
+        if (frames.length) wireHoverCycle(card, thumb, frames);
+      }
       frag.appendChild(card);
     }
     grid.appendChild(frag);
@@ -354,6 +406,7 @@ function createGallery(cfg) {
     const grid = el(cfg.grid), empty = el(cfg.empty);
     if (grid) { grid.scrollTop = 0; grid.innerHTML = ""; grid.style.display = list.length ? "" : "none"; }
     if (empty) empty.hidden = list.length > 0;
+    setSubtitle("", false); // der prominente Gesamt-Untertitel gilt nur fuer die Kategorie-Uebersicht
     setCount((search.trim() ? '„' + search.trim() + '"' : (category === "Alle" ? "Alle" : category)) + " · " + list.length);
     renderNext();
   }
@@ -419,10 +472,10 @@ function createGallery(cfg) {
 
 // Zwei Instanzen derselben Komponente: Inline-Galerie (Leerzustand) + Overlay.
 const inlineGallery = createGallery({
-  grid: "tgGrid", cats: "tgCats", search: "tgSearch", count: "tgCount", empty: "tgEmpty", error: "tgError", retry: "tgRetry",
+  grid: "tgGrid", cats: "tgCats", search: "tgSearch", count: "tgCount", subtitle: "tgSubtitle", empty: "tgEmpty", error: "tgError", retry: "tgRetry",
 });
 const modalGallery = createGallery({
-  grid: "pickerGrid", cats: "pickerCats", search: "pickerSearch",
+  grid: "pickerGrid", cats: "pickerCats", search: "pickerSearch", subtitle: "pickerSubtitle",
 });
 
 export function renderGallery() { inlineGallery.render(); }
