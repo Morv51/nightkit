@@ -262,21 +262,35 @@
   background: var(--color-accent); color: var(--color-accent-ink); border-color: transparent; font-weight: 600;
 }
 
-/* Format-/Seitenverhaeltnis-Analyse (reine Anzeige). Badge auf der Kachel: gruen = 9:16 nah,
-   orange = abweichend. Masse als kleine Zeile in der Meta. Plus die Formatleiste oben. */
+/* Format-/Seitenverhaeltnis-Analyse (reine Anzeige). Badge auf der Kachel: gruen = 9:16-nah,
+   orange = 2:3-nah, grau = sonstige. Masse als kleine Zeile in der Meta. Plus die Formatleiste
+   oben mit farbigen Kategorie-Chips (zugleich Filter und Zaehler). */
 #panel-manage .mng-tile .tw .mng-fmtbadge {
   position: absolute; top: 6px; right: 6px; z-index: 3;
   font-size: 10.5px; line-height: 1; font-weight: 700; letter-spacing: .02em;
   padding: 3px 6px; border-radius: 6px; pointer-events: none;
 }
-#panel-manage .mng-tile .tw .mng-fmtbadge.ok { background: rgba(40,160,90,.85); color: #eafff1; }
-#panel-manage .mng-tile .tw .mng-fmtbadge.dev { background: rgba(230,140,30,.92); color: #1a1205; }
+#panel-manage .mng-tile .tw .mng-fmtbadge.c916 { background: rgba(40,160,90,.88); color: #eafff1; }
+#panel-manage .mng-tile .tw .mng-fmtbadge.c23 { background: rgba(230,140,30,.92); color: #1a1205; }
+#panel-manage .mng-tile .tw .mng-fmtbadge.cother { background: rgba(150,150,155,.85); color: #101012; }
 #panel-manage .mng-tile .m .dim { font-size: var(--font-size-xs); color: var(--color-text-dim); margin-top: 2px; font-variant-numeric: tabular-nums; }
 #panel-manage .mng-formatbar { margin: 2px 0 12px; }
-#panel-manage .mng-fmt-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-#panel-manage .mng-fmt-counts { font-size: var(--font-size-sm); color: var(--color-text-muted); }
-#panel-manage .mng-fmt-counts b { color: var(--color-text); }
-#panel-manage .mng-fmt-counts b.dev { color: #e68c1e; }
-#panel-manage .mng-fmt-counts b.unk { color: var(--color-text-dim); }
-#panel-manage .mng-fmt-toggle.active { background: var(--color-accent); color: var(--color-accent-ink); border-color: transparent; font-weight: 600; }
+#panel-manage .mng-fmt-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+#panel-manage .mng-fmt-lead { font-size: var(--font-size-sm); color: var(--color-text-muted); }
+#panel-manage .mng-fmt-chip {
+  font: inherit; font-size: var(--font-size-sm); padding: 5px 10px; border-radius: var(--radius-full, 999px);
+  border: 1px solid var(--color-border); background: var(--color-surface-2); color: var(--color-text-muted);
+  cursor: pointer; display: inline-flex; align-items: center; gap: 7px;
+}
+#panel-manage .mng-fmt-chip b { color: var(--color-text); font-variant-numeric: tabular-nums; }
+#panel-manage .mng-fmt-chip::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: transparent; }
+#panel-manage .mng-fmt-chip.c916::before { background: rgba(40,160,90,.95); }
+#panel-manage .mng-fmt-chip.c23::before { background: rgba(230,140,30,1); }
+#panel-manage .mng-fmt-chip.cother::before { background: rgba(150,150,155,.95); }
+#panel-manage .mng-fmt-chip.call::before { display: none; }
+#panel-manage .mng-fmt-chip.active { border-color: var(--color-accent); color: var(--color-text); background: rgba(204,255,0,.08); }
+#panel-manage .mng-fmt-chip.call.active { background: var(--color-accent); color: var(--color-accent-ink); border-color: transparent; }
+#panel-manage .mng-fmt-chip.call.active b { color: var(--color-accent-ink); }
+#panel-manage .mng-fmt-recompute { margin-left: auto; }
+#panel-manage .mng-fmt-unk { font-size: var(--font-size-xs); color: var(--color-text-dim); }
 #panel-manage .mng-fmt-note { font-size: var(--font-size-xs); color: var(--color-text-dim); margin-top: 6px; }

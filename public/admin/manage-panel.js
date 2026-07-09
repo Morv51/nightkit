@@ -8,7 +8,8 @@
 
 import { getToken, clearToken, post } from "./studioApi.js";
 
-const state = { data: { templates: [], categories: [], counts: {} }, sub: "manage", filter: null, formatFilter: false };
+// fmtCat: Format-Filter "" (alle) | "916" | "23" | "other" (reine Anzeige-Filterung).
+const state = { data: { templates: [], categories: [], counts: {} }, sub: "manage", filter: null, fmtCat: "" };
 let moveFile = null, renameFrom = null;
 
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -133,9 +134,11 @@ function tileHTML(t, kind, index) {
   // Grosse Ansicht via R2-faehige Route (/api/thumb w=720 -> Quelle aus R2 mit Repo-Rueckfall).
   const big = "/api/thumb?w=720&file=" + encodeURIComponent(t.file);
   const coverBadge = isCover ? '<span class="mng-coverbadge" title="Kategoriebild">★</span>' : "";
-  // Format-Kennzeichnung (reine Anzeige): gruen = 9:16 nah, orange = abweichend. Masse im Tooltip.
+  // Format-Kennzeichnung (reine Anzeige): grün = 9:16-nah, orange = 2:3-nah, grau = sonstige.
+  const fmtCls = t.dims ? ({ "916": "c916", "23": "c23" }[t.dims.cat] || "cother") : "";
+  const fmtLbl = t.dims ? ({ "916": "9:16", "23": "2:3" }[t.dims.cat] || "andere") : "";
   const dimsBadge = t.dims
-    ? '<span class="mng-fmtbadge ' + (t.dims.status === "out" ? "dev" : "ok") + '" title="' + t.dims.w + '×' + t.dims.h + ' · Verhältnis ' + t.dims.ratio + '">' + (t.dims.status === "out" ? "≠ 9:16" : "9:16") + "</span>"
+    ? '<span class="mng-fmtbadge ' + fmtCls + '" title="' + t.dims.w + '×' + t.dims.h + ' · Verhältnis ' + t.dims.ratio + '">' + fmtLbl + "</span>"
     : "";
   const dimsText = t.dims ? '<div class="dim" title="Breite×Höhe · Verhältnis">' + t.dims.w + "×" + t.dims.h + " · " + t.dims.ratio + "</div>" : "";
   return '<div class="mng-tile' + (isCover ? " is-cover" : "") + '" data-file="' + esc(t.file) + '">' +
@@ -158,49 +161,57 @@ function renderCatnav() {
   q("#mngCatnav").innerHTML = html;
 }
 
-// Format-Leiste (reine Anzeige): Zaehlung, Filter "nur abweichende", Neuberechnung.
+// Format-Leiste (reine Anzeige): Kategorie-Chips (zugleich Filter UND Zaehler), Neuberechnung.
 function renderFormatBar() {
   const bar = q("#mngFormatBar"); if (!bar) return;
-  const s = state.data.dimsSummary || { inFormat: 0, deviating: 0, unknown: 0, total: 0, low: 0.53, high: 0.59, target: 0.5625 };
+  const s = state.data.dimsSummary || { near916: 0, near23: 0, other: 0, unknown: 0, total: 0, target916: 0.5625, low916: 0.53, high916: 0.59, target23: 0.667, low23: 0.63, high23: 0.70 };
+  const chip = (key, label, n, cls) =>
+    '<button class="mng-fmt-chip ' + cls + (state.fmtCat === key ? " active" : "") + '" data-fmt="' + key + '" type="button">' + label + " <b>" + n + "</b></button>";
   bar.innerHTML =
     '<div class="mng-fmt-row">' +
-      '<span class="mng-fmt-counts">Formate: <b>' + s.inFormat + "</b> im Format · <b class=\"dev\">" + s.deviating + "</b> abweichend" +
-        (s.unknown ? ' · <b class="unk">' + s.unknown + "</b> ungeprüft" : "") + "</span>" +
-      '<button class="rbtn rbtn-ghost mng-fmt-toggle' + (state.formatFilter ? " active" : "") + '" id="mngFmtFilter" type="button">Nur abweichende</button>' +
-      '<button class="rbtn rbtn-ghost" id="mngFmtRecompute" type="button">' + (s.unknown >= s.total && s.total ? "Formate berechnen" : "Formate aktualisieren") + "</button>" +
+      '<span class="mng-fmt-lead">Formate:</span>' +
+      chip("", "Alle", s.total, "call") +
+      chip("916", "9:16-nah", s.near916, "c916") +
+      chip("23", "2:3-nah", s.near23, "c23") +
+      chip("other", "sonstige", s.other, "cother") +
+      (s.unknown ? '<span class="mng-fmt-unk">' + s.unknown + " ungeprüft</span>" : "") +
+      '<button class="rbtn rbtn-ghost mng-fmt-recompute" id="mngFmtRecompute" type="button">' + (s.unknown >= s.total && s.total ? "Formate berechnen" : "Formate aktualisieren") + "</button>" +
     "</div>" +
-    '<div class="mng-fmt-note">Zielwert 9:16 = ' + s.target + '. „Im Format" heißt Verhältnis ' + s.low + " bis " + s.high + ". Reine Anzeige, es wird nichts geändert oder ausgeblendet.</div>";
+    '<div class="mng-fmt-note">9:16-nah = Verhältnis ' + s.low916 + " bis " + s.high916 + " (Ziel " + s.target916 + "), 2:3-nah = " + s.low23 + " bis " + s.high23 + " (Ziel " + s.target23 + "). Der Bereich dazwischen (" + s.high916 + " bis " + s.low23 + ") und alles andere zählt als sonstige. Reine Anzeige, es wird nichts geändert oder ausgeblendet.</div>";
 }
 
-// Format-Filter auf eine Tile-Liste (nur abweichende, wenn aktiv). Ungeprüfte zaehlen NICHT
-// als abweichend, damit vor der Berechnung nicht faelschlich alles als Ausreisser erscheint.
+// Format-Filter auf eine Tile-Liste: nur die gewaehlte Kategorie ("" = alle). Ungeprüfte
+// (dims=null) fallen bei einem aktiven Filter raus, bis sie berechnet sind.
 function fmtFiltered(list) {
-  if (!state.formatFilter) return list;
-  return list.filter((t) => t.dims && t.dims.status === "out");
+  if (!state.fmtCat) return list;
+  return list.filter((t) => t.dims && t.dims.cat === state.fmtCat);
 }
+const FMT_LABEL = { "916": "9:16-nah", "23": "2:3-nah", "other": "sonstige" };
 
 function renderGrid() {
   const grid = q("#mngGrid");
   const by = visibleByCat();
+  const fcat = state.fmtCat; // aktiver Format-Filter ("" = alle)
+  const fLbl = FMT_LABEL[fcat] || "";
   // "Alle": gruppiert wie bisher, keine Sortierung (Umsortieren geht pro Kategorie).
   if (state.filter === null) {
     const cats = catList();
     const blocks = cats.map((c) => ({ c, items: fmtFiltered(by[c]) })).filter((bl) => bl.items.length);
-    if (!blocks.length) { grid.innerHTML = '<div class="mng-empty">' + (state.formatFilter ? "Keine abweichenden Formate." : "Keine sichtbaren Templates.") + "</div>"; return; }
+    if (!blocks.length) { grid.innerHTML = '<div class="mng-empty">' + (fcat ? "Keine Templates in „" + fLbl + "“." : "Keine sichtbaren Templates.") + "</div>"; return; }
     grid.innerHTML = blocks.map(({ c, items }) =>
-      '<div class="mng-catblock"><h3>' + esc(c) + " · " + items.length + (state.formatFilter ? " abweichend" : "") + "</h3>" +
+      '<div class="mng-catblock"><h3>' + esc(c) + " · " + items.length + (fcat ? " " + esc(fLbl) : "") + "</h3>" +
       '<div class="mng-grid">' + items.map((t) => tileHTML(t, "manage")).join("") + "</div></div>"
     ).join("");
     return;
   }
-  // Einzelkategorie: mit Format-Filter ein einfaches (nicht sortierbares) Raster der Ausreisser.
+  // Einzelkategorie: mit Format-Filter ein einfaches (nicht sortierbares) Raster der gefilterten.
   const cat = state.filter;
   let items = by[cat] || [];
-  if (state.formatFilter) {
+  if (fcat) {
     items = fmtFiltered(items);
     grid.innerHTML = items.length
       ? '<div class="mng-grid">' + items.map((t) => tileHTML(t, "manage")).join("") + "</div>"
-      : '<div class="mng-empty">Keine abweichenden Formate in dieser Kategorie.</div>';
+      : '<div class="mng-empty">Keine Templates in „' + esc(fLbl) + "“ in dieser Kategorie.</div>";
     return;
   }
   if (!items.length) { grid.innerHTML = '<div class="mng-empty">Keine sichtbaren Templates.</div>'; return; }
@@ -445,7 +456,8 @@ function wireEvents(p) {
   p.addEventListener("click", (e) => {
     const sub = e.target.closest(".mng-subbtn");
     if (sub) { state.sub = sub.dataset.sub; renderAll(); return; }
-    if (e.target.closest("#mngFmtFilter")) { state.formatFilter = !state.formatFilter; renderFormatBar(); renderGrid(); return; }
+    const fchip = e.target.closest(".mng-fmt-chip[data-fmt]");
+    if (fchip) { state.fmtCat = fchip.dataset.fmt; renderFormatBar(); renderGrid(); return; }
     if (e.target.closest("#mngFmtRecompute")) { doRecomputeDims(); return; }
     const pen = e.target.closest(".pen");
     if (pen) { e.stopPropagation(); openRename(pen.dataset.rename); return; }
