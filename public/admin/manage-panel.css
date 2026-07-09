@@ -309,3 +309,17 @@
 #panel-manage .mng-test-imgs figcaption { margin-top: 4px; font-size: var(--font-size-xs); color: var(--color-text-dim); text-align: center; }
 #panel-manage .mng-test-cap { font-size: var(--font-size-sm); color: var(--color-text-muted); }
 #panel-manage .mng-test-trail { margin-top: 6px; font-size: var(--font-size-xs); color: var(--color-text-dim); }
+
+/* Stapel-Umformung aller 2:3-nah auf 9:16 (aktiv schalten, Originale in den Papierkorb). */
+#panel-manage .mng-batchbox { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 2px 0 16px; }
+#panel-manage .mng-batchbox .mng-batch-note { font-size: var(--font-size-xs); color: var(--color-text-dim); flex: 1 1 240px; }
+#panel-manage .mng-batch-result { flex-basis: 100%; font-size: var(--font-size-sm); color: var(--color-text-muted); }
+#panel-manage .mng-batch-result:empty { display: none; }
+#panel-manage .mng-batch-result .err { color: #ffb0b0; font-weight: 600; }
+#panel-manage .mng-batch-head { font-weight: 600; color: var(--color-text); }
+#panel-manage .mng-batch-cur { margin-top: 4px; font-size: var(--font-size-xs); color: var(--color-text-dim); }
+#panel-manage .mng-batch-ok { margin-top: 6px; color: var(--color-text-muted); }
+#panel-manage .mng-batch-bar { margin: 8px 0 2px; height: 8px; border-radius: 999px; background: var(--color-surface-2); overflow: hidden; }
+#panel-manage .mng-batch-bar > span { display: block; height: 100%; background: var(--color-accent); transition: width .3s; }
+#panel-manage .mng-batch-failhead { margin-top: 10px; font-weight: 600; color: #ffb0b0; }
+#panel-manage .mng-batch-faillist { margin: 4px 0 0; padding-left: 18px; font-size: var(--font-size-xs); color: #ffc9c9; max-height: 220px; overflow: auto; }

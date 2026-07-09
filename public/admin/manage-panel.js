@@ -53,6 +53,7 @@ export async function initManage() {
   renderShell(p);
   renderAll();
   probeExistingTest916(); // frueheres 9:16-Ergebnis (falls vorhanden) direkt zeigen
+  probeBatch();           // laufenden/fertigen Stapel-Lauf wieder anzeigen
   // Bei ADMIN_TOOLS=1 ist die Bestandsverwaltung der Standard-Tab. studio.js zieht das
   // nach (respektiert #manage-Anker und eine bereits getroffene Nutzerwahl).
   document.dispatchEvent(new CustomEvent("nk-admin-ready"));
@@ -76,6 +77,11 @@ function renderShell(p) {
     '    <button class="rbtn rbtn-ghost" id="mngTest916" type="button">9:16-Testlauf (Urban 91, teures Modell)</button>',
     '    <span class="mng-test-note">Einmaliger Test: formt Urban 91 per flux-2-pro auf 9:16 und legt das Ergebnis zusätzlich in R2 ab. Der Aufruf läuft im Hintergrund und kann bis zu einer Minute dauern. Original bleibt unangetastet. (Stand H4)</span>',
     '    <div class="mng-test-result" id="mngTestResult"></div>',
+    '  </div>',
+    '  <div class="mng-batchbox" id="mngBatchBox">',
+    '    <button class="rbtn rbtn-danger" id="mngReformat916" type="button">Alle 2:3-nah auf 9:16 umformen und aktiv schalten</button>',
+    '    <span class="mng-batch-note">Formt alle aktiven 2:3-nah-Templates per teurem flux-2-pro auf 9:16 um und schaltet sie aktiv. Die 2:3-Originale wandern in den Papierkorb (wiederherstellbar), sie werden nicht gelöscht. Läuft im Hintergrund und kann eine Weile dauern, bitte die Seite offen lassen. Fehlgeschlagene bleiben unverändert aktiv und lassen sich später erneut laufen lassen.</span>',
+    '    <div class="mng-batch-result" id="mngReformatResult"></div>',
     '  </div>',
     '  <div class="mng-catnav" id="mngCatnav"></div>',
     '  <div id="mngGrid"></div>',
@@ -409,6 +415,97 @@ async function doTest916() {
   showErr("Zeitüberschreitung nach 4 Minuten. Letzte Schritte oben. Hängt es hier, liegt es am fal-Dienst (Guthaben oder Auslastung).");
 }
 
+// ── Stapel-Umformung aller aktiven 2:3-nah-Templates auf 9:16 (aktiv schalten, Originale in
+// den Papierkorb). Eigener Aufruf mit HTTP-Status (kein stilles Neuladen). Lauf im Hintergrund,
+// Fortschritt per Status-Abfrage. ──
+async function adminPost(path, bodyObj) {
+  const res = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Admin-Token": getToken() },
+    body: JSON.stringify(bodyObj || {}),
+  });
+  let data = {};
+  try { data = (await res.json()) || {}; } catch (_) {}
+  return { http: res.status, data };
+}
+
+const reformatBox = () => q("#mngReformatResult");
+
+function renderBatch(st) {
+  const box = reformatBox(); if (!box) return;
+  if (!st || st.status === "idle") { box.innerHTML = ""; return; }
+  const total = st.total || 0, done = st.done || 0, swapped = st.swapped || 0, failed = st.failed || 0;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  const bar = '<div class="mng-batch-bar"><span style="width:' + pct + '%"></span></div>';
+  if (st.status === "running") {
+    box.innerHTML =
+      '<div class="mng-batch-head">Umformung läuft: ' + done + " von " + total + " fertig (" + swapped + " getauscht, " + failed + " fehlgeschlagen).</div>" +
+      bar + (st.current ? '<div class="mng-batch-cur">Aktuell: ' + esc(st.current) + "</div>" : "");
+    return;
+  }
+  const fails = (st.results || []).filter((r) => r && !r.ok);
+  let html = '<div class="mng-batch-head">Fertig: ' + swapped + " getauscht, " + failed + " fehlgeschlagen (von " + total + ")." +
+    (st.estCost ? " Geschätzte Kosten rund $" + st.estCost + "." : "") + "</div>";
+  if (st.error) html += '<div class="err">' + esc(st.error) + "</div>";
+  if (swapped > 0) html += '<div class="mng-batch-ok">Die getauschten 2:3-Originale liegen jetzt im Papierkorb (Reiter „Papierkorb") und sind wiederherstellbar.</div>';
+  if (fails.length) {
+    html += '<div class="mng-batch-failhead">Fehlgeschlagen (bleiben unverändert aktiv, später erneut startbar):</div><ul class="mng-batch-faillist">';
+    for (const f of fails.slice(0, 200)) html += "<li>" + esc(f.name || f.file) + ": " + esc(f.reason || "unbekannt") + "</li>";
+    html += "</ul>";
+  }
+  box.innerHTML = html;
+}
+
+async function pollBatch() {
+  while (true) {
+    await new Promise((r) => setTimeout(r, 3000));
+    let st;
+    try { st = await adminPost("/admin/reformat-916", { mode: "status" }); }
+    catch (e) { continue; } // transienter Netzfehler -> weiter versuchen
+    if (st.http === 401) { if (reformatBox()) reformatBox().innerHTML = '<span class="err">Sitzung abgelaufen. Bitte Seite neu laden und Code 99 erneut eingeben.</span>'; const b = q("#mngReformat916"); if (b) b.disabled = false; return; }
+    if (st.http !== 200) continue;
+    renderBatch(st.data);
+    if (st.data.status !== "running") { const b = q("#mngReformat916"); if (b) b.disabled = false; return; }
+  }
+}
+
+async function doReformatBatch() {
+  const btn = q("#mngReformat916");
+  let prev;
+  try { prev = await adminPost("/admin/reformat-916", { mode: "preview" }); }
+  catch (e) { toast("Vorschau fehlgeschlagen", "err"); return; }
+  if (prev.http === 401) { toast("Sitzung abgelaufen, bitte neu entsperren", "err"); return; }
+  const total = (prev.data && prev.data.total) || 0;
+  const cost = (prev.data && prev.data.estCost) || 0;
+  if (!total) { toast("Keine aktiven 2:3-nah-Templates gefunden"); return; }
+  const go = confirm(
+    "Jetzt " + total + " Templates (2:3-nah) per teurem Modell auf 9:16 umformen und aktiv schalten?\n\n" +
+    "Geschätzte Kosten rund $" + cost + ".\n" +
+    "Die 2:3-Originale wandern in den Papierkorb (wiederherstellbar), sie werden NICHT gelöscht.\n" +
+    "Fehlgeschlagene bleiben unverändert aktiv.\n\n" +
+    "Der Lauf läuft im Hintergrund. Bitte die Seite offen lassen."
+  );
+  if (!go) return;
+  if (btn) btn.disabled = true;
+  let s;
+  try { s = await adminPost("/admin/reformat-916", { mode: "run" }); }
+  catch (e) { if (btn) btn.disabled = false; toast("Start fehlgeschlagen", "err"); return; }
+  if (s.http === 401) { if (btn) btn.disabled = false; if (reformatBox()) reformatBox().innerHTML = '<span class="err">Sitzung abgelaufen. Bitte Seite neu laden und Code 99 erneut eingeben.</span>'; return; }
+  if (s.http !== 200) { if (btn) btn.disabled = false; if (reformatBox()) reformatBox().innerHTML = '<span class="err">Start fehlgeschlagen: HTTP ' + s.http + "</span>"; return; }
+  toast("Umformung gestartet", "good");
+  renderBatch({ status: "running", total: (s.data && s.data.total) || total, done: 0, swapped: 0, failed: 0 });
+  pollBatch();
+}
+
+// Beim Öffnen der Verwaltung: läuft schon ein Stapel-Lauf oder ist einer fertig? Dann anzeigen.
+async function probeBatch() {
+  let st;
+  try { st = await adminPost("/admin/reformat-916", { mode: "status" }); } catch (_) { return; }
+  if (!st || st.http !== 200 || !st.data) return;
+  if (st.data.status === "running") { const b = q("#mngReformat916"); if (b) b.disabled = true; renderBatch(st.data); pollBatch(); }
+  else if (st.data.status === "done") { renderBatch(st.data); }
+}
+
 function openMove(file) {
   const t = state.data.templates.find((x) => x.file === file); if (!t) return;
   moveFile = file;
@@ -573,6 +670,7 @@ function wireEvents(p) {
     if (fchip) { state.fmtCat = fchip.dataset.fmt; renderFormatBar(); renderGrid(); return; }
     if (e.target.closest("#mngFmtRecompute")) { doRecomputeDims(); return; }
     if (e.target.closest("#mngTest916")) { doTest916(); return; }
+    if (e.target.closest("#mngReformat916")) { doReformatBatch(); return; }
     const pen = e.target.closest(".pen");
     if (pen) { e.stopPropagation(); openRename(pen.dataset.rename); return; }
     const catEl = e.target.closest(".mng-cat");
