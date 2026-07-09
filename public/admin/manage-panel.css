@@ -261,3 +261,22 @@
 #panel-manage .mng-tile .acts .rbtn.mng-coverbtn.is-cover {
   background: var(--color-accent); color: var(--color-accent-ink); border-color: transparent; font-weight: 600;
 }
+
+/* Format-/Seitenverhaeltnis-Analyse (reine Anzeige). Badge auf der Kachel: gruen = 9:16 nah,
+   orange = abweichend. Masse als kleine Zeile in der Meta. Plus die Formatleiste oben. */
+#panel-manage .mng-tile .tw .mng-fmtbadge {
+  position: absolute; top: 6px; right: 6px; z-index: 3;
+  font-size: 10.5px; line-height: 1; font-weight: 700; letter-spacing: .02em;
+  padding: 3px 6px; border-radius: 6px; pointer-events: none;
+}
+#panel-manage .mng-tile .tw .mng-fmtbadge.ok { background: rgba(40,160,90,.85); color: #eafff1; }
+#panel-manage .mng-tile .tw .mng-fmtbadge.dev { background: rgba(230,140,30,.92); color: #1a1205; }
+#panel-manage .mng-tile .m .dim { font-size: var(--font-size-xs); color: var(--color-text-dim); margin-top: 2px; font-variant-numeric: tabular-nums; }
+#panel-manage .mng-formatbar { margin: 2px 0 12px; }
+#panel-manage .mng-fmt-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+#panel-manage .mng-fmt-counts { font-size: var(--font-size-sm); color: var(--color-text-muted); }
+#panel-manage .mng-fmt-counts b { color: var(--color-text); }
+#panel-manage .mng-fmt-counts b.dev { color: #e68c1e; }
+#panel-manage .mng-fmt-counts b.unk { color: var(--color-text-dim); }
+#panel-manage .mng-fmt-toggle.active { background: var(--color-accent); color: var(--color-accent-ink); border-color: transparent; font-weight: 600; }
+#panel-manage .mng-fmt-note { font-size: var(--font-size-xs); color: var(--color-text-dim); margin-top: 6px; }

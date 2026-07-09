@@ -8,7 +8,7 @@
 
 import { getToken, clearToken, post } from "./studioApi.js";
 
-const state = { data: { templates: [], categories: [], counts: {} }, sub: "manage", filter: null };
+const state = { data: { templates: [], categories: [], counts: {} }, sub: "manage", filter: null, formatFilter: false };
 let moveFile = null, renameFrom = null;
 
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -69,6 +69,7 @@ function renderShell(p) {
     '  <button class="rbtn rbtn-ghost spacer" id="mngReload" type="button">Aktualisieren</button>',
     '</div>',
     '<div id="mngManageView">',
+    '  <div class="mng-formatbar" id="mngFormatBar"></div>',
     '  <div class="mng-catnav" id="mngCatnav"></div>',
     '  <div id="mngGrid"></div>',
     '</div>',
@@ -132,10 +133,15 @@ function tileHTML(t, kind, index) {
   // Grosse Ansicht via R2-faehige Route (/api/thumb w=720 -> Quelle aus R2 mit Repo-Rueckfall).
   const big = "/api/thumb?w=720&file=" + encodeURIComponent(t.file);
   const coverBadge = isCover ? '<span class="mng-coverbadge" title="Kategoriebild">★</span>' : "";
+  // Format-Kennzeichnung (reine Anzeige): gruen = 9:16 nah, orange = abweichend. Masse im Tooltip.
+  const dimsBadge = t.dims
+    ? '<span class="mng-fmtbadge ' + (t.dims.status === "out" ? "dev" : "ok") + '" title="' + t.dims.w + '×' + t.dims.h + ' · Verhältnis ' + t.dims.ratio + '">' + (t.dims.status === "out" ? "≠ 9:16" : "9:16") + "</span>"
+    : "";
+  const dimsText = t.dims ? '<div class="dim" title="Breite×Höhe · Verhältnis">' + t.dims.w + "×" + t.dims.h + " · " + t.dims.ratio + "</div>" : "";
   return '<div class="mng-tile' + (isCover ? " is-cover" : "") + '" data-file="' + esc(t.file) + '">' +
     orderBar +
-    '<div class="tw" data-big="' + esc(big) + '" data-name="' + esc(t.name) + '">' + coverBadge + '<img loading="lazy" draggable="false" src="' + esc(t.thumb) + '" alt=""></div>' +
-    '<div class="m"><div class="nm" title="Klicken zum Umbenennen" data-editname data-file="' + esc(t.file) + '" data-cur="' + esc(t.name) + '">' + esc(t.name) + '</div>' + cat + "</div>" +
+    '<div class="tw" data-big="' + esc(big) + '" data-name="' + esc(t.name) + '">' + coverBadge + dimsBadge + '<img loading="lazy" draggable="false" src="' + esc(t.thumb) + '" alt=""></div>' +
+    '<div class="m"><div class="nm" title="Klicken zum Umbenennen" data-editname data-file="' + esc(t.file) + '" data-cur="' + esc(t.name) + '">' + esc(t.name) + '</div>' + cat + dimsText + "</div>" +
     '<div class="acts">' + acts + "</div></div>";
 }
 
@@ -152,23 +158,53 @@ function renderCatnav() {
   q("#mngCatnav").innerHTML = html;
 }
 
+// Format-Leiste (reine Anzeige): Zaehlung, Filter "nur abweichende", Neuberechnung.
+function renderFormatBar() {
+  const bar = q("#mngFormatBar"); if (!bar) return;
+  const s = state.data.dimsSummary || { inFormat: 0, deviating: 0, unknown: 0, total: 0, low: 0.53, high: 0.59, target: 0.5625 };
+  bar.innerHTML =
+    '<div class="mng-fmt-row">' +
+      '<span class="mng-fmt-counts">Formate: <b>' + s.inFormat + "</b> im Format · <b class=\"dev\">" + s.deviating + "</b> abweichend" +
+        (s.unknown ? ' · <b class="unk">' + s.unknown + "</b> ungeprüft" : "") + "</span>" +
+      '<button class="rbtn rbtn-ghost mng-fmt-toggle' + (state.formatFilter ? " active" : "") + '" id="mngFmtFilter" type="button">Nur abweichende</button>' +
+      '<button class="rbtn rbtn-ghost" id="mngFmtRecompute" type="button">' + (s.unknown >= s.total && s.total ? "Formate berechnen" : "Formate aktualisieren") + "</button>" +
+    "</div>" +
+    '<div class="mng-fmt-note">Zielwert 9:16 = ' + s.target + '. „Im Format" heißt Verhältnis ' + s.low + " bis " + s.high + ". Reine Anzeige, es wird nichts geändert oder ausgeblendet.</div>";
+}
+
+// Format-Filter auf eine Tile-Liste (nur abweichende, wenn aktiv). Ungeprüfte zaehlen NICHT
+// als abweichend, damit vor der Berechnung nicht faelschlich alles als Ausreisser erscheint.
+function fmtFiltered(list) {
+  if (!state.formatFilter) return list;
+  return list.filter((t) => t.dims && t.dims.status === "out");
+}
+
 function renderGrid() {
   const grid = q("#mngGrid");
   const by = visibleByCat();
   // "Alle": gruppiert wie bisher, keine Sortierung (Umsortieren geht pro Kategorie).
   if (state.filter === null) {
     const cats = catList();
-    if (!cats.length) { grid.innerHTML = '<div class="mng-empty">Keine sichtbaren Templates.</div>'; return; }
-    grid.innerHTML = cats.map((c) =>
-      '<div class="mng-catblock"><h3>' + esc(c) + " · " + by[c].length + "</h3>" +
-      '<div class="mng-grid">' + by[c].map((t) => tileHTML(t, "manage")).join("") + "</div></div>"
+    const blocks = cats.map((c) => ({ c, items: fmtFiltered(by[c]) })).filter((bl) => bl.items.length);
+    if (!blocks.length) { grid.innerHTML = '<div class="mng-empty">' + (state.formatFilter ? "Keine abweichenden Formate." : "Keine sichtbaren Templates.") + "</div>"; return; }
+    grid.innerHTML = blocks.map(({ c, items }) =>
+      '<div class="mng-catblock"><h3>' + esc(c) + " · " + items.length + (state.formatFilter ? " abweichend" : "") + "</h3>" +
+      '<div class="mng-grid">' + items.map((t) => tileHTML(t, "manage")).join("") + "</div></div>"
     ).join("");
     return;
   }
-  // Einzelkategorie: Sortier-Ansicht mit Drag and Drop, Positionsfeldern und Zurücksetzen.
+  // Einzelkategorie: mit Format-Filter ein einfaches (nicht sortierbares) Raster der Ausreisser.
   const cat = state.filter;
-  const items = by[cat] || [];
+  let items = by[cat] || [];
+  if (state.formatFilter) {
+    items = fmtFiltered(items);
+    grid.innerHTML = items.length
+      ? '<div class="mng-grid">' + items.map((t) => tileHTML(t, "manage")).join("") + "</div>"
+      : '<div class="mng-empty">Keine abweichenden Formate in dieser Kategorie.</div>';
+    return;
+  }
   if (!items.length) { grid.innerHTML = '<div class="mng-empty">Keine sichtbaren Templates.</div>'; return; }
+  // Sortier-Ansicht mit Drag and Drop, Positionsfeldern und Zurücksetzen.
   grid.innerHTML =
     '<div class="mng-orderhead"><span class="mng-orderhint">Ziehen zum Umsortieren, oder Positionsfeld und Pfeile nutzen. Position 1 ist oben links, dann zeilenweise. Die Reihenfolge gilt genauso in der User-App.</span>' +
     '<button class="rbtn rbtn-ghost" id="mngOrderReset" type="button">Reihenfolge zurücksetzen</button></div>' +
@@ -186,6 +222,7 @@ function renderTrash() {
 }
 
 function renderAll() {
+  renderFormatBar();
   renderCatnav();
   renderGrid();
   renderTrash();
@@ -232,6 +269,20 @@ async function doSetCover(file, category) {
 async function doResetCover(category) {
   try { await post("/admin/manage/cover/reset", { category }); toast("Kategoriebild zurückgesetzt (Standard)", "good"); await reload(); }
   catch (e) { if (e.message !== "401") toast(e.message, "err"); }
+}
+// Format-/Masse-Cache berechnen bzw. aktualisieren (rein additive Analyse, aendert nichts).
+async function doRecomputeDims() {
+  const btn = q("#mngFmtRecompute");
+  const label = btn ? btn.textContent : "";
+  if (btn) { btn.disabled = true; btn.textContent = "Berechne Formate …"; }
+  try {
+    const r = await post("/admin/manage/dimensions/recompute", {});
+    const msg = (r.computed || 0) + " berechnet" + (r.failed ? ", " + r.failed + " fehlgeschlagen" : "") +
+      (r.persisted === false ? " (nicht dauerhaft gespeichert, R2 fehlt)" : " und gespeichert");
+    toast(msg, r.persisted === false ? "warn" : "good");
+    await reload();
+  } catch (e) { if (e.message !== "401") toast(e.message, "err"); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = label; } }
 }
 
 function openMove(file) {
@@ -394,6 +445,8 @@ function wireEvents(p) {
   p.addEventListener("click", (e) => {
     const sub = e.target.closest(".mng-subbtn");
     if (sub) { state.sub = sub.dataset.sub; renderAll(); return; }
+    if (e.target.closest("#mngFmtFilter")) { state.formatFilter = !state.formatFilter; renderFormatBar(); renderGrid(); return; }
+    if (e.target.closest("#mngFmtRecompute")) { doRecomputeDims(); return; }
     const pen = e.target.closest(".pen");
     if (pen) { e.stopPropagation(); openRename(pen.dataset.rename); return; }
     const catEl = e.target.closest(".mng-cat");

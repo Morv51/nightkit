@@ -617,6 +617,9 @@ server.listen(PORT, () => {
     // Kategorie-Cover-Overlay (Aushaengeschild pro Kategorie) vorwaermen.
     try { categoryCover.prime().catch(() => {}); }
     catch (e) { console.log("[ADMIN-COVER] Start-Prime fehlgeschlagen: " + (e && e.message ? e.message : e)); }
+    // Format-/Masse-Cache (reine Anzeige der Seitenverhaeltnisse) vorwaermen.
+    try { require("./lib/admin/dimensions").prime().catch(() => {}); }
+    catch (e) { console.log("[ADMIN-DIMS] Start-Prime fehlgeschlagen: " + (e && e.message ? e.message : e)); }
     // Nutzungs-Zähler vorwaermen (nachrangig; nie blockierend, faengt alles ab).
     try { usage.prime().catch(() => {}); }
     catch (e) { console.log("[USAGE] Start-Prime fehlgeschlagen: " + (e && e.message ? e.message : e)); }
