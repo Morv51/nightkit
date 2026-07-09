@@ -125,7 +125,36 @@ async function run(mode) {
   }
 }
 
-module.exports = { run };
+// ── Hintergrundlauf: der teure fal-Aufruf laeuft NICHT in der HTTP-Anfrage, sondern im
+// Hintergrund. Der Endpunkt startet den Job und antwortet SOFORT; das Frontend fragt danach
+// den Status ab. So kann die Klick-Anfrage nie haengen. Zustand im Speicher (Einzelinstanz-
+// Annahme wie bei den uebrigen Admin-Overlays). ──
+let job = null; // { status:"running"|"done"|"error", startedAt, result, error }
+
+function startJob() {
+  if (job && job.status === "running") return job; // laeuft schon: nicht doppelt starten
+  job = { status: "running", startedAt: Date.now(), result: null, error: null };
+  const cur = job;
+  Promise.resolve()
+    .then(() => run("run"))
+    .then((r) => {
+      if (r && r.ok) { cur.status = "done"; cur.result = r; }
+      else { cur.status = "error"; cur.error = (r && r.error) || "unbekannter Fehler"; cur.result = r || null; }
+      log("Job " + cur.status + (cur.error ? ": " + cur.error : ""));
+    })
+    .catch((e) => { cur.status = "error"; cur.error = fehlerText(e); log("Job-Fehler: " + cur.error); });
+  return job;
+}
+
+function jobStatus() {
+  if (!job) return { status: "idle" };
+  const out = { status: job.status, startedAt: job.startedAt };
+  if (job.result) out.result = job.result;
+  if (job.error) out.error = job.error;
+  return out;
+}
+
+module.exports = { run, startJob, jobStatus };
 
 // Eigenstaendig startbar: node test-outpaint-916.js [find|run]
 if (require.main === module) {

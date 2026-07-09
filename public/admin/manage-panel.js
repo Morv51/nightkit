@@ -74,7 +74,7 @@ function renderShell(p) {
     '  <div class="mng-formatbar" id="mngFormatBar"></div>',
     '  <div class="mng-testbox" id="mngTestBox">',
     '    <button class="rbtn rbtn-ghost" id="mngTest916" type="button">9:16-Testlauf (Urban 91, teures Modell)</button>',
-    '    <span class="mng-test-note">Einmaliger Test: formt Urban 91 per flux-2-pro auf 9:16 und legt das Ergebnis zusätzlich in R2 ab. Der Aufruf kann bis zu einer Minute dauern. Original bleibt unangetastet.</span>',
+    '    <span class="mng-test-note">Einmaliger Test: formt Urban 91 per flux-2-pro auf 9:16 und legt das Ergebnis zusätzlich in R2 ab. Der Aufruf läuft im Hintergrund und kann bis zu einer Minute dauern. Original bleibt unangetastet.</span>',
     '    <div class="mng-test-result" id="mngTestResult"></div>',
     '  </div>',
     '  <div class="mng-catnav" id="mngCatnav"></div>',
@@ -327,44 +327,66 @@ function probeExistingTest916() {
   probe.src = T916_OUT;
 }
 
-// Einmaliger 9:16-Testlauf (Urban 91). Sichtbarer Laufhinweis mit mitlaufenden Sekunden,
-// hartes Zeitlimit (nie ewiges Haengen), fertiges Bild erscheint direkt gross im Studio.
+// Bild-Existenzpruefung: laedt eine URL als Image und meldet, ob sie geladen wurde.
+// Instanz-unabhaengiger Notnagel: prueft direkt, ob das 9:16-Ergebnis in R2 auftaucht.
+function imageLoads(url) {
+  return new Promise((resolve) => {
+    const im = new Image();
+    im.onload = () => resolve(true);
+    im.onerror = () => resolve(false);
+    im.src = url;
+  });
+}
+
+// Einmaliger 9:16-Testlauf (Urban 91). Der teure fal-Aufruf laeuft im HINTERGRUND auf dem
+// Server: die Klick-Anfrage antwortet sofort und kann nie haengen. Danach wird auf das
+// Ergebnis gewartet, primaer per Status-Abfrage, zusaetzlich per Bild-in-R2 (Notnagel).
+// Laufhinweis mit Sekunden, hartes Gesamt-Zeitlimit, fertiges Bild direkt gross im Studio.
 async function doTest916() {
   const btn = q("#mngTest916"), box = q("#mngTestResult");
   const label = btn ? btn.textContent : "";
   if (btn) { btn.disabled = true; btn.textContent = "Läuft …"; }
 
-  // Laufhinweis mit Sekundenzaehler, damit es nicht wie eingefroren wirkt.
   let secs = 0;
   const setRun = () => { if (box) box.innerHTML = '<span class="mng-test-run">Läuft: teurer flux-2-pro-Aufruf, dauert meist 30 bis 60 Sekunden. Bitte warten … (' + secs + "s)</span>"; };
   setRun();
   const ticker = setInterval(() => { secs += 1; setRun(); }, 1000);
+  const stop = () => { clearInterval(ticker); if (btn) { btn.disabled = false; btn.textContent = label; } };
+  const showResult = (meta) => {
+    const cap = meta && meta.original && meta.result
+      ? "Fertig. Original " + meta.original.w + "×" + meta.original.h + " (" + meta.original.ratio + ") auf 9:16 " +
+        meta.result.w + "×" + meta.result.h + " (" + meta.result.ratio + "), Schätzung ~$" + meta.estCost + " (flux-2-pro)."
+      : "Fertig. Das 9:16-Ergebnis steht unten.";
+    box.innerHTML = test916Gallery(bust(T916_ORIG), bust(T916_OUT)) +
+      '<div class="mng-test-cap">' + cap + ' <a href="' + esc(T916_OUT) + '" target="_blank" rel="noopener">9:16 groß öffnen</a></div>';
+    toast("9:16-Testlauf fertig", "good");
+  };
+  const showErr = (msg) => { if (box) box.innerHTML = '<span class="err">' + esc(msg) + "</span>"; toast("Testlauf fehlgeschlagen", "err"); };
 
-  // Hartes Zeitlimit von 3 Minuten, damit der Knopf nie dauerhaft haengt.
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 180000);
-
+  // 1) Hintergrund-Job starten. Antwort kommt sofort, egal wie lange fal spaeter braucht.
   try {
-    const r = await post("/admin/test-outpaint-916", { mode: "run" }, { signal: ctrl.signal });
-    if (r && r.ok && r.view916) {
-      box.innerHTML = test916Gallery(bust(r.viewOriginal), bust(r.view916)) +
-        '<div class="mng-test-cap">Fertig. Original ' + r.original.w + "×" + r.original.h + " (" + r.original.ratio + ") auf 9:16 " +
-        r.result.w + "×" + r.result.h + " (" + r.result.ratio + "), Schätzung ~$" + r.estCost + " (flux-2-pro). " +
-        '<a href="' + esc(r.view916) + '" target="_blank" rel="noopener">9:16 groß öffnen</a></div>';
-      toast("9:16-Testlauf fertig", "good");
-    } else {
-      box.innerHTML = '<span class="err">Nicht erzeugt: ' + esc((r && r.error) || "unbekannter Fehler") + "</span>";
-      toast("Testlauf fehlgeschlagen", "err");
-    }
+    await post("/admin/test-outpaint-916", { mode: "run" });
   } catch (e) {
-    const msg = e && e.name === "AbortError"
-      ? "Zeitüberschreitung: der Aufruf hat über 3 Minuten gebraucht und wurde abgebrochen. Bitte erneut versuchen. Hängt es wieder, liegt es am fal-Dienst (Guthaben oder Auslastung)."
-      : (e && e.message ? e.message : String(e));
-    if (msg !== "401") { toast("Testlauf fehlgeschlagen", "err"); if (box) box.innerHTML = '<span class="err">' + esc(msg) + "</span>"; }
-  } finally {
-    clearInterval(ticker); clearTimeout(timer);
-    if (btn) { btn.disabled = false; btn.textContent = label; }
+    stop();
+    const msg = e && e.message ? e.message : String(e);
+    if (msg !== "401") showErr(msg);
+    return;
   }
+
+  // 2) Auf Ergebnis warten (max 4 Minuten). Status meldet Fertig/Fehler mit Massen; als
+  //    Notnagel gilt auch: das 9:16-Bild ist in R2 ladbar geworden.
+  const deadline = Date.now() + 240000;
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 3000));
+    let st = null;
+    try { st = await post("/admin/test-outpaint-916", { mode: "status" }); }
+    catch (e) { if (e && e.message === "401") { stop(); return; } }
+    if (st && st.status === "done") { stop(); showResult(st.result); return; }
+    if (st && st.status === "error") { stop(); showErr("Nicht erzeugt: " + (st.error || "unbekannter Fehler")); return; }
+    if (await imageLoads(bust(T916_OUT))) { stop(); showResult(st && st.result); return; }
+  }
+  stop();
+  showErr("Zeitüberschreitung: nach 4 Minuten kein Ergebnis. Bitte erneut versuchen. Hängt es weiter, liegt es am fal-Dienst (Guthaben oder Auslastung).");
 }
 
 function openMove(file) {
