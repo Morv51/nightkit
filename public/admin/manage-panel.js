@@ -74,7 +74,7 @@ function renderShell(p) {
     '  <div class="mng-formatbar" id="mngFormatBar"></div>',
     '  <div class="mng-testbox" id="mngTestBox">',
     '    <button class="rbtn rbtn-ghost" id="mngTest916" type="button">9:16-Testlauf (Urban 91, teures Modell)</button>',
-    '    <span class="mng-test-note">Einmaliger Test: formt Urban 91 per flux-2-pro auf 9:16 und legt das Ergebnis zusätzlich in R2 ab. Der Aufruf läuft im Hintergrund und kann bis zu einer Minute dauern. Original bleibt unangetastet.</span>',
+    '    <span class="mng-test-note">Einmaliger Test: formt Urban 91 per flux-2-pro auf 9:16 und legt das Ergebnis zusätzlich in R2 ab. Der Aufruf läuft im Hintergrund und kann bis zu einer Minute dauern. Original bleibt unangetastet. (Stand H4)</span>',
     '    <div class="mng-test-result" id="mngTestResult"></div>',
     '  </div>',
     '  <div class="mng-catnav" id="mngCatnav"></div>',
@@ -338,17 +338,34 @@ function imageLoads(url) {
   });
 }
 
+// Eigener Aufruf an den Test-Endpunkt OHNE die geteilte post()-Hilfe. Grund: post() macht
+// bei 401 ein stilles location.reload(), das wie "bricht ab ohne Meldung" aussieht. Hier
+// bekommen wir den HTTP-Status zurueck und zeigen IMMER eine sichtbare Meldung.
+async function callTest916(mode, token) {
+  const res = await fetch("/admin/test-outpaint-916", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Admin-Token": token || "" },
+    body: JSON.stringify({ mode }),
+  });
+  let data = {};
+  try { data = (await res.json()) || {}; } catch (_) {}
+  return { http: res.status, data };
+}
+
 // Einmaliger 9:16-Testlauf (Urban 91). Der teure fal-Aufruf laeuft im HINTERGRUND auf dem
-// Server: die Klick-Anfrage antwortet sofort und kann nie haengen. Danach wird auf das
-// Ergebnis gewartet, primaer per Status-Abfrage, zusaetzlich per Bild-in-R2 (Notnagel).
-// Laufhinweis mit Sekunden, hartes Gesamt-Zeitlimit, fertiges Bild direkt gross im Studio.
+// Server: die Klick-Anfrage antwortet sofort und kann nie haengen. Danach Status-Abfrage im
+// Takt. JEDER Ausgang zeigt eine Meldung, plus eine kurze Schritt-Spur, damit nie etwas
+// stumm abbricht. Fertiges Bild erscheint direkt gross im Studio.
 async function doTest916() {
   const btn = q("#mngTest916"), box = q("#mngTestResult");
   const label = btn ? btn.textContent : "";
+  const token = getToken();
   if (btn) { btn.disabled = true; btn.textContent = "Läuft …"; }
 
   let secs = 0;
-  const setRun = () => { if (box) box.innerHTML = '<span class="mng-test-run">Läuft: teurer flux-2-pro-Aufruf, dauert meist 30 bis 60 Sekunden. Bitte warten … (' + secs + "s)</span>"; };
+  const trail = [];
+  const trailHtml = () => (trail.length ? '<div class="mng-test-trail">Schritte: ' + esc(trail.join(" · ")) + "</div>" : "");
+  const setRun = () => { if (box) box.innerHTML = '<span class="mng-test-run">Läuft: teurer flux-2-pro-Aufruf, dauert meist 30 bis 60 Sekunden. Bitte warten … (' + secs + "s)</span>" + trailHtml(); };
   setRun();
   const ticker = setInterval(() => { secs += 1; setRun(); }, 1000);
   const stop = () => { clearInterval(ticker); if (btn) { btn.disabled = false; btn.textContent = label; } };
@@ -361,32 +378,35 @@ async function doTest916() {
       '<div class="mng-test-cap">' + cap + ' <a href="' + esc(T916_OUT) + '" target="_blank" rel="noopener">9:16 groß öffnen</a></div>';
     toast("9:16-Testlauf fertig", "good");
   };
-  const showErr = (msg) => { if (box) box.innerHTML = '<span class="err">' + esc(msg) + "</span>"; toast("Testlauf fehlgeschlagen", "err"); };
+  const showErr = (msg) => { if (box) box.innerHTML = '<span class="err">' + esc(msg) + "</span>" + trailHtml(); toast("Testlauf fehlgeschlagen", "err"); };
 
-  // 1) Hintergrund-Job starten. Antwort kommt sofort, egal wie lange fal spaeter braucht.
-  try {
-    await post("/admin/test-outpaint-916", { mode: "run" });
-  } catch (e) {
-    stop();
-    const msg = e && e.message ? e.message : String(e);
-    if (msg !== "401") showErr(msg);
-    return;
-  }
+  // 1) Hintergrund-Job starten. Antwort kommt sofort.
+  let s;
+  try { s = await callTest916("run", token); }
+  catch (e) { stop(); showErr("Netzwerkfehler beim Start: " + (e && e.message ? e.message : e)); return; }
+  trail.push("Start HTTP " + s.http);
+  if (s.http === 401) { stop(); showErr("Sitzung abgelaufen. Bitte Seite hart neu laden (Cmd+Shift+R), Code 99 erneut eingeben, dann nochmal klicken."); return; }
+  if (s.http === 404) { stop(); showErr("Endpunkt nicht gefunden (404). Vermutlich läuft die neue Version auf Render noch nicht. Kurz warten, dann hart neu laden (Cmd+Shift+R)."); return; }
+  if (s.http !== 200) { stop(); showErr("Start fehlgeschlagen: HTTP " + s.http + (s.data && s.data.error ? " " + s.data.error : "")); return; }
 
-  // 2) Auf Ergebnis warten (max 4 Minuten). Status meldet Fertig/Fehler mit Massen; als
-  //    Notnagel gilt auch: das 9:16-Bild ist in R2 ladbar geworden.
+  // 2) Auf Ergebnis warten (max 4 Minuten). Status meldet Fertig/Fehler; als Notnagel gilt
+  //    auch: das 9:16-Bild ist in R2 ladbar geworden.
   const deadline = Date.now() + 240000;
   while (Date.now() < deadline) {
     await new Promise((r) => setTimeout(r, 3000));
-    let st = null;
-    try { st = await post("/admin/test-outpaint-916", { mode: "status" }); }
-    catch (e) { if (e && e.message === "401") { stop(); return; } }
-    if (st && st.status === "done") { stop(); showResult(st.result); return; }
-    if (st && st.status === "error") { stop(); showErr("Nicht erzeugt: " + (st.error || "unbekannter Fehler")); return; }
-    if (await imageLoads(bust(T916_OUT))) { stop(); showResult(st && st.result); return; }
+    let st;
+    try { st = await callTest916("status", token); }
+    catch (e) { trail.push("Status-Netzfehler"); continue; }
+    if (st.http === 401) { stop(); showErr("Sitzung abgelaufen. Bitte Seite hart neu laden und Code 99 erneut eingeben."); return; }
+    if (st.http !== 200) { trail.push("Status HTTP " + st.http); continue; }
+    const d = st.data || {};
+    trail.push(d.status || "?");
+    if (d.status === "done") { stop(); showResult(d.result); return; }
+    if (d.status === "error") { stop(); showErr("Nicht erzeugt: " + (d.error || "unbekannter Fehler")); return; }
+    if (await imageLoads(bust(T916_OUT))) { stop(); showResult(d.result); return; }
   }
   stop();
-  showErr("Zeitüberschreitung: nach 4 Minuten kein Ergebnis. Bitte erneut versuchen. Hängt es weiter, liegt es am fal-Dienst (Guthaben oder Auslastung).");
+  showErr("Zeitüberschreitung nach 4 Minuten. Letzte Schritte oben. Hängt es hier, liegt es am fal-Dienst (Guthaben oder Auslastung).");
 }
 
 function openMove(file) {
