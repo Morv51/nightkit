@@ -446,6 +446,7 @@ function renderBatch(st) {
   const fails = (st.results || []).filter((r) => r && !r.ok);
   let html = '<div class="mng-batch-head">Fertig: ' + swapped + " getauscht, " + failed + " fehlgeschlagen (von " + total + ")." +
     (st.estCost ? " Geschätzte Kosten rund $" + st.estCost + "." : "") + "</div>";
+  if (st.sanitized > 0) html += '<div class="mng-batch-cur">Davon ' + st.sanitized + " erst nach verlustfreier Neukodierung der Eingabe angenommen.</div>";
   if (st.error) html += '<div class="err">' + esc(st.error) + "</div>";
   if (swapped > 0) html += '<div class="mng-batch-ok">Die getauschten 2:3-Originale liegen jetzt im Papierkorb (Reiter „Papierkorb") und sind wiederherstellbar.</div>';
   if (fails.length) {
