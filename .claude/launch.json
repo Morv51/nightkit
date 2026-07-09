@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["start"],
       "port": 3000
+    },
+    {
+      "name": "nightkit-admin",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "ADMIN_TOOLS=1 ADMIN_CODES=99 TEMPLATE_SOURCE=repo PORT=3000 node server.js"],
+      "port": 3000
     }
   ]
 }

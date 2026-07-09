@@ -52,6 +52,7 @@ export async function initManage() {
   state.data = data;
   renderShell(p);
   renderAll();
+  probeExistingTest916(); // frueheres 9:16-Ergebnis (falls vorhanden) direkt zeigen
   // Bei ADMIN_TOOLS=1 ist die Bestandsverwaltung der Standard-Tab. studio.js zieht das
   // nach (respektiert #manage-Anker und eine bereits getroffene Nutzerwahl).
   document.dispatchEvent(new CustomEvent("nk-admin-ready"));
@@ -73,7 +74,7 @@ function renderShell(p) {
     '  <div class="mng-formatbar" id="mngFormatBar"></div>',
     '  <div class="mng-testbox" id="mngTestBox">',
     '    <button class="rbtn rbtn-ghost" id="mngTest916" type="button">9:16-Testlauf (Urban 91, teures Modell)</button>',
-    '    <span class="mng-test-note">Einmaliger Test: formt Urban 91 per flux-2-pro auf 9:16 und legt das Ergebnis zusätzlich in R2 ab. Original bleibt unangetastet.</span>',
+    '    <span class="mng-test-note">Einmaliger Test: formt Urban 91 per flux-2-pro auf 9:16 und legt das Ergebnis zusätzlich in R2 ab. Der Aufruf kann bis zu einer Minute dauern. Original bleibt unangetastet.</span>',
     '    <div class="mng-test-result" id="mngTestResult"></div>',
     '  </div>',
     '  <div class="mng-catnav" id="mngCatnav"></div>',
@@ -301,28 +302,69 @@ async function doRecomputeDims() {
   finally { if (btn) { btn.disabled = false; btn.textContent = label; } }
 }
 
-// Einmaliger 9:16-Testlauf (Urban 91) auf dem Server anstossen und die Ansicht-URLs zeigen.
+// Bekannte Ansicht-URLs (Original 2:3 + 9:16-Ergebnis) fuer die Inline-Vorschau im Studio.
+const T916_ORIG = "/api/template-image?file=" + encodeURIComponent("Urban/urban-91.jpg");
+const T916_OUT = "/api/template-image?file=" + encodeURIComponent("_test916/urban-91-916.png");
+const bust = (u) => u + (u.indexOf("?") >= 0 ? "&" : "?") + "v=" + Date.now();
+
+// Zwei Bilder nebeneinander: Original 2:3 und 9:16-Ergebnis.
+function test916Gallery(viewOriginal, view916) {
+  return '<div class="mng-test-imgs">' +
+    '<figure><img src="' + esc(viewOriginal) + '" alt="Original 2:3"><figcaption>Original 2:3</figcaption></figure>' +
+    '<figure><img src="' + esc(view916) + '" alt="9:16-Ergebnis"><figcaption>9:16-Ergebnis</figcaption></figure>' +
+    "</div>";
+}
+
+// Liegt aus einem frueheren Lauf schon ein 9:16-Ergebnis in R2, direkt im Studio zeigen.
+function probeExistingTest916() {
+  const box = q("#mngTestResult"); if (!box || box.innerHTML.trim()) return;
+  const probe = new Image();
+  probe.onload = () => {
+    if (box.innerHTML.trim()) return;
+    box.innerHTML = test916Gallery(T916_ORIG, T916_OUT) +
+      '<div class="mng-test-cap">Bereits erzeugtes 9:16-Ergebnis. Neu erzeugen über den Knopf oben.</div>';
+  };
+  probe.src = T916_OUT;
+}
+
+// Einmaliger 9:16-Testlauf (Urban 91). Sichtbarer Laufhinweis mit mitlaufenden Sekunden,
+// hartes Zeitlimit (nie ewiges Haengen), fertiges Bild erscheint direkt gross im Studio.
 async function doTest916() {
   const btn = q("#mngTest916"), box = q("#mngTestResult");
   const label = btn ? btn.textContent : "";
-  if (btn) { btn.disabled = true; btn.textContent = "Läuft (fal-Aufruf, einen Moment) …"; }
-  if (box) box.innerHTML = "";
+  if (btn) { btn.disabled = true; btn.textContent = "Läuft …"; }
+
+  // Laufhinweis mit Sekundenzaehler, damit es nicht wie eingefroren wirkt.
+  let secs = 0;
+  const setRun = () => { if (box) box.innerHTML = '<span class="mng-test-run">Läuft: teurer flux-2-pro-Aufruf, dauert meist 30 bis 60 Sekunden. Bitte warten … (' + secs + "s)</span>"; };
+  setRun();
+  const ticker = setInterval(() => { secs += 1; setRun(); }, 1000);
+
+  // Hartes Zeitlimit von 3 Minuten, damit der Knopf nie dauerhaft haengt.
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 180000);
+
   try {
-    const r = await post("/admin/test-outpaint-916", { mode: "run" });
+    const r = await post("/admin/test-outpaint-916", { mode: "run" }, { signal: ctrl.signal });
     if (r && r.ok && r.view916) {
-      box.innerHTML =
-        "Fertig. Original " + r.original.w + "×" + r.original.h + " (" + r.original.ratio + ") auf 9:16 " +
-        r.result.w + "×" + r.result.h + " (" + r.result.ratio + "), Schätzung ~$" + r.estCost + " (flux-2-pro).<br>" +
-        '<a href="' + esc(r.viewOriginal) + '" target="_blank" rel="noopener">Original ansehen</a> · ' +
-        '<a href="' + esc(r.view916) + '" target="_blank" rel="noopener">9:16-Ergebnis ansehen</a>';
+      box.innerHTML = test916Gallery(bust(r.viewOriginal), bust(r.view916)) +
+        '<div class="mng-test-cap">Fertig. Original ' + r.original.w + "×" + r.original.h + " (" + r.original.ratio + ") auf 9:16 " +
+        r.result.w + "×" + r.result.h + " (" + r.result.ratio + "), Schätzung ~$" + r.estCost + " (flux-2-pro). " +
+        '<a href="' + esc(r.view916) + '" target="_blank" rel="noopener">9:16 groß öffnen</a></div>';
       toast("9:16-Testlauf fertig", "good");
     } else {
       box.innerHTML = '<span class="err">Nicht erzeugt: ' + esc((r && r.error) || "unbekannter Fehler") + "</span>";
       toast("Testlauf fehlgeschlagen", "err");
     }
   } catch (e) {
-    if (e.message !== "401") { toast(e.message, "err"); if (box) box.textContent = "Fehler: " + e.message; }
-  } finally { if (btn) { btn.disabled = false; btn.textContent = label; } }
+    const msg = e && e.name === "AbortError"
+      ? "Zeitüberschreitung: der Aufruf hat über 3 Minuten gebraucht und wurde abgebrochen. Bitte erneut versuchen. Hängt es wieder, liegt es am fal-Dienst (Guthaben oder Auslastung)."
+      : (e && e.message ? e.message : String(e));
+    if (msg !== "401") { toast("Testlauf fehlgeschlagen", "err"); if (box) box.innerHTML = '<span class="err">' + esc(msg) + "</span>"; }
+  } finally {
+    clearInterval(ticker); clearTimeout(timer);
+    if (btn) { btn.disabled = false; btn.textContent = label; }
+  }
 }
 
 function openMove(file) {

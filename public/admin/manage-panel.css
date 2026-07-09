@@ -301,4 +301,10 @@
 #panel-manage .mng-test-result { flex-basis: 100%; font-size: var(--font-size-sm); color: var(--color-text-muted); }
 #panel-manage .mng-test-result:empty { display: none; }
 #panel-manage .mng-test-result a { color: var(--color-accent); }
-#panel-manage .mng-test-result .err { color: #ffb0b0; }
+#panel-manage .mng-test-result .err { color: #ffb0b0; font-weight: 600; }
+#panel-manage .mng-test-run { color: var(--color-text-muted); }
+#panel-manage .mng-test-imgs { display: flex; flex-wrap: wrap; gap: 12px; margin: 8px 0 4px; }
+#panel-manage .mng-test-imgs figure { margin: 0; }
+#panel-manage .mng-test-imgs img { display: block; max-height: 360px; max-width: 100%; border-radius: var(--radius-md); background: #0003; }
+#panel-manage .mng-test-imgs figcaption { margin-top: 4px; font-size: var(--font-size-xs); color: var(--color-text-dim); text-align: center; }
+#panel-manage .mng-test-cap { font-size: var(--font-size-sm); color: var(--color-text-muted); }
