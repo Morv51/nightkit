@@ -71,6 +71,11 @@ function renderShell(p) {
     '</div>',
     '<div id="mngManageView">',
     '  <div class="mng-formatbar" id="mngFormatBar"></div>',
+    '  <div class="mng-testbox" id="mngTestBox">',
+    '    <button class="rbtn rbtn-ghost" id="mngTest916" type="button">9:16-Testlauf (Urban 91, teures Modell)</button>',
+    '    <span class="mng-test-note">Einmaliger Test: formt Urban 91 per flux-2-pro auf 9:16 und legt das Ergebnis zusätzlich in R2 ab. Original bleibt unangetastet.</span>',
+    '    <div class="mng-test-result" id="mngTestResult"></div>',
+    '  </div>',
     '  <div class="mng-catnav" id="mngCatnav"></div>',
     '  <div id="mngGrid"></div>',
     '</div>',
@@ -296,6 +301,30 @@ async function doRecomputeDims() {
   finally { if (btn) { btn.disabled = false; btn.textContent = label; } }
 }
 
+// Einmaliger 9:16-Testlauf (Urban 91) auf dem Server anstossen und die Ansicht-URLs zeigen.
+async function doTest916() {
+  const btn = q("#mngTest916"), box = q("#mngTestResult");
+  const label = btn ? btn.textContent : "";
+  if (btn) { btn.disabled = true; btn.textContent = "Läuft (fal-Aufruf, einen Moment) …"; }
+  if (box) box.innerHTML = "";
+  try {
+    const r = await post("/admin/test-outpaint-916", { mode: "run" });
+    if (r && r.ok && r.view916) {
+      box.innerHTML =
+        "Fertig. Original " + r.original.w + "×" + r.original.h + " (" + r.original.ratio + ") auf 9:16 " +
+        r.result.w + "×" + r.result.h + " (" + r.result.ratio + "), Schätzung ~$" + r.estCost + " (flux-2-pro).<br>" +
+        '<a href="' + esc(r.viewOriginal) + '" target="_blank" rel="noopener">Original ansehen</a> · ' +
+        '<a href="' + esc(r.view916) + '" target="_blank" rel="noopener">9:16-Ergebnis ansehen</a>';
+      toast("9:16-Testlauf fertig", "good");
+    } else {
+      box.innerHTML = '<span class="err">Nicht erzeugt: ' + esc((r && r.error) || "unbekannter Fehler") + "</span>";
+      toast("Testlauf fehlgeschlagen", "err");
+    }
+  } catch (e) {
+    if (e.message !== "401") { toast(e.message, "err"); if (box) box.textContent = "Fehler: " + e.message; }
+  } finally { if (btn) { btn.disabled = false; btn.textContent = label; } }
+}
+
 function openMove(file) {
   const t = state.data.templates.find((x) => x.file === file); if (!t) return;
   moveFile = file;
@@ -459,6 +488,7 @@ function wireEvents(p) {
     const fchip = e.target.closest(".mng-fmt-chip[data-fmt]");
     if (fchip) { state.fmtCat = fchip.dataset.fmt; renderFormatBar(); renderGrid(); return; }
     if (e.target.closest("#mngFmtRecompute")) { doRecomputeDims(); return; }
+    if (e.target.closest("#mngTest916")) { doTest916(); return; }
     const pen = e.target.closest(".pen");
     if (pen) { e.stopPropagation(); openRename(pen.dataset.rename); return; }
     const catEl = e.target.closest(".mng-cat");

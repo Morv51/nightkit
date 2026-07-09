@@ -294,3 +294,11 @@
 #panel-manage .mng-fmt-recompute { margin-left: auto; }
 #panel-manage .mng-fmt-unk { font-size: var(--font-size-xs); color: var(--color-text-dim); }
 #panel-manage .mng-fmt-note { font-size: var(--font-size-xs); color: var(--color-text-dim); margin-top: 6px; }
+
+/* Einmaliger 9:16-Testlauf (isolierter Test): Knopf + Ergebnis mit Ansicht-Links. */
+#panel-manage .mng-testbox { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 2px 0 14px; }
+#panel-manage .mng-testbox .mng-test-note { font-size: var(--font-size-xs); color: var(--color-text-dim); flex: 1 1 240px; }
+#panel-manage .mng-test-result { flex-basis: 100%; font-size: var(--font-size-sm); color: var(--color-text-muted); }
+#panel-manage .mng-test-result:empty { display: none; }
+#panel-manage .mng-test-result a { color: var(--color-accent); }
+#panel-manage .mng-test-result .err { color: #ffb0b0; }
