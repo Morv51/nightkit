@@ -14,7 +14,6 @@ const VARIANTS = 9;
 let files = [];   // [{ name, dataUrl }]
 let rows = [];    // [{ idx, fnum, prefix, dataUrl, tiles:[tile] }]
 let running = false;
-let noFalRun = false;    // Test-Weg "Nur GPT Image, ohne fal": beim naechsten Lauf den Outpaint ueberspringen
 let cancelled = false;   // Abbrechen angefordert → keine neuen Bilder mehr starten
 let runStamp = "";       // Zeitstempel je Lauf → eindeutige Datei-/Ordnernamen beim Download
 
@@ -168,12 +167,6 @@ function renderTileInner(el, t) {
     acts.appendChild(iconBtn("⬇", "Herunterladen", () => downloadTile(t)));
     acts.appendChild(iconBtn("📋", "Prompt kopieren", (b) => copyText(t.sentPrompt, b)));
     el.appendChild(acts);
-    if (t.dims) {
-      const dim = document.createElement("div"); dim.className = "af-tile-dims";
-      const near916 = Math.abs(t.dims.ratio - 0.5625) < 0.01;
-      dim.textContent = t.dims.w + "×" + t.dims.h + " · " + t.dims.ratio + (near916 ? " (9:16 ✓)" : "");
-      el.appendChild(dim);
-    }
   } else if (t.status === "blocked" || t.status === "error" || t.status === "cancelled") {
     const mk = document.createElement("div"); mk.className = "af-tile-mark"; mk.title = t.reason || "";
     mk.textContent = t.status === "blocked" ? "⚠ blockiert" : t.status === "cancelled" ? "⊘ abgebrochen" : "✗ Fehler"; el.appendChild(mk);
@@ -241,7 +234,6 @@ function updateOverview() {
 //    des Klicks laufendes Einzelbild darf noch fertig werden. Fertige bleiben. ──
 function showRunningUI(on) {
   const start = $("afStart"); if (start) start.disabled = on;
-  const startNF = $("afStartNoFal"); if (startNF) startNF.disabled = on;
   const cancel = $("afCancel"); if (cancel) { cancel.hidden = !on; cancel.disabled = false; }
 }
 function requestCancel() {
@@ -287,12 +279,12 @@ async function genTile(row, tile) {
   tile.status = "running"; updateTile(tile);
   const t0 = Date.now();
   try {
-    const start = await post("/admin/auto-generate", { image: row.dataUrl, prompt: tile.prompt, noFal: noFalRun });
+    const start = await post("/admin/auto-generate", { image: row.dataUrl, prompt: tile.prompt });
     if (!start || !start.jobId) throw new Error("Kein Auftrag gestartet");
     tile.sentPrompt = start.prompt || tile.prompt;
     const job = await pollJob(start.jobId);
     if (!job.image) throw new Error("Kein Bild erhalten");
-    tile.status = "done"; tile.image = job.image; tile.dims = job.dims || null; tile.ms = job.ms ? Math.round(job.ms / 1000) : Math.round((Date.now() - t0) / 1000);
+    tile.status = "done"; tile.image = job.image; tile.ms = job.ms ? Math.round(job.ms / 1000) : Math.round((Date.now() - t0) / 1000);
   } catch (e) {
     tile.status = isBlocked(e.message) ? "blocked" : "error"; tile.reason = e.message;
   }
@@ -384,8 +376,7 @@ export function initAutoflow() {
   });
   wireDropzoneMulti($("afDrop"), addFiles);
   wirePaste($("panel-auto"), (f) => addFiles([f]));
-  if ($("afStart")) $("afStart").addEventListener("click", () => { noFalRun = false; run(); });
-  if ($("afStartNoFal")) $("afStartNoFal").addEventListener("click", () => { noFalRun = true; run(); });
+  if ($("afStart")) $("afStart").addEventListener("click", run);
   if ($("afCancel")) $("afCancel").addEventListener("click", requestCancel);
   if ($("afZipAll")) $("afZipAll").addEventListener("click", zipAll);
 }

@@ -16,7 +16,6 @@ const WARN_AT = 8; // ab so vielen Templates eine Kosten-/Laufzeit-Warnung
 let files = [];   // [{ name, dataUrl }]
 let rows = [];    // [{ idx, fnum, prefix, dataUrl, tiles:[tile] }]
 let running = false;
-let noFalRun = false;    // Test-Weg "Nur GPT Image, ohne fal": beim naechsten Lauf den Outpaint ueberspringen
 let cancelled = false;   // Abbrechen angefordert → keine neuen Bilder mehr starten
 let runStamp = "";       // Zeitstempel je Lauf → eindeutige Datei-/ZIP-Namen
 let pathMode = "near";   // Pfad A ("near", mit Bild) | Pfad B ("far", nur Text)
@@ -167,12 +166,6 @@ function renderTileInner(el, t) {
     acts.appendChild(iconBtn("⬇", "Herunterladen", () => downloadTile(t)));
     acts.appendChild(iconBtn("📋", "Prompt kopieren", (b) => copyText(t.sentPrompt, b)));
     el.appendChild(acts);
-    if (t.dims) {
-      const dim = document.createElement("div"); dim.className = "af-tile-dims";
-      const near916 = Math.abs(t.dims.ratio - 0.5625) < 0.01;
-      dim.textContent = t.dims.w + "×" + t.dims.h + " · " + t.dims.ratio + (near916 ? " (9:16 ✓)" : "");
-      el.appendChild(dim);
-    }
   } else if (t.status === "blocked" || t.status === "error" || t.status === "cancelled") {
     const mk = document.createElement("div"); mk.className = "af-tile-mark"; mk.title = t.reason || "";
     const head = document.createElement("div"); head.className = "af-tile-mark-h";
@@ -252,7 +245,6 @@ function finishSummary() {
 //    fertig werden, fertige bleiben. ──
 function showRunningUI(on) {
   const start = $("af3Start"); if (start) start.disabled = on;
-  const startNF = $("af3StartNoFal"); if (startNF) startNF.disabled = on;
   const cancel = $("af3Cancel"); if (cancel) { cancel.hidden = !on; cancel.disabled = false; }
 }
 function requestCancel() {
@@ -284,12 +276,12 @@ async function genTile(row, tile) {
   tile.status = "running"; updateTile(tile);
   const t0 = Date.now();
   try {
-    const start = await post("/admin/auto-generate", pathMode === "far" ? { prompt: tile.prompt, textOnly: true, noFal: noFalRun } : { image: row.dataUrl, prompt: tile.prompt, noFal: noFalRun });
+    const start = await post("/admin/auto-generate", pathMode === "far" ? { prompt: tile.prompt, textOnly: true } : { image: row.dataUrl, prompt: tile.prompt });
     if (!start || !start.jobId) throw new Error("Kein Auftrag gestartet");
     tile.sentPrompt = start.prompt || tile.prompt;
     const job = await pollJob(start.jobId);
     if (!job.image) throw new Error("Kein Bild erhalten");
-    tile.status = "done"; tile.image = job.image; tile.dims = job.dims || null; tile.ms = job.ms ? Math.round(job.ms / 1000) : Math.round((Date.now() - t0) / 1000);
+    tile.status = "done"; tile.image = job.image; tile.ms = job.ms ? Math.round(job.ms / 1000) : Math.round((Date.now() - t0) / 1000);
   } catch (e) {
     tile.status = isBlocked(e.message) ? "blocked" : "error"; tile.reason = e.message;
     notify((tile.status === "blocked" ? "Blockiert (Inhaltsfilter): " : "Fehler bei „" + tile.label + "“: ") + e.message, "error");
@@ -366,8 +358,7 @@ export function initAutoflow3() {
   });
   wireDropzoneMulti($("af3Drop"), addFiles);
   wirePaste($("panel-auto3"), (f) => addFiles([f]));
-  if ($("af3Start")) $("af3Start").addEventListener("click", () => { noFalRun = false; run(); });
-  if ($("af3StartNoFal")) $("af3StartNoFal").addEventListener("click", () => { noFalRun = true; run(); });
+  if ($("af3Start")) $("af3Start").addEventListener("click", run);
   if ($("af3Cancel")) $("af3Cancel").addEventListener("click", requestCancel);
   if ($("af3ZipAll")) $("af3ZipAll").addEventListener("click", zipAll);
 }

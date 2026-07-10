@@ -472,8 +472,6 @@ html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: aut
 .af2-pathopt-t { font-size: 14px; font-weight: 700; color: var(--color-text, #fff); }
 .af2-pathopt-d { font-size: 12px; color: var(--color-text-muted, #999); }
 .af-tile-acts { position: absolute; bottom: 4px; right: 4px; display: flex; gap: 4px; }
-/* Ausgabe-Dimensionen unter der Kachel (9:16-Test): tatsaechliche Masse + Verhaeltnis. */
-.af-tile-dims { margin-top: 3px; font-size: 10px; line-height: 1.2; text-align: center; color: var(--color-text-dim, #9ca3af); font-variant-numeric: tabular-nums; }
 .af-icon-btn { width: 26px; height: 26px; border-radius: 6px; border: 1px solid rgba(255,255,255,.25); background: rgba(0,0,0,.62); color: #fff; font-size: 13px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
 .af-icon-btn:hover { background: rgba(0,0,0,.88); }
 .af-icon-btn.copied { background: #4ade80; border-color: #4ade80; color: #04210f; }
