@@ -640,15 +640,6 @@ server.listen(PORT, () => {
     try { require("./migrate-r2").runR2Migration().catch(() => {}); }
     catch (e) { console.log("[R2-MIGRATE] FERTIG: FEHLER: Migration nicht startbar: " + (e && e.message ? e.message : e)); }
   }
-  // Optionaler, ISOLIERTER Einzeltest beim Start: EIN 2:3-Template per teurem fal-Modell
-  // (flux-2-pro/outpaint) auf 9:16 bringen und ZUSAETZLICH in R2 ablegen. Original bleibt.
-  // Nur wenn TEST_OUTPAINT_916 gesetzt ist ("find" = nur Datei bestaetigen ohne Kosten,
-  // "run" = voller Test). Nicht-blockierend, faengt alles ab. Aendert keinen Dauerbetrieb
-  // und nicht die Modell-Konstante in lib/fal.js. Ohne die Variable passiert gar nichts.
-  if (process.env.TEST_OUTPAINT_916) {
-    try { require("./test-outpaint-916").run(process.env.TEST_OUTPAINT_916).catch((e) => console.log("[TEST-916] Fehler: " + (e && e.message ? e.message : e))); }
-    catch (e) { console.log("[TEST-916] nicht startbar: " + (e && e.message ? e.message : e)); }
-  }
 });
 
 function shutdown() {

@@ -52,8 +52,7 @@ export async function initManage() {
   state.data = data;
   renderShell(p);
   renderAll();
-  probeExistingTest916(); // frueheres 9:16-Ergebnis (falls vorhanden) direkt zeigen
-  probeBatch();           // laufenden/fertigen Stapel-Lauf wieder anzeigen
+  probeBatch();           // nur einen LAUFENDEN Stapel-Lauf wieder anzeigen (Reconnect)
   // Bei ADMIN_TOOLS=1 ist die Bestandsverwaltung der Standard-Tab. studio.js zieht das
   // nach (respektiert #manage-Anker und eine bereits getroffene Nutzerwahl).
   document.dispatchEvent(new CustomEvent("nk-admin-ready"));
@@ -73,11 +72,6 @@ function renderShell(p) {
     '</div>',
     '<div id="mngManageView">',
     '  <div class="mng-formatbar" id="mngFormatBar"></div>',
-    '  <div class="mng-testbox" id="mngTestBox">',
-    '    <button class="rbtn rbtn-ghost" id="mngTest916" type="button">9:16-Testlauf (Urban 91, teures Modell)</button>',
-    '    <span class="mng-test-note">Einmaliger Test: formt Urban 91 per flux-2-pro auf 9:16 und legt das Ergebnis zusätzlich in R2 ab. Der Aufruf läuft im Hintergrund und kann bis zu einer Minute dauern. Original bleibt unangetastet. (Stand H4)</span>',
-    '    <div class="mng-test-result" id="mngTestResult"></div>',
-    '  </div>',
     '  <div class="mng-batchbox" id="mngBatchBox">',
     '    <button class="rbtn rbtn-danger" id="mngReformat916" type="button">Alle 2:3-nah auf 9:16 umformen und aktiv schalten</button>',
     '    <span class="mng-batch-note">Formt alle aktiven 2:3-nah-Templates per teurem flux-2-pro auf 9:16 um und schaltet sie aktiv. Die 2:3-Originale wandern in den Papierkorb (wiederherstellbar), sie werden nicht gelöscht. Läuft im Hintergrund und kann eine Weile dauern, bitte die Seite offen lassen. Fehlgeschlagene bleiben unverändert aktiv und lassen sich später erneut laufen lassen.</span>',
@@ -308,113 +302,6 @@ async function doRecomputeDims() {
   finally { if (btn) { btn.disabled = false; btn.textContent = label; } }
 }
 
-// Bekannte Ansicht-URLs (Original 2:3 + 9:16-Ergebnis) fuer die Inline-Vorschau im Studio.
-const T916_ORIG = "/api/template-image?file=" + encodeURIComponent("Urban/urban-91.jpg");
-const T916_OUT = "/api/template-image?file=" + encodeURIComponent("_test916/urban-91-916.png");
-const bust = (u) => u + (u.indexOf("?") >= 0 ? "&" : "?") + "v=" + Date.now();
-
-// Zwei Bilder nebeneinander: Original 2:3 und 9:16-Ergebnis.
-function test916Gallery(viewOriginal, view916) {
-  return '<div class="mng-test-imgs">' +
-    '<figure><img src="' + esc(viewOriginal) + '" alt="Original 2:3"><figcaption>Original 2:3</figcaption></figure>' +
-    '<figure><img src="' + esc(view916) + '" alt="9:16-Ergebnis"><figcaption>9:16-Ergebnis</figcaption></figure>' +
-    "</div>";
-}
-
-// Liegt aus einem frueheren Lauf schon ein 9:16-Ergebnis in R2, direkt im Studio zeigen.
-function probeExistingTest916() {
-  const box = q("#mngTestResult"); if (!box || box.innerHTML.trim()) return;
-  const probe = new Image();
-  probe.onload = () => {
-    if (box.innerHTML.trim()) return;
-    box.innerHTML = test916Gallery(T916_ORIG, T916_OUT) +
-      '<div class="mng-test-cap">Bereits erzeugtes 9:16-Ergebnis. Neu erzeugen über den Knopf oben.</div>';
-  };
-  probe.src = T916_OUT;
-}
-
-// Bild-Existenzpruefung: laedt eine URL als Image und meldet, ob sie geladen wurde.
-// Instanz-unabhaengiger Notnagel: prueft direkt, ob das 9:16-Ergebnis in R2 auftaucht.
-function imageLoads(url) {
-  return new Promise((resolve) => {
-    const im = new Image();
-    im.onload = () => resolve(true);
-    im.onerror = () => resolve(false);
-    im.src = url;
-  });
-}
-
-// Eigener Aufruf an den Test-Endpunkt OHNE die geteilte post()-Hilfe. Grund: post() macht
-// bei 401 ein stilles location.reload(), das wie "bricht ab ohne Meldung" aussieht. Hier
-// bekommen wir den HTTP-Status zurueck und zeigen IMMER eine sichtbare Meldung.
-async function callTest916(mode, token) {
-  const res = await fetch("/admin/test-outpaint-916", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-Admin-Token": token || "" },
-    body: JSON.stringify({ mode }),
-  });
-  let data = {};
-  try { data = (await res.json()) || {}; } catch (_) {}
-  return { http: res.status, data };
-}
-
-// Einmaliger 9:16-Testlauf (Urban 91). Der teure fal-Aufruf laeuft im HINTERGRUND auf dem
-// Server: die Klick-Anfrage antwortet sofort und kann nie haengen. Danach Status-Abfrage im
-// Takt. JEDER Ausgang zeigt eine Meldung, plus eine kurze Schritt-Spur, damit nie etwas
-// stumm abbricht. Fertiges Bild erscheint direkt gross im Studio.
-async function doTest916() {
-  const btn = q("#mngTest916"), box = q("#mngTestResult");
-  const label = btn ? btn.textContent : "";
-  const token = getToken();
-  if (btn) { btn.disabled = true; btn.textContent = "Läuft …"; }
-
-  let secs = 0;
-  const trail = [];
-  const trailHtml = () => (trail.length ? '<div class="mng-test-trail">Schritte: ' + esc(trail.join(" · ")) + "</div>" : "");
-  const setRun = () => { if (box) box.innerHTML = '<span class="mng-test-run">Läuft: teurer flux-2-pro-Aufruf, dauert meist 30 bis 60 Sekunden. Bitte warten … (' + secs + "s)</span>" + trailHtml(); };
-  setRun();
-  const ticker = setInterval(() => { secs += 1; setRun(); }, 1000);
-  const stop = () => { clearInterval(ticker); if (btn) { btn.disabled = false; btn.textContent = label; } };
-  const showResult = (meta) => {
-    const cap = meta && meta.original && meta.result
-      ? "Fertig. Original " + meta.original.w + "×" + meta.original.h + " (" + meta.original.ratio + ") auf 9:16 " +
-        meta.result.w + "×" + meta.result.h + " (" + meta.result.ratio + "), Schätzung ~$" + meta.estCost + " (flux-2-pro)."
-      : "Fertig. Das 9:16-Ergebnis steht unten.";
-    box.innerHTML = test916Gallery(bust(T916_ORIG), bust(T916_OUT)) +
-      '<div class="mng-test-cap">' + cap + ' <a href="' + esc(T916_OUT) + '" target="_blank" rel="noopener">9:16 groß öffnen</a></div>';
-    toast("9:16-Testlauf fertig", "good");
-  };
-  const showErr = (msg) => { if (box) box.innerHTML = '<span class="err">' + esc(msg) + "</span>" + trailHtml(); toast("Testlauf fehlgeschlagen", "err"); };
-
-  // 1) Hintergrund-Job starten. Antwort kommt sofort.
-  let s;
-  try { s = await callTest916("run", token); }
-  catch (e) { stop(); showErr("Netzwerkfehler beim Start: " + (e && e.message ? e.message : e)); return; }
-  trail.push("Start HTTP " + s.http);
-  if (s.http === 401) { stop(); showErr("Sitzung abgelaufen. Bitte Seite hart neu laden (Cmd+Shift+R), Code 99 erneut eingeben, dann nochmal klicken."); return; }
-  if (s.http === 404) { stop(); showErr("Endpunkt nicht gefunden (404). Vermutlich läuft die neue Version auf Render noch nicht. Kurz warten, dann hart neu laden (Cmd+Shift+R)."); return; }
-  if (s.http !== 200) { stop(); showErr("Start fehlgeschlagen: HTTP " + s.http + (s.data && s.data.error ? " " + s.data.error : "")); return; }
-
-  // 2) Auf Ergebnis warten (max 4 Minuten). Status meldet Fertig/Fehler; als Notnagel gilt
-  //    auch: das 9:16-Bild ist in R2 ladbar geworden.
-  const deadline = Date.now() + 240000;
-  while (Date.now() < deadline) {
-    await new Promise((r) => setTimeout(r, 3000));
-    let st;
-    try { st = await callTest916("status", token); }
-    catch (e) { trail.push("Status-Netzfehler"); continue; }
-    if (st.http === 401) { stop(); showErr("Sitzung abgelaufen. Bitte Seite hart neu laden und Code 99 erneut eingeben."); return; }
-    if (st.http !== 200) { trail.push("Status HTTP " + st.http); continue; }
-    const d = st.data || {};
-    trail.push(d.status || "?");
-    if (d.status === "done") { stop(); showResult(d.result); return; }
-    if (d.status === "error") { stop(); showErr("Nicht erzeugt: " + (d.error || "unbekannter Fehler")); return; }
-    if (await imageLoads(bust(T916_OUT))) { stop(); showResult(d.result); return; }
-  }
-  stop();
-  showErr("Zeitüberschreitung nach 4 Minuten. Letzte Schritte oben. Hängt es hier, liegt es am fal-Dienst (Guthaben oder Auslastung).");
-}
-
 // ── Stapel-Umformung aller aktiven 2:3-nah-Templates auf 9:16 (aktiv schalten, Originale in
 // den Papierkorb). Eigener Aufruf mit HTTP-Status (kein stilles Neuladen). Lauf im Hintergrund,
 // Fortschritt per Status-Abfrage. ──
@@ -503,8 +390,9 @@ async function probeBatch() {
   let st;
   try { st = await adminPost("/admin/reformat-916", { mode: "status" }); } catch (_) { return; }
   if (!st || st.http !== 200 || !st.data) return;
+  // Nur einen LAUFENDEN Lauf wieder anzeigen (Reconnect). Ein bereits fertiger Lauf wird beim
+  // Oeffnen NICHT erneut gezeigt, damit keine alte Fehlerliste dauerhaft stehenbleibt.
   if (st.data.status === "running") { const b = q("#mngReformat916"); if (b) b.disabled = true; renderBatch(st.data); pollBatch(); }
-  else if (st.data.status === "done") { renderBatch(st.data); }
 }
 
 function openMove(file) {
@@ -670,7 +558,6 @@ function wireEvents(p) {
     const fchip = e.target.closest(".mng-fmt-chip[data-fmt]");
     if (fchip) { state.fmtCat = fchip.dataset.fmt; renderFormatBar(); renderGrid(); return; }
     if (e.target.closest("#mngFmtRecompute")) { doRecomputeDims(); return; }
-    if (e.target.closest("#mngTest916")) { doTest916(); return; }
     if (e.target.closest("#mngReformat916")) { doReformatBatch(); return; }
     const pen = e.target.closest(".pen");
     if (pen) { e.stopPropagation(); openRename(pen.dataset.rename); return; }
