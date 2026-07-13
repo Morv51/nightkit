@@ -248,9 +248,13 @@ function copyPrompt() {
 
 export function initMode1() {
   const file = $("m1File");
-  $("m1Drop").addEventListener("click", () => file.click());
-  file.addEventListener("change", () => file.files[0] && onFile(file.files[0]));
-  // Upload ohne Dialog: Drag&Drop + Paste (Klick bleibt Fallback).
+  // WICHTIG (iOS Safari): #m1Drop ist ein <label>, das den Input umschliesst — der
+  // Klick/Tipp oeffnet den Dialog schon ueber die native Label-Assoziation. Ein
+  // ZUSAETZLICHES file.click() erzeugte einen Doppel-Trigger, den iOS verwirft
+  // (Dialog oeffnet, aber die Auswahl kommt nie als change an -> Upload haengt still).
+  // Darum KEIN file.click() mehr — exakt wie die funktionierenden Auto-Flows.
+  file.addEventListener("change", () => { if (file.files[0]) onFile(file.files[0]); file.value = ""; });
+  // Upload ohne Dialog: Drag&Drop + Paste (Klick laeuft ueber die Label-Assoziation).
   wireDropzone($("m1Drop"), onFile);
   wirePaste($("panel-mode1"), onFile);
 

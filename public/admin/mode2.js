@@ -287,9 +287,12 @@ function copyToClipboard(text, btn, onCopied) {
 
 export function initMode2() {
   const file = $("m2File");
-  $("m2Drop").addEventListener("click", () => file.click());
+  // WICHTIG (iOS Safari): #m2Drop ist ein <label> um den Input — der Tipp oeffnet den
+  // Dialog schon nativ. Ein zusaetzliches file.click() erzeugte einen Doppel-Trigger,
+  // den iOS verwirft (Auswahl kommt nie als change an). Darum KEIN file.click() mehr —
+  // wie die funktionierenden Auto-Flows.
   file.addEventListener("change", () => { if (file.files && file.files.length) { addFiles(file.files); file.value = ""; } });
-  // Mehrfach-Upload ohne Dialog: Drag&Drop (alle Dateien) + Paste (Klick bleibt Fallback).
+  // Mehrfach-Upload ohne Dialog: Drag&Drop (alle Dateien) + Paste (Klick laeuft ueber die Label-Assoziation).
   wireDropzoneMulti($("m2Drop"), addFiles);
   wirePaste($("panel-mode2"), (f) => addFiles([f]));
 
