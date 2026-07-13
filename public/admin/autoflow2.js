@@ -16,6 +16,7 @@ let rows = [];    // [{ idx, fnum, prefix, dataUrl, tiles:[tile] }]
 let running = false;
 let cancelled = false;   // Abbrechen angefordert → keine neuen Bilder mehr starten
 let runStamp = "";       // Zeitstempel je Lauf → eindeutige Datei-/Ordnernamen beim Download
+let runId = "", runCreatedAt = ""; // dauerhafte R2-Ablage: eindeutige Lauf-ID + Startzeit
 let pathMode = "near";   // Pfad A ("near", mit Bild) | Pfad B ("far", nur Text-Beschreibung)
 
 // Gewählte Anzahl VARIANTEN (zusätzlich zum EINEN Hauptflyer). Schieberegler #af2VarCount,
@@ -289,6 +290,19 @@ async function pollJob(jobId) {
   throw new Error("Zeitüberschreitung — über 6 Minuten gedauert.");
 }
 
+// Jedes fertige Bild sofort dauerhaft in R2 ablegen (best-effort; blockiert den Lauf nicht,
+// kein Reload bei 401). Aendert nichts an der Browser-Anzeige.
+function saveRunImage(row, tile) {
+  if (!tile || !tile.image || !runId) return;
+  const index = row.fnum + "-" + (tile.kind === "main" ? "haupt" : "v" + tile.num);
+  const mode = pathMode === "far" ? "Text-Pfad (weit)" : "Bild-Pfad (nah)";
+  fetch("/admin/autoflow/save-image", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Admin-Token": getToken() },
+    body: JSON.stringify({ runId, createdAt: runCreatedAt, flow: "2", mode, sourceName: row.srcName || "", index, image: tile.image }),
+  }).catch(() => {});
+}
+
 // ── Ein Bild generieren (Referenzbild als Stilanker + Prompt der Kachel) ──
 async function genTile(row, tile) {
   tile.status = "running"; updateTile(tile);
@@ -300,6 +314,7 @@ async function genTile(row, tile) {
     const job = await pollJob(start.jobId);
     if (!job.image) throw new Error("Kein Bild erhalten");
     tile.status = "done"; tile.image = job.image; tile.ms = job.ms ? Math.round(job.ms / 1000) : Math.round((Date.now() - t0) / 1000);
+    saveRunImage(row, tile); // fertiges Bild sofort dauerhaft in R2 (best-effort)
   } catch (e) {
     tile.status = isBlocked(e.message) ? "blocked" : "error"; tile.reason = e.message;
     // Grund auch als Meldung sichtbar machen (Klartext: Filter / Timeout / API-Fehler).
@@ -321,6 +336,7 @@ async function run() {
   if (running) return;
   if (!files.length) return notify("Erst Flyer hochladen", "info");
   running = true; cancelled = false; runStamp = stamp(); showRunningUI(true);
+  runCreatedAt = new Date().toISOString(); runId = "af2-" + runStamp + "-" + Math.random().toString(36).slice(2, 6);
   const _pe = document.querySelector('input[name="af2Path"]:checked') || $("af2Path");
   pathMode = (_pe && _pe.value === "far") ? "far" : "near";
   rows = []; $("af2List").innerHTML = ""; ensureLightbox();
@@ -334,7 +350,7 @@ async function run() {
     if (cancelled) break;
     const f = files[fi]; const fnum = fi + 1;
     const rowIdx = rows.length;
-    const row = { idx: rowIdx, fnum, prefix: multi ? "Flyer " + fnum : "Flyer", dataUrl: f.dataUrl, tiles: [] };
+    const row = { idx: rowIdx, fnum, prefix: multi ? "Flyer " + fnum : "Flyer", dataUrl: f.dataUrl, srcName: f.name, tiles: [] };
     row.tiles.push(mkTile(rowIdx, fnum, 0, "main", "Haupt"));
     for (let k = 1; k <= nVar; k++) row.tiles.push(mkTile(rowIdx, fnum, k, "variant", String(k)));
     rows.push(row); appendRow(row); updateOverview();

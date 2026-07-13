@@ -18,6 +18,7 @@ let rows = [];    // [{ idx, fnum, prefix, dataUrl, tiles:[tile] }]
 let running = false;
 let cancelled = false;   // Abbrechen angefordert → keine neuen Bilder mehr starten
 let runStamp = "";       // Zeitstempel je Lauf → eindeutige Datei-/ZIP-Namen
+let runId = "", runCreatedAt = ""; // dauerhafte R2-Ablage: eindeutige Lauf-ID + Startzeit
 let pathMode = "near";   // Pfad A ("near", mit Bild) | Pfad B ("far", nur Text)
 
 // ── Upload ───────────────────────────────────────────────────────
@@ -271,6 +272,19 @@ async function pollJob(jobId) {
   throw new Error("Zeitüberschreitung — über 6 Minuten gedauert.");
 }
 
+// Jedes fertige Bild sofort dauerhaft in R2 ablegen (best-effort; blockiert den Lauf nicht,
+// kein Reload bei 401). Aendert nichts an der Browser-Anzeige.
+function saveRunImage(row, tile) {
+  if (!tile || !tile.image || !runId) return;
+  const index = row.fnum + "-" + (tile.kind === "main" ? "haupt" : "v" + tile.num);
+  const mode = pathMode === "far" ? "Text-Pfad (weit)" : "Bild-Pfad (nah)";
+  fetch("/admin/autoflow/save-image", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Admin-Token": getToken() },
+    body: JSON.stringify({ runId, createdAt: runCreatedAt, flow: "3", mode, sourceName: row.srcName || "", index, image: tile.image }),
+  }).catch(() => {});
+}
+
 // ── Ein Hauptbild generieren — EXAKT die Hauptbild-Logik von Auto-Flow 2 ──
 async function genTile(row, tile) {
   tile.status = "running"; updateTile(tile);
@@ -282,6 +296,7 @@ async function genTile(row, tile) {
     const job = await pollJob(start.jobId);
     if (!job.image) throw new Error("Kein Bild erhalten");
     tile.status = "done"; tile.image = job.image; tile.ms = job.ms ? Math.round(job.ms / 1000) : Math.round((Date.now() - t0) / 1000);
+    saveRunImage(row, tile); // fertiges Bild sofort dauerhaft in R2 (best-effort)
   } catch (e) {
     tile.status = isBlocked(e.message) ? "blocked" : "error"; tile.reason = e.message;
     notify((tile.status === "blocked" ? "Blockiert (Inhaltsfilter): " : "Fehler bei „" + tile.label + "“: ") + e.message, "error");
@@ -305,6 +320,7 @@ async function run() {
   // Kosten-/Laufzeit-Warnung: je Template ein GPT-Image-Aufruf plus eine Sonnet-Analyse.
   if (files.length > WARN_AT && !confirm(files.length + " Templates auf einmal. Pro Template fällt ein GPT-Image-Aufruf und eine Sonnet-Analyse an — das dauert und kostet entsprechend.\nFortfahren?")) return;
   running = true; cancelled = false; runStamp = stamp(); showRunningUI(true);
+  runCreatedAt = new Date().toISOString(); runId = "af3-" + runStamp + "-" + Math.random().toString(36).slice(2, 6);
   const _pe = document.querySelector('input[name="af3Path"]:checked') || $("af3Path");
   pathMode = (_pe && _pe.value === "far") ? "far" : "near";
   rows = []; $("af3List").innerHTML = ""; ensureLightbox();
@@ -316,7 +332,7 @@ async function run() {
     if (cancelled) break;
     const f = files[fi]; const fnum = fi + 1;
     const rowIdx = rows.length;
-    const row = { idx: rowIdx, fnum, prefix: multi ? "Flyer " + fnum : "Flyer", dataUrl: f.dataUrl, tiles: [] };
+    const row = { idx: rowIdx, fnum, prefix: multi ? "Flyer " + fnum : "Flyer", dataUrl: f.dataUrl, srcName: f.name, tiles: [] };
     row.tiles.push(mkTile(rowIdx, fnum));
     rows.push(row); appendRow(row); updateOverview();
     const tag = multi ? "Flyer " + fnum + " von " + N + " · " : "";

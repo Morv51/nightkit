@@ -606,3 +606,17 @@ html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: aut
 .kw-add:focus { border-color: var(--color-accent, #ccff00); border-style: solid; }
 .kw-testout { margin-top: 10px; padding: 10px 12px; border: 1px solid var(--color-border, #333); border-radius: 8px; background: #0a0a0a; color: var(--color-text, #eee); font-size: 12px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .kw-testout[hidden] { display: none; }
+
+/* ── Letzte Läufe: dauerhaft gespeicherte Auto-Flow-Ergebnisse ─────────────── */
+.afr-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+.afr-title { font-family: Syne, Inter, sans-serif; font-size: 20px; font-weight: 800; margin: 0; }
+.afr-note { margin: 0 0 16px; font-size: 13px; color: var(--muted, rgba(245,245,240,0.5)); }
+.afr-empty { padding: 28px; text-align: center; color: var(--muted, rgba(245,245,240,0.42)); border: 1px dashed var(--color-border, #222); border-radius: var(--radius-lg, 16px); }
+.afr-run { background: var(--color-surface, #111); border: 1px solid var(--color-border, #222); border-radius: var(--radius-md, 12px); padding: 12px; margin-bottom: 14px; }
+.afr-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+.afr-meta { font-size: 13px; color: var(--color-text, #fff); }
+.afr-meta b { color: var(--color-accent, #ccff00); }
+.afr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+.afr-thumb { display: block; position: relative; border-radius: 8px; overflow: hidden; background: var(--card-inset, #0d0d0d); border: 1px solid var(--color-border, #222); text-decoration: none; }
+.afr-thumb img { display: block; width: 100%; aspect-ratio: 9 / 16; object-fit: cover; }
+.afr-thumb span { position: absolute; left: 0; right: 0; bottom: 0; font-size: 10px; padding: 3px 5px; background: rgba(0,0,0,.72); color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

@@ -37,6 +37,7 @@
         <button class="studio-tab" type="button" data-tab="upload" hidden>Template Uploader</button>
         <button class="studio-tab active" type="button" data-tab="prompting">Prompting Tool</button>
         <button class="studio-tab" type="button" data-tab="auto">Auto-Flow</button>
+        <button class="studio-tab" type="button" data-tab="afruns" hidden>Letzte Läufe</button>
         <button class="studio-tab" type="button" data-tab="keywords">Schlagworte verwalten</button>
         <button class="studio-tab" type="button" data-tab="usage" hidden>Nutzung</button>
       </div>
@@ -436,6 +437,17 @@
       <!-- Nutzungs-Dashboard (additiv). Inhalt rendert usage-panel.js. Tab + Panel
            bleiben verborgen, wenn ADMIN_TOOLS aus ist. Nur Anzeige, keine Kernfunktion. -->
       <section class="studio-panel" id="panel-usage" data-tab="usage" hidden></section>
+
+      <!-- Letzte Läufe (additiv): dauerhaft gespeicherte Auto-Flow-Ergebnisse aus R2.
+           Inhalt rendert autoflowRuns.js. Tab + Panel bleiben verborgen, wenn ADMIN_TOOLS aus ist. -->
+      <section class="studio-panel" id="panel-afruns" data-tab="afruns" hidden>
+        <div class="afr-top">
+          <h2 class="afr-title">Letzte Läufe</h2>
+          <button class="rbtn rbtn-ghost" id="afRunsReload" type="button">Aktualisieren</button>
+        </div>
+        <p class="afr-note">Dauerhaft gespeicherte Auto-Flow-Ergebnisse (die neuesten 30 Läufe). Nach Neuladen oder von einem anderen Gerät hier wieder auffindbar. Jedes fertige Bild wird sofort einzeln gespeichert.</p>
+        <div id="afRunsRoot"></div>
+      </section>
     </main>
   </div>
 
