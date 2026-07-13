@@ -6,7 +6,7 @@
 // Ist ADMIN_TOOLS aus, liefert /admin/manage/list 404 -> Tab bleibt verborgen.
 
 import { getToken, clearToken, post } from "./studioApi.js";
-import { wireDropzoneMulti } from "./studioUi.js";
+import { wireDropzoneMulti, fileToDataUrl } from "./studioUi.js";
 
 const WARN_AT = 20; // ab so vielen Dateien nachfragen
 let categories = [];
@@ -44,8 +44,8 @@ function renderShell(p) {
     '<div class="up-wrap">',
     '  <div class="up-note">Lädt neue Flyer als Templates in R2 hoch: eindeutiger technischer Name, WebP-Thumbnail, optional automatische Verschlagwortung (Sonnet). Bestehende Templates werden nicht angefasst. Neue erscheinen sofort in der Bestandsverwaltung und der App.</div>',
     '  <div class="up-card up-drop" id="upDrop">',
-    '    <label class="up-label">1 · Bilddateien wählen (jpg, jpeg, png, webp, mehrere möglich)</label>',
-    '    <input type="file" id="upFiles" accept="image/png,image/jpeg,image/webp" multiple>',
+    '    <label class="up-label">1 · Bilddateien wählen (jpg, jpeg, png, webp oder iPhone-Foto HEIC, mehrere möglich)</label>',
+    '    <input type="file" id="upFiles" accept="image/*" multiple>',
     '    <div class="up-drophint">oder Dateien hierher ziehen und ablegen</div>',
     '    <div class="up-filelist" id="upFileList"></div>',
     '  </div>',
@@ -93,15 +93,6 @@ function renderFileList() {
     : '<div class="up-hint">Noch keine Dateien gewählt.</div>';
 }
 
-function readAsDataURL(file) {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(r.result);
-    r.onerror = () => reject(new Error("Datei nicht lesbar"));
-    r.readAsDataURL(file);
-  });
-}
-
 function setStatus(i, text, kind) {
   const el = q("#upSt" + i); if (!el) return;
   el.textContent = text; el.className = "st" + (kind ? " " + kind : "");
@@ -119,7 +110,7 @@ async function start() {
   for (let i = 0; i < files.length; i++) {
     setStatus(i, "wird hochgeladen …");
     try {
-      const dataUrl = await readAsDataURL(files[i]);
+      const dataUrl = await fileToDataUrl(files[i]); // HEIC/iPhone-Fotos + Übergröße werden hier normalisiert
       const r = await post("/admin/upload", { category, image: dataUrl, autoTag });
       done++; added.push(r);
       const tg = r.tagged ? ("Tags: " + (r.tags ? r.tags.length : 0)) : (r.tagError ? "ohne Tags (" + r.tagError + ")" : "ohne Tags");
@@ -147,7 +138,10 @@ async function start() {
 // sodass exakt derselbe Auswahl- und Weiterverarbeitungspfad wie beim Dialog läuft. Nicht-
 // Bilddateien werden ignoriert (kurzer Hinweis). Die Upload-Verarbeitung bleibt unberührt.
 function isImageFile(f) {
-  return /^image\/(png|jpe?g|webp)$/i.test(f.type || "") || /\.(png|jpe?g|webp)$/i.test(f.name || "");
+  // iPhone-Fotos (HEIC/HEIF) haben oft einen leeren oder image/heic-Typ -> ueber Typ
+  // ODER Endung erkennen; fileToDataUrl konvertiert sie danach nach JPG.
+  const t = f.type || "";
+  return t.startsWith("image/") || /\.(png|jpe?g|webp|heic|heif|gif|bmp|tiff?|avif)$/i.test(f.name || "");
 }
 function onDropped(fileList) {
   const all = Array.from(fileList || []);

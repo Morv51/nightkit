@@ -1,16 +1,65 @@
 // Geteilte UI-Helfer fürs Template Studio (beide Modi).
 
 const MAX = 10 * 1024 * 1024;
+const MAX_EDGE = 2048; // lange Kante beim Herunterrechnen (Konvertierungs-/Downscale-Pfad)
+const STD_TYPE = /^image\/(png|jpe?g|webp)$/;
 
+// Datei -> dataURL. Standardformate (PNG/JPG/WebP) unter dem Limit werden EXAKT wie
+// bisher 1:1 gelesen (Rechner-Weg unverändert, keine Neucodierung). Alles andere —
+// vor allem iPhone-Fotos im HEIC/HEIF-Format oder sehr große Bilder — wird über ein
+// Canvas verlustarm nach JPG konvertiert und bei Bedarf auf MAX_EDGE heruntergerechnet.
+// In iOS Safari dekodiert das System HEIC, sodass das Bild geladen werden kann; die
+// weitere Verarbeitung (Analyse, Generierung) bekommt damit immer ein JPG/PNG/WebP.
 export function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
     if (!file) return reject(new Error("Keine Datei gewählt"));
-    if (!/^image\/(png|jpeg|webp)$/.test(file.type)) return reject(new Error("Nur PNG, JPG oder WebP"));
-    if (file.size > MAX) return reject(new Error("Bild zu groß (max. 10 MB)"));
-    const r = new FileReader();
-    r.onload = () => resolve(r.result);
-    r.onerror = () => reject(new Error("Datei konnte nicht gelesen werden"));
-    r.readAsDataURL(file);
+    const type = file.type || "";
+    // Unveränderter Standardpfad (Rechner: Drag-and-Drop, Einfügen, Klicken).
+    if (STD_TYPE.test(type) && file.size <= MAX) {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = () => reject(new Error("Datei konnte nicht gelesen werden"));
+      r.readAsDataURL(file);
+      return;
+    }
+    // Muss überhaupt ein Bild sein (Typ ODER Dateiendung) — sonst klare Meldung.
+    const looksImage = type.startsWith("image/") || type === "" ||
+      /\.(heic|heif|png|jpe?g|webp|gif|bmp|tiff?|avif)$/i.test(file.name || "");
+    if (!looksImage) return reject(new Error("Nur Bilddateien: JPG, PNG, WebP oder HEIC (iPhone)"));
+    convertImageFile(file).then(resolve, reject);
+  });
+}
+
+// HEIC/HEIF oder zu große Bilder über ein Canvas nach JPG bringen (weißer Hintergrund,
+// da JPG kein Alpha kann) und auf MAX_EDGE herunterrechnen. Fehler = klare Meldung
+// statt stillem Fehlschlag.
+function convertImageFile(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+        if (!w || !h) throw new Error("leer");
+        const scale = Math.min(1, MAX_EDGE / Math.max(w, h));
+        const cw = Math.max(1, Math.round(w * scale)), ch = Math.max(1, Math.round(h * scale));
+        const c = document.createElement("canvas");
+        c.width = cw; c.height = ch;
+        const ctx = c.getContext("2d");
+        ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, cw, ch);
+        ctx.drawImage(img, 0, 0, cw, ch);
+        URL.revokeObjectURL(url);
+        resolve(c.toDataURL("image/jpeg", 0.92));
+      } catch (_) {
+        URL.revokeObjectURL(url);
+        reject(new Error("Bild konnte nicht verarbeitet werden. Bitte als JPG oder PNG hochladen."));
+      }
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Dieses Format ließ sich hier nicht öffnen (evtl. HEIC auf einem Nicht-Apple-Gerät). Bitte als JPG oder PNG hochladen."));
+    };
+    img.src = url;
   });
 }
 

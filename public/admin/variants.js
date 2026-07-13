@@ -25,7 +25,11 @@ export function initVariants() {
       $("vpDropLabel").textContent = "Anderes Bild wählen (ziehen, einfügen oder klicken)";
       $("vpGo").disabled = false;
       $("vpStatus").textContent = "";
-    } catch (e) { notify("Bild konnte nicht gelesen werden", "error"); }
+    } catch (e) {
+      const msg = (e && e.message) || "Bild konnte nicht gelesen werden";
+      $("vpStatus").textContent = msg;
+      notify(msg, "error");
+    }
   };
 
   wireDropzone($("vpDrop"), onFile);
