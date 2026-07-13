@@ -405,6 +405,34 @@ async function run() {
   notify(cancelled ? "Lauf abgebrochen — fertige Bilder bleiben" : "Auto-Flow 2 fertig", cancelled ? "info" : "success");
 }
 
+// Server-getriebener Start (siehe autoflow.js). Der bisherige run() bleibt als Rueckfall.
+async function runServer() {
+  if (running) return;
+  if (!files.length) return notify("Erst Flyer hochladen", "info");
+  const near = pathMode === "near";
+  const btn = $("af2Start"); if (btn) btn.disabled = true;
+  try {
+    const res = await fetch("/admin/autoflow/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Admin-Token": getToken() },
+      body: JSON.stringify({
+        flow: "2", mode: near ? "Bild-Pfad (nah)" : "Text-Pfad (weit)", loose: near, textOnly: !near,
+        variants: variantCount(), model: MODEL, refType: "single",
+        files: files.map((f) => ({ name: f.name, dataUrl: f.dataUrl })),
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.status !== 200 || !data.runId) throw new Error(data.error || ("HTTP " + res.status));
+    notify("Lauf gestartet auf dem Server. Du kannst den Tab jetzt schließen. Fortschritt siehe Reiter Letzte Läufe.", "success");
+    const tab = document.querySelector('.studio-tab[data-tab="afruns"]');
+    if (tab) tab.click();
+  } catch (e) {
+    notify("Start fehlgeschlagen: " + (e.message || e), "error");
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
 export function initAutoflow2() {
   const file = $("af2File");
   if (file) file.addEventListener("change", () => {
@@ -418,7 +446,7 @@ export function initAutoflow2() {
     const lab = $("af2VarVal"); if (lab) lab.textContent = vc.value;
     if (files.length) renderThumbs();   // Datei-Meldung mit der neuen Zahl aktualisieren
   });
-  if ($("af2Start")) $("af2Start").addEventListener("click", run);
+  if ($("af2Start")) $("af2Start").addEventListener("click", runServer);
   if ($("af2Cancel")) $("af2Cancel").addEventListener("click", requestCancel);
   if ($("af2ZipAll")) $("af2ZipAll").addEventListener("click", zipAll);
 }

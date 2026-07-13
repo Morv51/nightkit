@@ -383,6 +383,35 @@ async function run() {
   notify(cancelled ? "Lauf abgebrochen — fertige Bilder bleiben" : "Auto-Flow fertig", cancelled ? "info" : "success");
 }
 
+// Server-getriebener Start: schickt den Auftrag an den Server und ist danach fertig. Der Lauf
+// laeuft im Server weiter (auch wenn der Tab schliesst). Fortschritt + Ergebnisse im Reiter
+// "Letzte Laeufe". Der bisherige browsergetriebene run() bleibt als Rueckfall im Code.
+async function runServer() {
+  if (running) return;
+  if (!files.length) return notify("Erst Flyer hochladen", "info");
+  const btn = $("afStart"); if (btn) btn.disabled = true;
+  try {
+    const res = await fetch("/admin/autoflow/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Admin-Token": getToken() },
+      body: JSON.stringify({
+        flow: "1", mode: "Bild-Pfad", loose: false, textOnly: false,
+        variants: VARIANTS, model: MODEL, refType: "single",
+        files: files.map((f) => ({ name: f.name, dataUrl: f.dataUrl })),
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.status !== 200 || !data.runId) throw new Error(data.error || ("HTTP " + res.status));
+    notify("Lauf gestartet auf dem Server. Du kannst den Tab jetzt schließen. Fortschritt siehe Reiter Letzte Läufe.", "success");
+    const tab = document.querySelector('.studio-tab[data-tab="afruns"]');
+    if (tab) tab.click();
+  } catch (e) {
+    notify("Start fehlgeschlagen: " + (e.message || e), "error");
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
 export function initAutoflow() {
   const file = $("afFile");
   if (file) file.addEventListener("change", () => {
@@ -391,7 +420,7 @@ export function initAutoflow() {
   });
   wireDropzoneMulti($("afDrop"), addFiles);
   wirePaste($("panel-auto"), (f) => addFiles([f]));
-  if ($("afStart")) $("afStart").addEventListener("click", run);
+  if ($("afStart")) $("afStart").addEventListener("click", runServer);
   if ($("afCancel")) $("afCancel").addEventListener("click", requestCancel);
   if ($("afZipAll")) $("afZipAll").addEventListener("click", zipAll);
 }

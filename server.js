@@ -640,6 +640,13 @@ server.listen(PORT, () => {
     try { require("./migrate-r2").runR2Migration().catch(() => {}); }
     catch (e) { console.log("[R2-MIGRATE] FERTIG: FEHLER: Migration nicht startbar: " + (e && e.message ? e.message : e)); }
   }
+  // Serverseitige Auto-Flow-Laeufe nach einem Neustart automatisch fortsetzen (nur bei
+  // ADMIN_TOOLS=1). Nicht-blockierend, faengt alles ab; ohne unterbrochene Laeufe passiert
+  // nichts. Beruehrt keinen Kern-Flow.
+  if (process.env.ADMIN_TOOLS === "1") {
+    try { require("./lib/studio/autoflowRunner").recoverRunning().catch(() => {}); }
+    catch (e) { console.log("[AUTOFLOW-RUN] Wiederanlauf nicht startbar: " + (e && e.message ? e.message : e)); }
+  }
 });
 
 function shutdown() {
