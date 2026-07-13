@@ -154,3 +154,21 @@ export function notify(msg, type = "info") {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { el.className = "studio-toast"; }, 4200);
 }
+
+// Sicherheitsnetz gegen STILLES Scheitern: bislang unbemerkte JS-Fehler und nicht
+// abgefangene Promise-Rejections werden als Toast sichtbar gemacht (statt dass beim
+// Upload einfach nichts passiert). Einmalig, idempotent. Rein additiv, aendert keine
+// Logik — nur Sichtbarkeit. Besonders wichtig auf iOS Safari, wo man keine Konsole hat.
+let errSurfaceInstalled = false;
+export function installErrorSurface() {
+  if (errSurfaceInstalled || typeof window === "undefined") return;
+  errSurfaceInstalled = true;
+  window.addEventListener("unhandledrejection", (e) => {
+    const r = e && e.reason;
+    const m = (r && (r.message || r)) || "Unbekannter Fehler";
+    notify("Fehler: " + String(m).slice(0, 200), "error");
+  });
+  window.addEventListener("error", (e) => {
+    if (e && e.message) notify("Fehler: " + String(e.message).slice(0, 200), "error");
+  });
+}

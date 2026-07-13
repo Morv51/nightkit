@@ -3,7 +3,7 @@
 // Studio-Helfer (studioUi) und das gemeinsame Admin-Token (studioApi). Ändert kein
 // bestehendes Werkzeug; hängt sich nur an das eigene Panel #panel-variants.
 
-import { fileToDataUrl, wireDropzone, wirePaste, notify } from "./studioUi.js";
+import { fileToDataUrl, wireDropzone, wirePaste, notify, installErrorSurface } from "./studioUi.js";
 import { post } from "./studioApi.js";
 
 const $ = (id) => document.getElementById(id);
@@ -12,29 +12,40 @@ let busy = false;
 let currentPrompts = [];
 
 export function initVariants() {
+  installErrorSurface(); // bislang stille Fehler ab jetzt sichtbar (v. a. iOS)
   const panel = $("panel-variants");
   if (!panel || panel.dataset.wired) return; // nur einmal verdrahten
   panel.dataset.wired = "1";
 
   const onFile = async (file) => {
-    if (!file) return;
+    const st = $("vpStatus");
+    if (!file) { if (st) st.textContent = "Keine Datei erhalten — bitte erneut wählen."; return; }
+    // SOFORT sichtbar, sobald eine Datei ankommt — so ist auf iOS erkennbar, ob die
+    // Auswahl ueberhaupt im Code ankommt (change gefeuert) oder ob das Einlesen haengt.
+    if (st) st.textContent = "Verarbeite " + (file.name || "Bild") + " (" + Math.round((file.size || 0) / 1024) + " KB) …";
     try {
       dataUrl = await fileToDataUrl(file);
       const thumb = $("vpThumb");
       thumb.src = dataUrl; thumb.hidden = false;
-      $("vpDropLabel").textContent = "Anderes Bild wählen (ziehen, einfügen oder klicken)";
+      $("vpDropLabel").textContent = "Anderes Bild wählen (tippen, ziehen oder einfügen)";
       $("vpGo").disabled = false;
-      $("vpStatus").textContent = "";
+      if (st) st.textContent = "Bild geladen ✓ — bereit für „10 Prompts erzeugen“.";
     } catch (e) {
       const msg = (e && e.message) || "Bild konnte nicht gelesen werden";
-      $("vpStatus").textContent = msg;
+      if (st) st.textContent = "Upload-Fehler: " + msg;
       notify(msg, "error");
     }
   };
 
   wireDropzone($("vpDrop"), onFile);
   wirePaste(panel, onFile);
-  $("vpFile").addEventListener("change", (e) => { const f = e.target.files && e.target.files[0]; if (f) onFile(f); });
+  // change-Handler mit value-Reset: erlaubt, dieselbe Datei erneut zu wählen (iOS
+  // feuert change sonst nicht ein zweites Mal).
+  $("vpFile").addEventListener("change", (e) => {
+    const f = e.target.files && e.target.files[0];
+    onFile(f || null);
+    e.target.value = "";
+  });
   $("vpGo").addEventListener("click", generate);
   panel.addEventListener("click", onResultClick);
 }

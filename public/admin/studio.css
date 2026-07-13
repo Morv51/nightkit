@@ -13,6 +13,21 @@
    gewinnen — sonst bleiben „versteckte" Overlays sichtbar. */
 [hidden] { display: none !important; }
 
+/* Datei-Inputs unsichtbar, aber NICHT display:none/visibility:hidden — ein
+   file-Input mit display:none feuert auf iOS Safari nach der Auswahl KEIN
+   change-Event (der Upload haengt dann still). Deshalb visually-hidden: bleibt im
+   Layout/rendert, ist nur unsichtbar. Klick/Label triggern ihn weiter normal. */
+.file-hidden {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px; border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  opacity: 0;
+}
+
 /* Scrollen: die Haupt-App-CSS (app.css) setzt html,body auf overflow:hidden für
    ihr fixiertes Layout. studio.css lädt nur hier und danach → wir erlauben für
    die Studio-Seite vertikales Scrollen, damit nichts unten abgeschnitten wird. */
