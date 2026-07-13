@@ -619,8 +619,38 @@ html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: aut
 .afr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
 .afr-thumb { display: block; position: relative; border-radius: 8px; overflow: hidden; background: var(--card-inset, #0d0d0d); border: 1px solid var(--color-border, #222); text-decoration: none; }
 .afr-thumb img { display: block; width: 100%; aspect-ratio: 9 / 16; object-fit: cover; }
-.afr-thumb span { position: absolute; left: 0; right: 0; bottom: 0; font-size: 10px; padding: 3px 5px; background: rgba(0,0,0,.72); color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.afr-thumb .afr-cap { position: absolute; left: 0; right: 0; bottom: 0; font-size: 10px; padding: 3px 5px; background: rgba(0,0,0,.72); color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.afr-thumb .afr-cap.afr-cap-status { background: rgba(204,255,0,.2); color: var(--color-accent, #ccff00); font-weight: 700; }
+.afr-thumb .afr-cap.afr-cap-status.err { background: rgba(239,68,68,.22); color: #ff9b9b; }
 .afr-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ── Uebernahme in den Live-Bestand (additiv) ─────────────────────────────── */
+.afr-adopt-toggle { background: var(--color-surface-2, #1a1a1a); color: var(--color-accent, #ccff00); border: 1px solid rgba(204,255,0,.4); }
+.afr-adopt-toggle.is-on { background: var(--color-accent, #ccff00); color: #0a0a0a; border-color: var(--color-accent, #ccff00); }
+/* Auswaehlbare Kacheln: klarer Hinweis + grosse Tippflaeche (Mobile). */
+.afr-thumb.afr-selectable { cursor: pointer; }
+.afr-thumb.afr-selectable::after { content: ""; position: absolute; inset: 0; border: 2px solid transparent; border-radius: 8px; pointer-events: none; transition: border-color .12s, background .12s; }
+.afr-thumb.afr-selectable:hover::after { border-color: rgba(204,255,0,.5); }
+.afr-thumb.afr-selectable.is-sel::after { border-color: var(--color-accent, #ccff00); background: rgba(204,255,0,.14); }
+.afr-tick { position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; border-radius: 50%; background: rgba(0,0,0,.55); border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.4); }
+.afr-thumb.is-sel .afr-tick { background: var(--color-accent, #ccff00); border-color: var(--color-accent, #ccff00); }
+.afr-thumb.is-sel .afr-tick::after { content: "✓"; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #0a0a0a; font-size: 15px; font-weight: 900; }
+.afr-adopted-badge { position: absolute; top: 6px; left: 6px; font-size: 10px; font-weight: 800; padding: 3px 7px; border-radius: 100px; background: #9be37a; color: #0a2a0a; box-shadow: 0 1px 4px rgba(0,0,0,.4); }
+.afr-thumb.is-adopted img { opacity: .82; }
+.afr-adopt { margin-top: 12px; padding: 12px; border-radius: 10px; background: var(--card-inset, #0d0d0d); border: 1px solid rgba(204,255,0,.28); }
+.afr-adopt-title { font-size: 12px; font-weight: 700; color: var(--muted, rgba(245,245,240,0.7)); margin-bottom: 10px; }
+.afr-adopt-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.afr-adopt .afr-cat, .afr-adopt .afr-newcat, .afr-adopt .afr-name { min-height: 44px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--color-border, #333); background: var(--color-surface, #111); color: var(--color-text, #fff); font-size: 15px; }
+.afr-adopt .afr-cat { flex: 1 1 180px; }
+.afr-adopt .afr-newcat { flex: 1 1 180px; }
+.afr-adopt .afr-name { flex: 1 1 100%; width: 100%; }
+.afr-adopt .afr-or { font-size: 12px; color: var(--muted, rgba(245,245,240,0.5)); }
+.afr-autotag-lbl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--color-text, #fff); margin-bottom: 12px; cursor: pointer; }
+.afr-autotag-lbl input { width: 20px; height: 20px; accent-color: var(--color-accent, #ccff00); }
+.afr-adopt-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.afr-adopt-actions .rbtn { min-height: 46px; flex: 1 1 auto; }
+.afr-adopt-actions .afr-adopt-go { flex: 2 1 200px; }
+.afr-adopt-hint { margin-top: 8px; font-size: 12px; color: var(--color-accent, #ccff00); }
 .afr-badge { display: inline-block; margin-left: 6px; font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 100px; background: var(--color-surface-2, #1a1a1a); color: var(--color-text, #fff); vertical-align: middle; }
 .afr-badge.afr-st-running { background: rgba(204,255,0,.16); color: var(--color-accent, #ccff00); }
 .afr-badge.afr-st-done { background: rgba(155,227,122,.16); color: #9be37a; }
