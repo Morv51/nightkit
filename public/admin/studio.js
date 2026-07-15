@@ -93,6 +93,7 @@ function showStudio() {
   import("./keywords.js").then((m) => m.initKeywords && m.initKeywords()).catch(() => {});
   import("./manage-panel.js").then((m) => m.initManage && m.initManage()).catch(() => {});
   import("./upload-panel.js").then((m) => m.initUpload && m.initUpload()).catch(() => {});
+  import("./designAnalysis.js").then((m) => m.initDesignAnalysis && m.initDesignAnalysis()).catch(() => {});
   import("./usage-panel.js").then((m) => m.initUsage && m.initUsage()).catch(() => {});
   resolveInitial();
 }

@@ -35,6 +35,7 @@
       <div class="studio-tabs" id="tabs">
         <button class="studio-tab" type="button" data-tab="manage" hidden>Bestandsverwaltung</button>
         <button class="studio-tab" type="button" data-tab="upload" hidden>Template Uploader</button>
+        <button class="studio-tab" type="button" data-tab="dsgn" hidden>Grafik-Analyse</button>
         <button class="studio-tab active" type="button" data-tab="prompting">Prompting Tool</button>
         <button class="studio-tab" type="button" data-tab="auto">Auto-Flow</button>
         <button class="studio-tab" type="button" data-tab="afruns" hidden>Letzte Läufe</button>
@@ -447,6 +448,50 @@
         </div>
         <p class="afr-note">Dauerhaft gespeicherte Auto-Flow-Ergebnisse (die neuesten 30 Läufe). Nach Neuladen oder von einem anderen Gerät hier wieder auffindbar. Jedes fertige Bild wird sofort einzeln gespeichert.</p>
         <div id="afRunsRoot"></div>
+      </section>
+
+      <!-- Grafik-Analyse (additiv, isoliert): Phase 1 Eingabe + Phase 2 Analyse je Flyer.
+           Laeuft EINMALIG zur Musterextraktion, nicht bei der Generierung. Die Bilder werden
+           nur analysiert, nie als Vorlage gespeichert. Inhalt rendert designAnalysis.js.
+           Tab + Panel bleiben verborgen, wenn ADMIN_TOOLS aus ist. -->
+      <section class="studio-panel" id="panel-dsgn" data-tab="dsgn" hidden>
+        <div class="afr-top">
+          <h2 class="afr-title">Grafik-Analyse</h2>
+          <button class="rbtn rbtn-ghost" id="dsgnReload" type="button">Aktualisieren</button>
+        </div>
+        <p class="afr-note">Leitet Gestaltungsregeln aus fertigen Flyern ab. Die Bilder werden <b>nur analysiert</b>: sie werden nicht als Vorlage gespeichert und nicht nachgebaut. Jeder Flyer wird einzeln nach einem festen Fragenkatalog ausgewertet; die Datensätze werden gesammelt, damit sie später (Phase 3) gemeinsam zu Regeln verdichtet werden können.</p>
+
+        <div class="st-card">
+          <div class="st-head">1 · Flyer wählen (mehrere)</div>
+          <label class="st-drop" id="dsgnDrop">
+            <input type="file" id="dsgnFile" accept="image/*" multiple class="file-hidden">
+            <span id="dsgnDropLabel">Flyer hierher ziehen, einfügen (⌘/Ctrl+V) oder tippen — mehrere möglich (zum Testen 3–5, später 30–50)</span>
+          </label>
+          <div class="batch-thumbs" id="dsgnThumbs" hidden></div>
+        </div>
+
+        <div class="st-card">
+          <div class="st-head">2 · Analyse</div>
+          <div class="st-row">
+            <select class="st-select" id="dsgnModel" aria-label="Modell">
+              <option value="sonnet">Sonnet · genauer</option>
+              <option value="haiku">Haiku · schnell</option>
+            </select>
+            <button class="rbtn rbtn-primary" id="dsgnStart" type="button" disabled>Analysieren</button>
+            <button class="rbtn rbtn-danger" id="dsgnCancel" type="button" hidden>■ Abbrechen</button>
+            <span class="af-time" id="dsgnStatus"></span>
+          </div>
+          <div class="st-mini-note">Ein Sonnet-Aufruf je Flyer, nacheinander. Ein Fehlschlag bricht den Lauf nicht ab. Fester Fragenkatalog: Blickfang, Flächenaufteilung, Klassen, fehlende Rollen, Datum, Schrift-Disziplin, Tiefe, Ordnung, Vibe.</div>
+        </div>
+
+        <div class="st-card">
+          <div class="st-head">
+            Gesammelte Datensätze <span id="dsgnCount" class="afr-badge"></span>
+            <button class="st-mini" id="dsgnClear" type="button">Alle verwerfen</button>
+          </div>
+          <div class="st-mini-note">Diese Datensätze sind die Grundlage für Phase 3 (Regeldatei). Sie bleiben gespeichert, bis du sie verwirfst.</div>
+          <div id="dsgnRecords"></div>
+        </div>
       </section>
     </main>
   </div>
