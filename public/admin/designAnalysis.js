@@ -217,6 +217,107 @@ async function clearAll() {
   else notify("Verwerfen fehlgeschlagen: " + ((r.data && r.data.error) || ("HTTP " + r.http)), "error");
 }
 
+// ── Phase 3: Regelwerk destillieren + anzeigen. Reine Anzeige gespeicherter Daten; die
+//    Belastbarkeit (beruht_auf) kommt aus dem Backend (Anzahl belegender Datensätze). ──
+let rulesRunning = false;
+
+// Belastbarkeits-Chip: stark, wenn eine Regel auf vielen Datensätzen beruht; schwach (Hinweis)
+// bei ≤ 2. Der Schwellwert für „stark" richtet sich nach der Gesamtzahl der Datensätze.
+function belegBadge(n, total) {
+  const strong = n >= Math.max(5, Math.ceil((total || 0) / 2));
+  const weak = n <= 2;
+  const cls = "dsgn-beleg" + (strong ? " is-strong" : "") + (weak ? " is-weak" : "");
+  const label = n + (n === 1 ? " Datensatz" : " Datensätze");
+  return '<span class="' + cls + '" title="Auf wie vielen Datensätzen die Regel beruht">' + esc(label) + "</span>";
+}
+
+function ruleItemHtml(item, total) {
+  const it = item || {};
+  const text = esc(it.regel || it.muster || "");
+  const rolle = it.rolle ? '<b class="dsgn-rolle">' + esc(it.rolle) + "</b> " : "";
+  return '<li class="dsgn-rule">' + rolle + '<span class="dsgn-rule-t">' + text + "</span> " + belegBadge(it.beruht_auf || 0, total) + "</li>";
+}
+
+function renderRuleset(ruleset) {
+  const root = $("dsgnRules");
+  const meta = $("dsgnRulesMeta");
+  const clearBtn = $("dsgnRulesClear");
+  if (!root) return;
+  if (!ruleset) {
+    if (meta) meta.textContent = "";
+    if (clearBtn) clearBtn.hidden = true;
+    root.innerHTML = '<div class="afr-empty">Noch kein Regelwerk. Oben „Regelwerk destillieren" starten.</div>';
+    return;
+  }
+  const total = (ruleset.basis && ruleset.basis.datensaetze) || 0;
+  const when = (ruleset.createdAt || "").slice(0, 16).replace("T", " ");
+  if (meta) meta.textContent = total ? total + " Datensätze · " + when : "";
+  if (clearBtn) clearBtn.hidden = false;
+
+  const uni = Array.isArray(ruleset.universelle_regeln) ? ruleset.universelle_regeln : [];
+  const stil = (ruleset.stilabhaengige_regeln && typeof ruleset.stilabhaengige_regeln === "object") ? ruleset.stilabhaengige_regeln : {};
+
+  let html = '<div class="dsgn-rules-sec"><div class="dsgn-rules-h">Universelle Regeln</div>';
+  html += uni.length
+    ? '<ol class="dsgn-rules-list">' + uni.map((r) => ruleItemHtml(r, total)).join("") + "</ol>"
+    : '<div class="afr-empty">Keine universellen Regeln erkannt.</div>';
+  html += "</div>";
+
+  const keys = Object.keys(stil).sort((a, b) => (stil[b].anzahl || 0) - (stil[a].anzahl || 0));
+  html += '<div class="dsgn-rules-sec"><div class="dsgn-rules-h">Stilabhängige Regeln</div>';
+  if (!keys.length) html += '<div class="afr-empty">Keine stilabhängigen Regeln erkannt.</div>';
+  for (const k of keys) {
+    const grp = stil[k] || {};
+    html += '<div class="dsgn-stil"><div class="dsgn-stil-h">' + esc(k) + ' <span class="dsgn-stil-n">' + (grp.anzahl || 0) + " Datensätze</span></div>";
+    const regeln = Array.isArray(grp.regeln) ? grp.regeln : [];
+    if (regeln.length) html += '<ol class="dsgn-rules-list">' + regeln.map((r) => ruleItemHtml(r, total)).join("") + "</ol>";
+    const hr = Array.isArray(grp.herleitung_rollen) ? grp.herleitung_rollen : [];
+    if (hr.length) {
+      html += '<div class="dsgn-hr-h">Herleitung fehlender Rollen</div>';
+      html += '<ul class="dsgn-rules-list dsgn-hr">' + hr.map((r) => ruleItemHtml(r, total)).join("") + "</ul>";
+    }
+    html += "</div>";
+  }
+  html += "</div>";
+  root.innerHTML = html;
+}
+
+async function loadRuleset() {
+  const r = await api("/admin/design-analysis/ruleset", {});
+  if (r.http === 404 || r.http === 401) return;
+  if (r.http !== 200 || !r.data || r.data.ok === false) { renderRuleset(null); return; }
+  renderRuleset(r.data.ruleset || null);
+}
+
+async function distill() {
+  if (rulesRunning || running) return;
+  const btn = $("dsgnDistill");
+  const setD = (t) => { const el = $("dsgnDistillStatus"); if (el) el.textContent = t || ""; };
+  rulesRunning = true;
+  if (btn) btn.disabled = true;
+  const model = ($("dsgnModel") && $("dsgnModel").value) === "haiku" ? "haiku" : "sonnet";
+  setD("Destilliere Regelwerk aus allen Datensätzen … (kann etwas dauern)");
+  const r = await api("/admin/design-analysis/distill", { model });
+  rulesRunning = false;
+  if (btn) btn.disabled = false;
+  if (r.http === 200 && r.data && r.data.ok) {
+    renderRuleset(r.data.ruleset || null);
+    setD("Regelwerk destilliert.");
+    notify("Regelwerk destilliert", "success");
+  } else {
+    setD("");
+    notify("Destillieren fehlgeschlagen: " + ((r.data && r.data.error) || ("HTTP " + r.http)), "error");
+  }
+}
+
+async function clearRuleset() {
+  if (rulesRunning) return;
+  if (!confirm("Das destillierte Regelwerk verwerfen?")) return;
+  const r = await api("/admin/design-analysis/ruleset-clear", {});
+  if (r.http === 200 && r.data && r.data.ok) { notify("Regelwerk verworfen", "success"); renderRuleset(null); }
+  else notify("Verwerfen fehlgeschlagen: " + ((r.data && r.data.error) || ("HTTP " + r.http)), "error");
+}
+
 export function initDesignAnalysis() {
   installErrorSurface();
   const panel = $("panel-dsgn");
@@ -233,10 +334,13 @@ export function initDesignAnalysis() {
   if ($("dsgnStart")) $("dsgnStart").addEventListener("click", analyseAll);
   if ($("dsgnCancel")) $("dsgnCancel").addEventListener("click", () => { cancelled = true; setStatus("Bricht ab …"); });
   if ($("dsgnClear")) $("dsgnClear").addEventListener("click", clearAll);
-  if ($("dsgnReload")) $("dsgnReload").addEventListener("click", loadRecords);
+  if ($("dsgnReload")) $("dsgnReload").addEventListener("click", () => { loadRecords(); loadRuleset(); });
+  if ($("dsgnDistill")) $("dsgnDistill").addEventListener("click", distill);
+  if ($("dsgnRulesClear")) $("dsgnRulesClear").addEventListener("click", clearRuleset);
   const tabBtn = document.querySelector('.studio-tab[data-tab="dsgn"]');
-  if (tabBtn) tabBtn.addEventListener("click", loadRecords);
+  if (tabBtn) tabBtn.addEventListener("click", () => { loadRecords(); loadRuleset(); });
   renderThumbs();
 
   loadRecords().then((reachable) => { if (reachable && tabBtn) tabBtn.hidden = false; });
+  loadRuleset();
 }
