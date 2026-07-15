@@ -24,6 +24,8 @@ const FIELDS = [
   ["tiefe", "Tiefe"],
   ["ordnung", "Ordnung"],
   ["vibe", "Vibe"],
+  ["stil_kategorie", "Stil-Kategorie"],
+  ["lautstaerke", "Lautstärke"],
 ];
 
 let files = [];       // { name, dataUrl }
