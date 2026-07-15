@@ -501,6 +501,22 @@
           <div class="st-mini-note">Diese Datensätze sind die Grundlage für Phase 3 (Regeldatei). Sie bleiben gespeichert, bis du sie verwirfst.</div>
           <div id="dsgnRecords"></div>
         </div>
+
+        <!-- Phase 3 (additiv): die gesammelten Datensätze zu einem Regelwerk destillieren.
+             Ein Anthropic-Aufruf über alle Datensätze, nur wiederkehrende Muster. Das Regelwerk
+             wird als getrennte Datei gespeichert und (noch) NICHT an Auto-Flow gehängt. -->
+        <div class="st-card">
+          <div class="st-head">
+            3 · Regelwerk destillieren <span id="dsgnRulesMeta" class="afr-badge"></span>
+            <button class="st-mini" id="dsgnRulesClear" type="button" hidden>Verwerfen</button>
+          </div>
+          <div class="st-mini-note">Fasst die gesammelten Datensätze zu <b>wiederkehrenden Regeln</b> zusammen (ein Sonnet-Aufruf über alle Datensätze) — universelle Regeln und stilabhängige Regeln je <code>stil_kategorie</code>, jede mit Angabe, auf wie vielen Datensätzen sie beruht. Das Regelwerk wird als getrennte Datei gespeichert und noch NICHT an Auto-Flow gehängt.</div>
+          <div class="st-row">
+            <button class="rbtn rbtn-primary" id="dsgnDistill" type="button">Regelwerk destillieren</button>
+            <span class="af-time" id="dsgnDistillStatus"></span>
+          </div>
+          <div id="dsgnRules"></div>
+        </div>
       </section>
     </main>
   </div>

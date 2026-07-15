@@ -690,6 +690,21 @@ html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: aut
 .dsgn-ov-item b { color: var(--color-accent, #ccff00); font-weight: 700; }
 .dsgn-ov-item.is-zero { color: var(--muted, rgba(245,245,240,0.4)); }
 .dsgn-ov-item.is-zero b { color: var(--muted, rgba(245,245,240,0.4)); }
+/* Phase 3: Regelwerk-Anzeige (universelle + stilabhängige Regeln, je mit Belastbarkeit). */
+.dsgn-rules-sec { margin-top: 12px; }
+.dsgn-rules-h { font-size: 13px; font-weight: 800; letter-spacing: .02em; text-transform: uppercase; color: var(--color-accent, #ccff00); margin-bottom: 6px; }
+.dsgn-rules-list { margin: 0 0 4px; padding-left: 22px; }
+.dsgn-rule { font-size: 13px; color: var(--color-text, #fff); line-height: 1.5; margin: 3px 0; }
+.dsgn-rule-t { }
+.dsgn-rolle { color: var(--color-accent, #ccff00); text-transform: uppercase; font-size: 11px; letter-spacing: .03em; margin-right: 2px; }
+.dsgn-stil { border: 1px solid var(--color-border, #222); border-radius: var(--radius-md, 12px); background: var(--card-inset, #0d0d0d); padding: 10px 12px; margin: 8px 0; }
+.dsgn-stil-h { font-size: 14px; font-weight: 700; color: var(--color-text, #fff); text-transform: capitalize; margin-bottom: 4px; }
+.dsgn-stil-n { font-size: 11px; font-weight: 600; color: var(--muted, rgba(245,245,240,0.5)); text-transform: none; }
+.dsgn-hr-h { font-size: 12px; font-weight: 700; color: var(--muted, rgba(245,245,240,0.7)); margin: 6px 0 2px; }
+.dsgn-hr { padding-left: 22px; }
+.dsgn-beleg { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; white-space: nowrap; background: rgba(255,255,255,.08); color: var(--muted, rgba(245,245,240,0.7)); }
+.dsgn-beleg.is-strong { background: rgba(204,255,0,.16); color: var(--color-accent, #ccff00); }
+.dsgn-beleg.is-weak { background: rgba(255,255,255,.05); color: var(--muted, rgba(245,245,240,0.4)); }
 
 .afr-prog { height: 8px; border-radius: 999px; background: var(--color-surface-2, #1a1a1a); overflow: hidden; margin: 4px 0; }
 .afr-prog > span { display: block; height: 100%; background: var(--color-accent, #ccff00); transition: width .3s; }
