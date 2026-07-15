@@ -136,7 +136,10 @@ function render(runs) {
     return '<div class="afr-run" data-run="' + esc(r.runId) + '">' +
       '<div class="afr-head">' +
         '<div class="afr-meta"><b>Auto-Flow ' + esc(r.flow || "?") + "</b> · " + esc(fmtTime(r.createdAt)) +
-          (r.mode ? " · " + esc(r.mode) : "") + (r.sourceName ? " · " + esc(r.sourceName) : "") +
+          (r.mode ? " · " + esc(r.mode) : "") +
+          // A/B auf einen Blick: ohne Marke lief der Lauf ohne Regelwerk.
+          (r.regelwerk ? ' · <b class="afr-rules">Regelwerk</b>' : "") +
+          (r.sourceName ? " · " + esc(r.sourceName) : "") +
           ' <span class="afr-badge afr-st-' + esc(r.status || "") + '">' + esc(stLabel) + "</span></div>" +
         '<div class="afr-btns">' + btns + "</div>" +
       "</div>" + progress +

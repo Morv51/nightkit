@@ -379,6 +379,7 @@ async function runServer() {
       headers: { "Content-Type": "application/json", "X-Admin-Token": getToken() },
       body: JSON.stringify({
         flow: "3", mode: near ? "Bild-Pfad (nah)" : "Text-Pfad (weit)", loose: near, textOnly: !near,
+        regelwerk: !!($("af3Rules") && $("af3Rules").checked), // A/B-Schalter
         variants: 0, model: MODEL, refType: "single",
         files: files.map((f) => ({ name: f.name, dataUrl: f.dataUrl })),
       }),

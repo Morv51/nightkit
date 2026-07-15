@@ -417,6 +417,7 @@ async function runServer() {
       headers: { "Content-Type": "application/json", "X-Admin-Token": getToken() },
       body: JSON.stringify({
         flow: "2", mode: near ? "Bild-Pfad (nah)" : "Text-Pfad (weit)", loose: near, textOnly: !near,
+        regelwerk: !!($("af2Rules") && $("af2Rules").checked), // A/B-Schalter
         variants: variantCount(), model: MODEL, refType: "single",
         files: files.map((f) => ({ name: f.name, dataUrl: f.dataUrl })),
       }),

@@ -260,8 +260,10 @@
             <div class="st-row">
               <button class="rbtn rbtn-primary" id="afStart" type="button">▶ Generieren</button>
               <button class="rbtn rbtn-danger" id="afCancel" type="button" hidden>■ Abbrechen</button>
+              <label class="kw-force"><input type="checkbox" id="afRules"> Regelwerk einspeisen</label>
               <span class="af-time" id="afProgress"></span>
             </div>
+            <div class="st-mini-note"><b>Regelwerk einspeisen (A/B):</b> aus = wie bisher, ohne Regelwerk. An = die im Tab „Grafik-Analyse" destillierten Regeln fließen zusätzlich in den Bildprompt — die universellen Regeln plus die stilabhängigen der an deiner Referenz erkannten Stil-Kategorie. Fehlt eine Rolle auf der Referenz (typisch die DJs), kommt deren stilspezifische Herleitung dazu. Hat die Kategorie weniger als 4 Datensätze, bleiben nur die universellen Regeln. Dieselbe Referenz einmal mit und einmal ohne fahren, dann siehst du den Unterschied direkt. Die Läufe sind im Reiter „Letzte Läufe" mit <b>Regelwerk</b> markiert.</div>
             <div class="st-mini-note">Sprachmodell fest: <b>Sonnet</b>. Bildmodell: <b>OpenAI GPT Image</b> (einzige Engine, moderation „low"). Je Flyer entstehen 10 Bilder (Hauptflyer + 9 Varianten), nacheinander — das dauert entsprechend (jede Generierung bis ~2 Min, timeout-sicher per Polling). Läuft ein Lauf, kannst du ihn mit <b>Abbrechen</b> stoppen — schon fertige Bilder bleiben erhalten.</div>
           </div>
 
@@ -320,8 +322,10 @@
             <div class="st-row">
               <button class="rbtn rbtn-primary" id="af2Start" type="button">▶ Generieren</button>
               <button class="rbtn rbtn-danger" id="af2Cancel" type="button" hidden>■ Abbrechen</button>
+              <label class="kw-force"><input type="checkbox" id="af2Rules"> Regelwerk einspeisen</label>
               <span class="af-time" id="af2Progress"></span>
             </div>
+            <div class="st-mini-note"><b>Regelwerk einspeisen (A/B):</b> aus = wie bisher, ohne Regelwerk. An = die im Tab „Grafik-Analyse" destillierten Regeln fließen zusätzlich in den Bildprompt (universelle Regeln plus die stilabhängigen der erkannten Kategorie, dazu die Herleitung fehlender Rollen wie der DJs). Gilt für beide Pfade, nah und weit. Läufe mit Regelwerk sind im Reiter „Letzte Läufe" markiert.</div>
             <div class="st-mini-note">Gleiche Engine wie Auto-Flow 1 (<b>Sonnet</b> + <b>OpenAI GPT Image</b>). Je Flyer <b>1 Hauptflyer plus die gewählte Anzahl Varianten</b>, nacheinander. Läuft ein Lauf, kannst du ihn mit <b>Abbrechen</b> stoppen, schon fertige Bilder bleiben erhalten.</div>
           </div>
 
@@ -375,8 +379,10 @@
             <div class="st-row">
               <button class="rbtn rbtn-primary" id="af3Start" type="button">▶ Hauptbilder generieren</button>
               <button class="rbtn rbtn-danger" id="af3Cancel" type="button" hidden>■ Abbrechen</button>
+              <label class="kw-force"><input type="checkbox" id="af3Rules"> Regelwerk einspeisen</label>
               <span class="af-time" id="af3Progress"></span>
             </div>
+            <div class="st-mini-note"><b>Regelwerk einspeisen (A/B):</b> aus = wie bisher, ohne Regelwerk. An = die im Tab „Grafik-Analyse" destillierten Regeln fließen zusätzlich in den Bildprompt (universelle Regeln plus die stilabhängigen der erkannten Kategorie, dazu die Herleitung fehlender Rollen wie der DJs). Läufe mit Regelwerk sind im Reiter „Letzte Läufe" markiert.</div>
             <div class="st-mini-note">Je Template ein Bild, nacheinander. Läuft ein Lauf, kannst du ihn mit <b>Abbrechen</b> stoppen — schon fertige Bilder bleiben erhalten.</div>
           </div>
 
