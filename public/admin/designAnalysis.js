@@ -289,25 +289,59 @@ async function loadRuleset() {
   renderRuleset(r.data.ruleset || null);
 }
 
+// Destillieren läuft serverseitig als HINTERGRUND-JOB (der Sonnet-Lauf über ~40 Datensätze
+// ist zu lang fürs Request-Fenster). Wir starten den Job (202 + jobId) und POLLEN den Status.
+// Läuft serverseitig weiter, auch wenn der Browser schließt — beim Reload zeigt loadRuleset
+// ein gespeichertes Regelwerk. So resettet der Knopf nicht mehr ohne Ergebnis.
 async function distill() {
   if (rulesRunning || running) return;
   const btn = $("dsgnDistill");
   const setD = (t) => { const el = $("dsgnDistillStatus"); if (el) el.textContent = t || ""; };
+  const done = () => { rulesRunning = false; if (btn) btn.disabled = false; };
   rulesRunning = true;
   if (btn) btn.disabled = true;
   const model = ($("dsgnModel") && $("dsgnModel").value) === "haiku" ? "haiku" : "sonnet";
-  setD("Destilliere Regelwerk aus allen Datensätzen … (kann etwas dauern)");
-  const r = await api("/admin/design-analysis/distill", { model });
-  rulesRunning = false;
-  if (btn) btn.disabled = false;
-  if (r.http === 200 && r.data && r.data.ok) {
-    renderRuleset(r.data.ruleset || null);
-    setD("Regelwerk destilliert.");
-    notify("Regelwerk destilliert", "success");
-  } else {
-    setD("");
-    notify("Destillieren fehlgeschlagen: " + ((r.data && r.data.error) || ("HTTP " + r.http)), "error");
+
+  setD("Starte Destillieren …");
+  const start = await api("/admin/design-analysis/distill", { model });
+  if (start.http !== 202 || !start.data || !start.data.jobId) {
+    done(); setD("");
+    notify("Destillieren fehlgeschlagen: " + ((start.data && start.data.error) || ("HTTP " + start.http)), "error");
+    return;
   }
+  const jobId = start.data.jobId;
+  const n = start.data.datensaetze || 0;
+  const t0 = Date.now();
+  const MAX_MS = 6 * 60 * 1000; // clientseitiges Poll-Limit; der Job läuft ggf. länger weiter
+
+  while (Date.now() - t0 < MAX_MS) {
+    await new Promise((r) => setTimeout(r, 2500));
+    setD("Destilliere Regelwerk aus " + (n ? n + " " : "") + "Datensätzen … " + Math.round((Date.now() - t0) / 1000) + " s");
+    const s = await api("/admin/design-analysis/distill-status", { jobId });
+    if (s.http === 404) { // Job abgelaufen/verloren — vielleicht ist er trotzdem gespeichert
+      done(); setD("");
+      await loadRuleset();
+      notify("Auftrag nicht mehr auffindbar — Regelwerk (falls gespeichert) unten geladen.", "warn");
+      return;
+    }
+    if (s.http !== 200 || !s.data) continue; // transient -> weiter pollen
+    if (s.data.status === "done") {
+      renderRuleset(s.data.ruleset || null);
+      setD("Regelwerk destilliert.");
+      notify("Regelwerk destilliert", "success");
+      done(); return;
+    }
+    if (s.data.status === "error") {
+      done(); setD("");
+      notify(s.data.error || "Destillieren fehlgeschlagen", "error");
+      return;
+    }
+    // status "pending" -> weiter warten
+  }
+  // Client-Poll-Limit erreicht: serverseitig evtl. noch laufend/fertig -> Reload lädt es.
+  done();
+  setD("Dauert ungewöhnlich lange — später „Aktualisieren" klicken.");
+  await loadRuleset();
 }
 
 async function clearRuleset() {
