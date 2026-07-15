@@ -96,9 +96,74 @@ function recordHtml(rec, idx) {
   "</div>";
 }
 
+// Übersicht: reine Verteilungszählung über die bereits gespeicherten Datensätze.
+// Feste Buckets in fester Reihenfolge (auch 0 wird gezeigt, damit Lücken sichtbar sind).
+const STIL_KATEGORIEN = ["grunge", "elegant", "minimal", "neon", "retro", "streetstyle", "glamour", "sonstige"];
+const LAUTSTAERKEN = ["zurueckhaltend", "mittel", "laut"];
+const LAUT_LABEL = { zurueckhaltend: "zurückhaltend", mittel: "mittel", laut: "laut" };
+
+// Zählt records nach einem Feld in die vorgegebenen Buckets; Unbekanntes separat.
+function tally(records, key, buckets) {
+  const counts = Object.create(null);
+  for (const b of buckets) counts[b] = 0;
+  let unbekannt = 0;
+  for (const rec of records) {
+    const raw = (rec && rec.fields) ? rec.fields[key] : "";
+    const v = String(raw == null ? "" : raw).trim().toLowerCase();
+    if (Object.prototype.hasOwnProperty.call(counts, v)) counts[v]++;
+    else unbekannt++;
+  }
+  return { counts, unbekannt };
+}
+
+function overviewLine(label, buckets, tallied, labelMap) {
+  const parts = buckets.map((b) => {
+    const n = tallied.counts[b];
+    const name = (labelMap && labelMap[b]) || b;
+    return '<span class="dsgn-ov-item' + (n ? "" : " is-zero") + '">' + esc(name) + " <b>" + n + "</b></span>";
+  });
+  if (tallied.unbekannt) parts.push('<span class="dsgn-ov-item is-zero">ohne/unklar <b>' + tallied.unbekannt + "</b></span>");
+  return '<div class="dsgn-row"><div class="dsgn-k">' + esc(label) + '</div><div class="dsgn-v dsgn-ov">' + parts.join(" · ") + "</div></div>";
+}
+
+// Übersichts-Karte holen — und, falls das HTML sie (z. B. durch veraltetes/gecachtes
+// template-studio.html) NICHT enthält, selbst oben im Panel erzeugen. So haengt die
+// Übersicht nicht mehr davon ab, dass HTML und JS im selben Deploy-Stand sind.
+function ensureOverviewEls() {
+  let card = $("dsgnOverview");
+  let body = $("dsgnOverviewBody");
+  if (card && body) return { card, body };
+  const panel = $("panel-dsgn");
+  if (!panel) return { card: null, body: null };
+  card = document.createElement("div");
+  card.className = "st-card";
+  card.id = "dsgnOverview";
+  card.hidden = true;
+  card.innerHTML =
+    '<div class="st-head">Übersicht · Verteilung der Datensätze</div>' +
+    '<div class="st-mini-note">Reine Zählung aus den gespeicherten Datensätzen — zeigt, ob die Kategorien ausgewogen besetzt sind, bevor die volle Charge läuft.</div>' +
+    '<div id="dsgnOverviewBody"></div>';
+  const note = panel.querySelector(".afr-note");
+  if (note && note.nextSibling) panel.insertBefore(card, note.nextSibling);
+  else panel.insertBefore(card, panel.firstChild);
+  body = card.querySelector("#dsgnOverviewBody");
+  return { card, body };
+}
+
+function renderOverview(records) {
+  const { card, body } = ensureOverviewEls();
+  if (!card || !body) return;
+  if (!records.length) { card.hidden = true; body.innerHTML = ""; return; }
+  card.hidden = false;
+  body.innerHTML =
+    overviewLine("Stil-Kategorie", STIL_KATEGORIEN, tally(records, "stil_kategorie", STIL_KATEGORIEN), null) +
+    overviewLine("Lautstärke", LAUTSTAERKEN, tally(records, "lautstaerke", LAUTSTAERKEN), LAUT_LABEL);
+}
+
 function renderRecords(records) {
   const root = $("dsgnRecords");
   if (!root) return;
+  renderOverview(records);            // Verteilungs-Übersicht oben mitziehen
   const n = records.length;
   const badge = $("dsgnCount");
   if (badge) badge.textContent = n ? n + (n === 1 ? " Datensatz" : " Datensätze") : "";

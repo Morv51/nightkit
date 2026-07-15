@@ -461,6 +461,15 @@
         </div>
         <p class="afr-note">Leitet Gestaltungsregeln aus fertigen Flyern ab. Die Bilder werden <b>nur analysiert</b>: sie werden nicht als Vorlage gespeichert und nicht nachgebaut. Jeder Flyer wird einzeln nach einem festen Fragenkatalog ausgewertet; die Datensätze werden gesammelt, damit sie später (Phase 3) gemeinsam zu Regeln verdichtet werden können.</p>
 
+        <!-- Übersicht (additiv): reine Verteilungszählung der bereits gespeicherten Datensätze,
+             ohne sie einzeln zu öffnen. Aktualisiert sich bei jeder neuen Analyse. Kein
+             Destillieren, keine Regeln — nur die Balance der Kategorien vor der vollen Charge. -->
+        <div class="st-card" id="dsgnOverview" hidden>
+          <div class="st-head">Übersicht · Verteilung der Datensätze</div>
+          <div class="st-mini-note">Reine Zählung aus den gespeicherten Datensätzen — zeigt, ob die Kategorien ausgewogen besetzt sind, bevor die volle Charge läuft.</div>
+          <div id="dsgnOverviewBody"></div>
+        </div>
+
         <div class="st-card">
           <div class="st-head">1 · Flyer wählen (mehrere)</div>
           <label class="st-drop" id="dsgnDrop">
