@@ -319,7 +319,9 @@ async function distill() {
     setD("Destilliere Regelwerk aus " + (n ? n + " " : "") + "Datensätzen … " + Math.round((Date.now() - t0) / 1000) + " s");
     const s = await api("/admin/design-analysis/distill-status", { jobId });
     if (s.http === 404) { // Job abgelaufen/verloren — vielleicht ist er trotzdem gespeichert
-      done(); setD("");
+      // Meldung BLEIBT in der Statuszeile stehen: der Toast löscht sich nach 4,2 s selbst,
+      // und ein zurückgesetzter Knopf ohne Text sieht aus wie „nichts passiert".
+      done(); setD("Auftrag nicht mehr auffindbar — Regelwerk (falls gespeichert) unten geladen.");
       await loadRuleset();
       notify("Auftrag nicht mehr auffindbar — Regelwerk (falls gespeichert) unten geladen.", "warn");
       return;
@@ -332,8 +334,10 @@ async function distill() {
       done(); return;
     }
     if (s.data.status === "error") {
-      done(); setD("");
-      notify(s.data.error || "Destillieren fehlgeschlagen", "error");
+      // Der Grund (z. B. welche Kategorie abgeschnitten wurde) bleibt lesbar stehen.
+      const msg = s.data.error || "Destillieren fehlgeschlagen";
+      done(); setD(msg);
+      notify(msg, "error");
       return;
     }
     // status "pending" -> weiter warten
