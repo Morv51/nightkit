@@ -126,9 +126,32 @@ function overviewLine(label, buckets, tallied, labelMap) {
   return '<div class="dsgn-row"><div class="dsgn-k">' + esc(label) + '</div><div class="dsgn-v dsgn-ov">' + parts.join(" · ") + "</div></div>";
 }
 
+// Übersichts-Karte holen — und, falls das HTML sie (z. B. durch veraltetes/gecachtes
+// template-studio.html) NICHT enthält, selbst oben im Panel erzeugen. So haengt die
+// Übersicht nicht mehr davon ab, dass HTML und JS im selben Deploy-Stand sind.
+function ensureOverviewEls() {
+  let card = $("dsgnOverview");
+  let body = $("dsgnOverviewBody");
+  if (card && body) return { card, body };
+  const panel = $("panel-dsgn");
+  if (!panel) return { card: null, body: null };
+  card = document.createElement("div");
+  card.className = "st-card";
+  card.id = "dsgnOverview";
+  card.hidden = true;
+  card.innerHTML =
+    '<div class="st-head">Übersicht · Verteilung der Datensätze</div>' +
+    '<div class="st-mini-note">Reine Zählung aus den gespeicherten Datensätzen — zeigt, ob die Kategorien ausgewogen besetzt sind, bevor die volle Charge läuft.</div>' +
+    '<div id="dsgnOverviewBody"></div>';
+  const note = panel.querySelector(".afr-note");
+  if (note && note.nextSibling) panel.insertBefore(card, note.nextSibling);
+  else panel.insertBefore(card, panel.firstChild);
+  body = card.querySelector("#dsgnOverviewBody");
+  return { card, body };
+}
+
 function renderOverview(records) {
-  const card = $("dsgnOverview");
-  const body = $("dsgnOverviewBody");
+  const { card, body } = ensureOverviewEls();
   if (!card || !body) return;
   if (!records.length) { card.hidden = true; body.innerHTML = ""; return; }
   card.hidden = false;
