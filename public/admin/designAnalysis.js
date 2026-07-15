@@ -340,7 +340,7 @@ async function distill() {
   }
   // Client-Poll-Limit erreicht: serverseitig evtl. noch laufend/fertig -> Reload lädt es.
   done();
-  setD("Dauert ungewöhnlich lange — später „Aktualisieren" klicken.");
+  setD("Dauert ungewöhnlich lange — bitte später neu laden oder auf Aktualisieren klicken.");
   await loadRuleset();
 }
 
