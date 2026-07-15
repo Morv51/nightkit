@@ -684,6 +684,12 @@ html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: aut
 .dsgn-raw summary { cursor: pointer; font-size: 11px; color: var(--muted, rgba(245,245,240,0.5)); }
 .dsgn-raw pre { margin: 6px 0 0; padding: 8px; border-radius: 8px; background: var(--color-surface, #111); color: var(--color-text, #fff); font-size: 11px; overflow-x: auto; white-space: pre; }
 @media (max-width: 640px) { .dsgn-row { grid-template-columns: 1fr; gap: 2px; } }
+/* Übersicht: kompakte Verteilungs-Chips (Zählung je Stil-Kategorie / Lautstärke). */
+.dsgn-ov { display: flex; flex-wrap: wrap; gap: 4px 10px; white-space: normal; }
+.dsgn-ov-item { font-size: 13px; color: var(--color-text, #fff); }
+.dsgn-ov-item b { color: var(--color-accent, #ccff00); font-weight: 700; }
+.dsgn-ov-item.is-zero { color: var(--muted, rgba(245,245,240,0.4)); }
+.dsgn-ov-item.is-zero b { color: var(--muted, rgba(245,245,240,0.4)); }
 
 .afr-prog { height: 8px; border-radius: 999px; background: var(--color-surface-2, #1a1a1a); overflow: hidden; margin: 4px 0; }
 .afr-prog > span { display: block; height: 100%; background: var(--color-accent, #ccff00); transition: width .3s; }
