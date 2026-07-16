@@ -100,8 +100,11 @@
               placeholder="Erst einen Flyer hochladen und Textzonen erkennen — oder den Prompt direkt selbst schreiben …"></textarea>
             <div class="prompt-actions">
               <button class="rbtn rbtn-primary st-copy" id="m1Copy" type="button">📋 Prompt kopieren</button>
+              <button class="rbtn" id="m1ToAuto" type="button" hidden>🚀 An Auto-Flow übergeben</button>
+              <label class="kw-force" id="m1RulesBox" hidden><input type="checkbox" id="m1Rules" checked> Regelwerk mitgeben</label>
             </div>
             <div class="st-mini-note">Prompt kopieren und in ChatGPT einfügen — dazu das Original-Flyerbild mit hochladen.</div>
+            <div class="st-mini-note"><b>An Auto-Flow übergeben:</b> schickt genau diese geprüfte Zuordnung direkt an den Auto-Flow-Generator, statt den Prompt von Hand zu kopieren. Auto-Flow analysiert die Rollen dann NICHT selbst, sondern nimmt deine — für fehlende Rollen greift das <b>Regelwerk</b> (aus, wenn du vergleichen willst). Der Lauf erzeugt den Hauptflyer, keine Varianten, und läuft auf dem Server weiter: Fortschritt, Ergebnis und Übernahme in den Bestand im Reiter „Letzte Läufe", dort markiert mit <b>Handzuordnung</b>. Die drei Auto-Flow-Reiter bleiben davon unberührt — der bisherige Weg läuft unverändert weiter.</div>
           </div>
         </div>
       </section>

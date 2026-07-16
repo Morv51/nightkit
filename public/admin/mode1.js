@@ -131,6 +131,7 @@ async function analyze() {
     state.fontRefIdx = -1;
     renderZones();
     populateFontRef();
+    updateToAutoBtn();
     $("m1Prompt").value = prompt || ""; // Fallback; gleich aus echtem Stand neu bauen
     autoGrow();
     $("m1Rebuild").hidden = false;
@@ -246,6 +247,54 @@ function copyPrompt() {
   }
 }
 
+// ── An Auto-Flow übergeben ──────────────────────────────────────────────────
+// Reicht die HIER geprüfte Rollen-Zuordnung direkt an den Auto-Flow-Generator, statt den
+// Prompt von Hand zu kopieren. Der Server baut daraus denselben Prompt, den das Feld oben
+// zeigt (plus Regelwerk, falls angehakt), und fährt den Lauf ansonsten wie gewohnt weiter:
+// Bild-Pfad, Ergebnis in R2, Anzeige und Übernahme im Reiter „Letzte Läufe". Keine Varianten
+// — der Handprompt hält bewusst dasselbe Design fest, eine Varianten-Streuung widerspricht ihm.
+// Die drei Auto-Flow-Reiter werden dabei NICHT angefasst.
+async function toAutoflow() {
+  if (!state.current) return notify("Erst einen Flyer hochladen", "error");
+  if (!state.zones.length) return notify("Erst Textzonen erkennen und Rollen zuordnen", "error");
+  const btn = $("m1ToAuto");
+  btn.disabled = true;
+  setBusy(true, "Übergebe an Auto-Flow …");
+  try {
+    const { runId } = await post("/admin/autoflow/start", {
+      flow: "1", mode: "Handzuordnung", loose: false, textOnly: false,
+      regelwerk: !!($("m1Rules") && $("m1Rules").checked),
+      // Modell fest auf sonnet wie in den Auto-Flows. Die Auswahl oben gilt nur der
+      // Textzonen-Erkennung; der Lauf braucht die Stil-Analyse (Kategorie fürs Regelwerk),
+      // und die soll nicht davon abhängen, ob hier zum Erkennen Haiku gewählt wurde.
+      variants: 0, model: "sonnet", refType: "single",
+      // zones + infoRef reisen AM Bild mit — genau die Werte, aus denen der Prompt oben gebaut ist.
+      files: [{
+        name: ($("m1DropLabel").textContent || "flyer").slice(0, 80),
+        dataUrl: state.current,
+        zones: state.zones,
+        infoRef: refForPrompt(),
+      }],
+    });
+    if (!runId) throw new Error("Keine Lauf-ID vom Server");
+    notify("Übergeben — der Lauf läuft auf dem Server. Fortschritt und Ergebnis im Reiter „Letzte Läufe“.", "success");
+    const tab = document.querySelector('.studio-tab[data-tab="afruns"]');
+    if (tab) tab.click();
+  } catch (e) {
+    notify("Übergabe fehlgeschlagen: " + (e.message || e), "error");
+  } finally {
+    btn.disabled = false;
+    setBusy(false);
+  }
+}
+
+// Der Knopf ergibt erst Sinn, wenn eine Zuordnung dasteht.
+function updateToAutoBtn() {
+  const on = state.zones.length > 0;
+  if ($("m1ToAuto")) $("m1ToAuto").hidden = !on;
+  if ($("m1RulesBox")) $("m1RulesBox").hidden = !on;
+}
+
 export function initMode1() {
   const file = $("m1File");
   // WICHTIG (iOS Safari): #m1Drop ist ein <label>, das den Input umschliesst — der
@@ -261,6 +310,7 @@ export function initMode1() {
   $("m1Analyze").addEventListener("click", analyze);
   $("m1Rebuild").addEventListener("click", rebuildPrompt);
   $("m1Copy").addEventListener("click", copyPrompt);
+  $("m1ToAuto").addEventListener("click", toAutoflow);
   // Manuelle Prompt-Änderungen: Höhe mitwachsen lassen.
   $("m1Prompt").addEventListener("input", autoGrow);
 

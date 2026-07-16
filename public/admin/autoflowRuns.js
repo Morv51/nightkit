@@ -139,6 +139,8 @@ function render(runs) {
           (r.mode ? " · " + esc(r.mode) : "") +
           // A/B auf einen Blick: ohne Marke lief der Lauf ohne Regelwerk.
           (r.regelwerk ? ' · <b class="afr-rules">Regelwerk</b>' : "") +
+          // Zweiter A/B-Vergleich: ohne Marke lief der Lauf mit der Auto-Analyse.
+          (r.hand ? ' · <b class="afr-hand">Handzuordnung</b>' : "") +
           (r.sourceName ? " · " + esc(r.sourceName) : "") +
           ' <span class="afr-badge afr-st-' + esc(r.status || "") + '">' + esc(stLabel) + "</span></div>" +
         '<div class="afr-btns">' + btns + "</div>" +
