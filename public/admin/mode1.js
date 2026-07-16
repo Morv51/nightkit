@@ -261,13 +261,15 @@ async function toAutoflow() {
   btn.disabled = true;
   setBusy(true, "Übergebe an Auto-Flow …");
   try {
+    // Bilder gesamt (1-5) -> Varianten = gesamt - 1. 1 = nur Hauptflyer (bisheriger Weg).
+    const total = Math.max(1, Math.min(5, parseInt($("m1Count") && $("m1Count").value, 10) || 3));
     const { runId } = await post("/admin/autoflow/start", {
       flow: "1", mode: "Handzuordnung", loose: false, textOnly: false,
       regelwerk: !!($("m1Rules") && $("m1Rules").checked),
       // Modell fest auf sonnet wie in den Auto-Flows. Die Auswahl oben gilt nur der
       // Textzonen-Erkennung; der Lauf braucht die Stil-Analyse (Kategorie fürs Regelwerk),
       // und die soll nicht davon abhängen, ob hier zum Erkennen Haiku gewählt wurde.
-      variants: 0, model: "sonnet", refType: "single",
+      variants: total - 1, model: "sonnet", refType: "single",
       // zones + infoRef reisen AM Bild mit — genau die Werte, aus denen der Prompt oben gebaut ist.
       files: [{
         name: ($("m1DropLabel").textContent || "flyer").slice(0, 80),
@@ -292,6 +294,7 @@ async function toAutoflow() {
 function updateToAutoBtn() {
   const on = state.zones.length > 0;
   if ($("m1ToAuto")) $("m1ToAuto").hidden = !on;
+  if ($("m1CountBox")) $("m1CountBox").hidden = !on;
   if ($("m1RulesBox")) $("m1RulesBox").hidden = !on;
 }
 
