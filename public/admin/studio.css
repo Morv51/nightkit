@@ -674,6 +674,21 @@ html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: aut
 /* A/B-Marke: welcher Lauf lief MIT Regelwerk (ohne Marke = ohne Regelwerk). */
 .afr-rules { color: var(--color-accent, #ccff00); font-weight: 700; }
 .afr-hand { color: #7ac7ff; font-weight: 700; }
+
+/* Einblick in den tatsaechlich gesendeten Bildprompt (Reiter "Letzte Laeufe"). */
+.afr-prompt-box { border: 1px solid var(--color-border, #222); border-radius: var(--radius-md, 12px); background: var(--card-inset, #0d0d0d); padding: 10px 12px; margin: 8px 0; }
+.afr-prompt-h { font-size: 13px; font-weight: 700; color: var(--color-text, #fff); margin: 6px 0 4px; }
+.afr-prompt-det { border-top: 1px solid var(--color-border, #222); padding: 6px 0; }
+.afr-prompt-det > summary { cursor: pointer; font-size: 12px; color: var(--muted, rgba(245,245,240,0.7)); display: flex; align-items: center; gap: 8px; }
+.afr-prompt-n { font-size: 11px; color: var(--muted, rgba(245,245,240,0.5)); }
+.afr-prompt-copy { margin-left: auto; font-size: 11px; padding: 2px 8px; }
+.afr-prompt-pre { max-height: 420px; overflow: auto; white-space: pre-wrap; word-break: break-word; font-size: 11px; line-height: 1.5; color: var(--color-text, #fff); background: #000; border: 1px solid var(--color-border, #222); border-radius: 8px; padding: 8px; margin: 6px 0 0; }
+.afr-befund { font-size: 12px; color: var(--color-text, #fff); background: rgba(204,255,0,0.06); border-left: 3px solid var(--color-accent, #ccff00); border-radius: 6px; padding: 6px 8px; margin: 6px 0 0; }
+.afr-befund.is-warn { background: rgba(255,180,80,0.08); border-left-color: #ffb450; }
+.afr-befund.is-off { background: rgba(245,245,240,0.04); border-left-color: var(--color-border, #333); color: var(--muted, rgba(245,245,240,0.7)); }
+.afr-befund-m { margin-top: 4px; font-size: 11px; line-height: 1.5; color: var(--muted, rgba(245,245,240,0.8)); }
+.afr-ja { color: var(--color-accent, #ccff00); }
+.afr-nein { color: #ffb450; }
 /* ── Grafik-Analyse: Datensatz-Anzeige (Wortlaut) ──────────────────────────── */
 .dsgn-rec { border: 1px solid var(--color-border, #222); border-radius: var(--radius-md, 12px); background: var(--card-inset, #0d0d0d); padding: 12px; margin-bottom: 10px; }
 .dsgn-rec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }

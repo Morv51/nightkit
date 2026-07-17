@@ -23,7 +23,10 @@ const ui = new Map();               // runId -> { adopting, selected:Set, cat, n
 
 function uiState(runId) {
   let s = ui.get(runId);
-  if (!s) { s = { adopting: false, selected: new Set(), cat: "", newCat: "", name: "", autoTag: true, busy: false }; ui.set(runId, s); }
+  // promptOpen/promptData gehoeren in den UI-Zustand, nicht ins DOM: die Liste wird alle 4 s
+  // neu gerendert, ein rein im DOM aufgeklappter Prompt waere sofort wieder weg.
+  if (!s) { s = { adopting: false, selected: new Set(), cat: "", newCat: "", name: "", autoTag: true, busy: false,
+    promptOpen: false, promptData: null, promptErr: "" }; ui.set(runId, s); }
   return s;
 }
 
@@ -107,6 +110,67 @@ function adoptBarHtml(st) {
   "</div>";
 }
 
+// ── Einblick in den TATSAECHLICH GESENDETEN Bildprompt ───────────────────────
+// Zaehlt die Marker, die selectRuleLines in den Prompt schreibt. Damit ist auf einen Blick
+// belegt, ob der destillierte Anordnungsmuster-Text aus der latest.json wirklich drin steht,
+// statt es am Bild raten zu muessen.
+function regelBefund(prompt) {
+  const p = String(prompt || "");
+  const zeilen = p.split("\n");
+  const muster = zeilen.find((l) => l.startsWith("- TYPICAL ARRANGEMENT:")) || "";
+  return {
+    muster: !!muster,
+    musterText: muster.replace("- TYPICAL ARRANGEMENT:", "").trim(),
+    regeln: zeilen.filter((l) => l.startsWith("- ARRANGEMENT RULE:")).length,
+    rollen: zeilen.filter((l) => l.startsWith("- MISSING ROLE")).length,
+    kopf: zeilen.some((l) => l.startsWith("SECONDARY-BLOCK ARRANGEMENT")),
+    zeichen: p.length,
+  };
+}
+
+function befundHtml(prompt) {
+  const b = regelBefund(prompt);
+  if (!b.kopf) {
+    return '<div class="afr-befund is-off">Kein Regelwerk im Prompt. Entweder lief der Lauf mit Schalter <b>aus</b>, ' +
+      'oder in der <code>latest.json</code> stand nichts Passendes.</div>';
+  }
+  const teile = [
+    (b.muster ? '<b class="afr-ja">Muster: ja</b>' : '<b class="afr-nein">Muster: nein</b>'),
+    b.regeln + " Anordnungsregeln",
+    b.rollen + " Rollen-Herleitungen",
+  ];
+  return '<div class="afr-befund' + (b.muster ? "" : " is-warn") + '">Regelwerk im Prompt · ' + teile.join(" · ") +
+    (b.muster ? '<div class="afr-befund-m">' + esc(b.musterText) + "</div>"
+      : '<div class="afr-befund-m">Kein <code>anordnung_muster</code> im Prompt. Typisch für ein noch nicht neu destilliertes Regelwerk im alten Format.</div>') +
+    "</div>";
+}
+
+function promptPanelHtml(runId, st) {
+  if (!st.promptOpen) return "";
+  if (st.promptErr) return '<div class="afr-prompt-box"><div class="afr-empty">' + esc(st.promptErr) + "</div></div>";
+  const d = st.promptData;
+  if (!d) return '<div class="afr-prompt-box"><div class="afr-empty">Lade Prompt …</div></div>';
+  const files = Array.isArray(d.files) ? d.files : [];
+  if (!files.length) return '<div class="afr-prompt-box"><div class="afr-empty">Keine Prompts im Lauf gespeichert.</div></div>';
+  const teil = (titel, prompt, key) => {
+    if (!prompt) return '<div class="afr-empty">' + esc(titel) + ": kein Prompt gespeichert.</div>";
+    return '<details class="afr-prompt-det"><summary>' + esc(titel) +
+      ' <span class="afr-prompt-n">' + prompt.length + " Zeichen</span>" +
+      '<button class="rbtn rbtn-ghost afr-prompt-copy" type="button" data-key="' + esc(key) + '">Kopieren</button></summary>' +
+      befundHtml(prompt) +
+      '<pre class="afr-prompt-pre" data-key="' + esc(key) + '">' + esc(prompt) + "</pre></details>";
+  };
+  return '<div class="afr-prompt-box">' + files.map((f) => {
+    const kopf = '<div class="afr-prompt-h">' + esc(f.name || ("Datei " + f.fnum)) +
+      (f.hand ? ' <b class="afr-hand">Handzuordnung</b>' : "") + "</div>";
+    if (f.analyzeError) return kopf + '<div class="afr-empty">Analyse fehlgeschlagen: ' + esc(f.analyzeError) + "</div>";
+    const haupt = teil("Hauptflyer", f.mainPrompt, f.fnum + "-haupt");
+    const vars = (f.variantPrompts || []).map((v) =>
+      teil("Variante " + v.num + (v.label ? " · " + v.label : ""), v.prompt, f.fnum + "-v" + v.num)).join("");
+    return kopf + haupt + vars;
+  }).join("") + "</div>";
+}
+
 function render(runs) {
   currentRuns = runs || [];
   const root = $("afRunsRoot");
@@ -130,6 +194,7 @@ function render(runs) {
       : "";
     let btns = "";
     if (hasFree) btns += '<button class="rbtn afr-adopt-toggle' + (st.adopting ? " is-on" : "") + '" type="button" data-run="' + esc(r.runId) + '">' + (st.adopting ? "Übernahme beenden" : "In Bestand übernehmen") + "</button>";
+    btns += '<button class="rbtn rbtn-ghost afr-prompt' + (st.promptOpen ? " is-on" : "") + '" type="button" data-run="' + esc(r.runId) + '">' + (st.promptOpen ? "Prompt zu" : "Prompt ansehen") + "</button>";
     if (running) btns += '<button class="rbtn rbtn-ghost afr-cancel" type="button" data-run="' + esc(r.runId) + '">Abbrechen</button>';
     if (incomplete) btns += '<button class="rbtn rbtn-ghost afr-resume" type="button" data-run="' + esc(r.runId) + '">Fortsetzen</button>';
     btns += '<button class="rbtn rbtn-danger afr-del" type="button" data-run="' + esc(r.runId) + '">Löschen</button>';
@@ -145,6 +210,7 @@ function render(runs) {
           ' <span class="afr-badge afr-st-' + esc(r.status || "") + '">' + esc(stLabel) + "</span></div>" +
         '<div class="afr-btns">' + btns + "</div>" +
       "</div>" + progress +
+      promptPanelHtml(r.runId, st) +
       '<div class="afr-grid">' + imgs + "</div>" +
       (st.adopting ? adoptBarHtml(st) : "") +
     "</div>";
@@ -301,6 +367,29 @@ async function delRun(runId) {
   else notify("Löschen fehlgeschlagen: " + ((r.data && r.data.error) || ("HTTP " + r.http)), "error");
 }
 
+// Prompt-Einblick auf Abruf holen (nicht im 4-s-Poll) und im UI-Zustand halten.
+async function togglePrompt(runId) {
+  const st = uiState(runId);
+  if (st.promptOpen) { st.promptOpen = false; render(currentRuns); return; }
+  st.promptOpen = true; st.promptErr = "";
+  render(currentRuns);                        // sofort "Lade Prompt …" zeigen
+  if (st.promptData) return;                  // schon geholt -> kein zweiter Aufruf
+  const r = await api("/admin/autoflow/prompt", { runId });
+  if (r.http === 200 && r.data && r.data.ok) st.promptData = r.data;
+  else st.promptErr = "Prompt nicht ladbar: " + ((r.data && r.data.error) || ("HTTP " + r.http));
+  render(currentRuns);
+}
+
+function copyPrompt(runId, key) {
+  const card = document.querySelector('.afr-run[data-run="' + CSS.escape(runId) + '"]');
+  const pre = card && card.querySelector('.afr-prompt-pre[data-key="' + CSS.escape(key) + '"]');
+  if (!pre) return;
+  const text = pre.textContent || "";
+  const ok2 = () => notify("Prompt kopiert", "success");
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(ok2).catch(() => notify("Kopieren nicht möglich", "error"));
+  else notify("Kopieren nicht möglich", "error");
+}
+
 function runIdOfEvent(e) {
   const card = e.target.closest(".afr-run");
   return card ? card.dataset.run : "";
@@ -317,6 +406,11 @@ export function initAutoflowRuns() {
     if (sel) { e.preventDefault(); return toggleSelect(runIdOfEvent(e), sel.dataset.index); }
     const all = e.target.closest(".afr-selall"); if (all) { e.preventDefault(); return selectAll(runIdOfEvent(e)); }
     const go = e.target.closest(".afr-adopt-go"); if (go) { e.preventDefault(); return adoptSelected(runIdOfEvent(e)); }
+    // Kopieren VOR dem Aufklapp-Umschalter pruefen: der Knopf sitzt im <summary>, sonst
+    // klappte das <details> beim Kopieren mit zu.
+    const cp = e.target.closest(".afr-prompt-copy");
+    if (cp) { e.preventDefault(); e.stopPropagation(); return copyPrompt(runIdOfEvent(e), cp.dataset.key); }
+    const pr = e.target.closest(".afr-prompt"); if (pr) { e.preventDefault(); return togglePrompt(pr.dataset.run); }
     const del = e.target.closest(".afr-del"); if (del) { e.preventDefault(); return delRun(del.dataset.run); }
     const c = e.target.closest(".afr-cancel"); if (c) { e.preventDefault(); return cancel(c.dataset.run); }
     const rs = e.target.closest(".afr-resume"); if (rs) { e.preventDefault(); return resume(rs.dataset.run); }
