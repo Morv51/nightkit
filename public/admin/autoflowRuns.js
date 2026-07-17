@@ -164,7 +164,8 @@ function promptPanelHtml(runId, st) {
     const kopf = '<div class="afr-prompt-h">' + esc(f.name || ("Datei " + f.fnum)) +
       (f.hand ? ' <b class="afr-hand">Handzuordnung</b>' : "") + "</div>";
     if (f.analyzeError) return kopf + '<div class="afr-empty">Analyse fehlgeschlagen: ' + esc(f.analyzeError) + "</div>";
-    const haupt = teil("Hauptflyer", f.mainPrompt, f.fnum + "-haupt");
+    // Hauptflyer-Zeile nur, wenn es einen gibt (Clean-Flow-Varianten haben keinen).
+    const haupt = f.mainPrompt ? teil("Hauptflyer", f.mainPrompt, f.fnum + "-haupt") : "";
     const vars = (f.variantPrompts || []).map((v) =>
       teil("Variante " + v.num + (v.label ? " · " + v.label : ""), v.prompt, f.fnum + "-v" + v.num)).join("");
     return kopf + haupt + vars;

@@ -36,19 +36,28 @@ async function onFile(f) {
   catch (e) { notify((e && e.message) || "Bild nicht lesbar", "error"); }
 }
 
-// Server-getriebener Start: ein Bild, cleanFlow:true, keine Varianten, editImage-Weg.
-async function runServer() {
+// Anzahl Varianten vom Slider (1-10).
+function variantCount() {
+  const el = $("clCount");
+  return Math.max(1, Math.min(10, parseInt(el && el.value, 10) || 5));
+}
+
+// Server-getriebener Start. variants=0 -> Nachbau (fester Prompt). variants>0 -> Design-Familie
+// (ein Sonnet-Aufruf + N editImage-Laeufe). Beides cleanFlow:true, editImage-Weg, keine Regeln.
+async function start(variants) {
   if (running) return;
   if (!file) return notify("Erst einen Flyer hochladen", "info");
-  const btn = $("clStart"); if (btn) btn.disabled = true;
+  const btns = [$("clStart"), $("clVariants")];
+  btns.forEach((b) => { if (b) b.disabled = true; });
   running = true; setStatus("Starte …");
   try {
     const res = await fetch("/admin/autoflow/start", {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Admin-Token": getToken() },
       body: JSON.stringify({
-        flow: "clean", mode: "Clean-Flow", cleanFlow: true,
-        loose: false, textOnly: false, regelwerk: false, variants: 0, refType: "single",
+        flow: "clean", cleanFlow: true,
+        mode: variants > 0 ? variants + " Varianten" : "Nachbau",
+        loose: false, textOnly: false, regelwerk: false, variants, refType: "single",
         files: [{ name: file.name, dataUrl: file.dataUrl }],
       }),
     });
@@ -63,7 +72,7 @@ async function runServer() {
     notify("Start fehlgeschlagen: " + (e.message || e), "error");
   } finally {
     running = false;
-    if (btn) btn.disabled = false;
+    btns.forEach((b) => { if (b) b.disabled = false; });
   }
 }
 
@@ -72,5 +81,8 @@ export function initCleanflow() {
   if (f) f.addEventListener("change", () => { if (f.files[0]) onFile(f.files[0]); f.value = ""; });
   wireDropzone($("clDrop"), onFile);
   wirePaste($("panel-clean"), onFile);
-  if ($("clStart")) $("clStart").addEventListener("click", runServer);
+  const slider = $("clCount"), val = $("clCountVal");
+  if (slider && val) { const sync = () => { val.textContent = slider.value; }; slider.addEventListener("input", sync); sync(); }
+  if ($("clStart")) $("clStart").addEventListener("click", () => start(0));
+  if ($("clVariants")) $("clVariants").addEventListener("click", () => start(variantCount()));
 }

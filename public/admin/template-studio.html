@@ -418,7 +418,7 @@
         <div class="studio-single">
           <div class="st-card">
             <div class="st-head">Clean-Flow <span class="beta-badge">BETA</span></div>
-            <div class="st-mini-note">Ein Upload → <b>ein</b> Template-Nachbau (9:16) über einen <b>kurzen, festen Prompt</b> an gpt-image, dein Flyer als Vorlage. Keine Analyse, keine Textzonen, keine Rollen, kein Regelwerk — das Modell komponiert Text und Grafik frei. Ergebnis erscheint im Reiter <b>Letzte Läufe</b>. Eigenständig, die anderen Flows bleiben unberührt. Upload, da die App in der Cloud läuft.</div>
+            <div class="st-mini-note">Ein Upload, dann <b>Nachbau</b> (ein 1:1-Template) oder <b>Varianten</b> (mehrere Bilder als Design-Familie), 9:16, über einen <b>kurzen Prompt</b> an gpt-image, dein Flyer als Vorlage. Keine Textzonen, keine Rollen, kein Regelwerk — das Modell komponiert Text und Grafik frei. Ergebnis erscheint im Reiter <b>Letzte Läufe</b>. Eigenständig, die anderen Flows bleiben unberührt. Upload, da die App in der Cloud läuft.</div>
           </div>
 
           <div class="st-card">
@@ -434,9 +434,15 @@
             <div class="st-head">2 · Start</div>
             <div class="st-row">
               <button class="rbtn rbtn-primary" id="clStart" type="button">▶ Nachbau erzeugen</button>
+              <button class="rbtn" id="clVariants" type="button">▶ Varianten erzeugen</button>
               <span class="af-time" id="clStatus"></span>
             </div>
-            <div class="st-mini-note">Der Lauf läuft auf dem Server weiter, auch wenn du den Tab schließt. Fortschritt und Ergebnis im Reiter „Letzte Läufe", dort als <b>Clean-Flow</b> markiert.</div>
+            <div class="st-row" style="margin-top:8px;align-items:center;gap:10px">
+              <label for="clCount" class="st-mini-note" style="margin:0">Anzahl Varianten</label>
+              <input type="range" id="clCount" min="1" max="10" value="5" step="1" style="flex:1;max-width:280px">
+              <b id="clCountVal" style="min-width:1.5em;text-align:right">5</b>
+            </div>
+            <div class="st-mini-note"><b>Nachbau</b> baut ein 1:1-Template. <b>Varianten</b> erzeugt N Bilder als Design-Familie: ein Sonnet-Schritt erfindet je Variante eine neue Farbwelt, Person/Motiv und Anordnung, die erste bleibt nah am Original, alle mit gemeinsamer Handschrift. Der Lauf läuft auf dem Server weiter, Ergebnis im Reiter „Letzte Läufe", als <b>Clean-Flow</b> markiert.</div>
           </div>
         </div>
       </section>
