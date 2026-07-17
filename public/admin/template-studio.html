@@ -275,7 +275,7 @@
               <label class="kw-force"><input type="checkbox" id="afRules"> Regelwerk einspeisen</label>
               <span class="af-time" id="afProgress"></span>
             </div>
-            <div class="st-mini-note"><b>Regelwerk einspeisen (A/B):</b> aus = wie bisher, ohne Regelwerk. An = die im Tab „Grafik-Analyse" destillierten Regeln fließen zusätzlich in den Bildprompt — die universellen Regeln plus die stilabhängigen der an deiner Referenz erkannten Stil-Kategorie. Fehlt eine Rolle auf der Referenz (typisch die DJs), kommt deren stilspezifische Herleitung dazu. Hat die Kategorie weniger als 4 Datensätze, bleiben nur die universellen Regeln. Dieselbe Referenz einmal mit und einmal ohne fahren, dann siehst du den Unterschied direkt. Die Läufe sind im Reiter „Letzte Läufe" mit <b>Regelwerk</b> markiert.</div>
+            <div class="st-mini-note"><b>Regelwerk einspeisen (A/B):</b> aus = wie bisher, ohne Regelwerk. An = das im Tab „Grafik-Analyse" aus allen Flyern destillierte <b>Anordnungsmuster</b> des Sekundär-Blocks fließt zusätzlich in den Bildprompt: der typische Anordnungs-Absatz plus die konkreten Anordnungsregeln. Fehlt eine Rolle auf der Referenz (typisch die DJs), kommt deren aus echten Flyern gelernte Platzierung dazu. Dieselbe Referenz einmal mit und einmal ohne fahren, dann siehst du den Unterschied direkt. Die Läufe sind im Reiter „Letzte Läufe" mit <b>Regelwerk</b> markiert.</div>
             <div class="st-mini-note">Sprachmodell fest: <b>Sonnet</b>. Bildmodell: <b>OpenAI GPT Image</b> (einzige Engine, moderation „low"). Je Flyer entstehen 10 Bilder (Hauptflyer + 9 Varianten), nacheinander — das dauert entsprechend (jede Generierung bis ~2 Min, timeout-sicher per Polling). Läuft ein Lauf, kannst du ihn mit <b>Abbrechen</b> stoppen — schon fertige Bilder bleiben erhalten.</div>
           </div>
 
@@ -479,12 +479,12 @@
         </div>
         <p class="afr-note">Leitet Gestaltungsregeln aus fertigen Flyern ab. Die Bilder werden <b>nur analysiert</b>: sie werden nicht als Vorlage gespeichert und nicht nachgebaut. Jeder Flyer wird einzeln nach einem festen Fragenkatalog ausgewertet; die Datensätze werden gesammelt, damit sie später (Phase 3) gemeinsam zu Regeln verdichtet werden können.</p>
 
-        <!-- Übersicht (additiv): reine Verteilungszählung der bereits gespeicherten Datensätze,
-             ohne sie einzeln zu öffnen. Aktualisiert sich bei jeder neuen Analyse. Kein
-             Destillieren, keine Regeln — nur die Balance der Kategorien vor der vollen Charge. -->
+        <!-- Übersicht (additiv): Abdeckungszählung der gespeicherten Datensätze (wie viele einen
+             DJ-Block zeigen). Aktualisiert sich bei jeder neuen Analyse. Kein Destillieren, keine
+             Regeln, nur die Lernbasis für die Platzierung einer fehlenden DJ-Rolle. -->
         <div class="st-card" id="dsgnOverview" hidden>
-          <div class="st-head">Übersicht · Verteilung der Datensätze</div>
-          <div class="st-mini-note">Reine Zählung aus den gespeicherten Datensätzen — zeigt, ob die Kategorien ausgewogen besetzt sind, bevor die volle Charge läuft.</div>
+          <div class="st-head">Übersicht · Abdeckung der Datensätze</div>
+          <div class="st-mini-note">Wie viele der analysierten Flyer einen DJ-Block zeigen. Genau die sind die Lernbasis für die Platzierung einer fehlenden DJ-Rolle.</div>
           <div id="dsgnOverviewBody"></div>
         </div>
 
@@ -508,7 +508,7 @@
             <button class="rbtn rbtn-danger" id="dsgnCancel" type="button" hidden>■ Abbrechen</button>
             <span class="af-time" id="dsgnStatus"></span>
           </div>
-          <div class="st-mini-note">Ein Sonnet-Aufruf je Flyer, nacheinander. Ein Fehlschlag bricht den Lauf nicht ab. Fester Fragenkatalog: Blickfang, Flächenaufteilung, Klassen, fehlende Rollen, Datum, Schrift-Disziplin, Tiefe, Ordnung, Vibe.</div>
+          <div class="st-mini-note">Ein Sonnet-Aufruf je Flyer, nacheinander. Ein Fehlschlag bricht den Lauf nicht ab. Der Katalog erfasst die konkrete räumliche Anordnung des Sekundär-Blocks: Lage zum Motiv, Flächenaufteilung, Gruppen zueinander, DJ-Block, Flächenfüllung, fehlende Rollen.</div>
         </div>
 
         <div class="st-card">
@@ -528,7 +528,7 @@
             3 · Regelwerk destillieren <span id="dsgnRulesMeta" class="afr-badge"></span>
             <button class="st-mini" id="dsgnRulesClear" type="button" hidden>Verwerfen</button>
           </div>
-          <div class="st-mini-note">Fasst die gesammelten Datensätze zu <b>wiederkehrenden Regeln</b> zusammen (ein Sonnet-Aufruf über alle Datensätze) — universelle Regeln und stilabhängige Regeln je <code>stil_kategorie</code>, jede mit Angabe, auf wie vielen Datensätzen sie beruht. Das Regelwerk wird als getrennte Datei gespeichert und noch NICHT an Auto-Flow gehängt.</div>
+          <div class="st-mini-note">Zieht aus <b>allen</b> Datensätzen gemeinsam das <b>wiederkehrende Anordnungsmuster</b> des Sekundär-Blocks (ein Sonnet-Aufruf über alle Datensätze, nicht nach Stil getrennt): ein typischer Anordnungs-Absatz, konkrete Anordnungsregeln und die Platzierung fehlender Rollen, jede mit Angabe, auf wie vielen Datensätzen sie beruht. Das Regelwerk wird als getrennte Datei gespeichert und fließt in den Bildprompt ein, wenn im Auto-Flow der Schalter <b>Regelwerk</b> an ist.</div>
           <div class="st-row">
             <button class="rbtn rbtn-primary" id="dsgnDistill" type="button">Regelwerk destillieren</button>
             <span class="af-time" id="dsgnDistillStatus"></span>

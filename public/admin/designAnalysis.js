@@ -13,19 +13,15 @@ import { fileToDataUrl, wireDropzoneMulti, wirePaste, notify, installErrorSurfac
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-// Fester Fragenkatalog — Reihenfolge + Beschriftung der Anzeige.
+// Fester Fragenkatalog — Reihenfolge + Beschriftung der Anzeige. Neu ausgerichtet auf die
+// KONKRETE raeumliche Anordnung des Sekundaer-Info-Blocks (keine Stil-Kategorie / Lautstaerke).
 const FIELDS = [
-  ["blickfang", "Blickfang"],
+  ["block_position", "Lage des Sekundär-Blocks (zum Motiv)"],
   ["flaechenaufteilung", "Flächenaufteilung"],
-  ["klassen", "Klassen (laut vs. Sachinfo)"],
+  ["gruppen_verhaeltnis", "Gruppen zueinander"],
+  ["dj_block", "DJ-Block (Lage + Setzweise)"],
+  ["flaechenfuellung", "Flächenfüllung"],
   ["fehlende_rollen", "Rollen (DJs / Location / Uhrzeit)"],
-  ["datum", "Datum"],
-  ["schrift_disziplin", "Schrift-Disziplin"],
-  ["tiefe", "Tiefe"],
-  ["ordnung", "Ordnung"],
-  ["vibe", "Vibe"],
-  ["stil_kategorie", "Stil-Kategorie"],
-  ["lautstaerke", "Lautstärke"],
 ];
 
 let files = [];       // { name, dataUrl }
@@ -96,39 +92,15 @@ function recordHtml(rec, idx) {
   "</div>";
 }
 
-// Übersicht: reine Verteilungszählung über die bereits gespeicherten Datensätze.
-// Feste Buckets in fester Reihenfolge (auch 0 wird gezeigt, damit Lücken sichtbar sind).
-const STIL_KATEGORIEN = ["grunge", "elegant", "minimal", "neon", "retro", "streetstyle", "glamour", "sonstige"];
-const LAUTSTAERKEN = ["zurueckhaltend", "mittel", "laut"];
-const LAUT_LABEL = { zurueckhaltend: "zurückhaltend", mittel: "mittel", laut: "laut" };
-
-// Zählt records nach einem Feld in die vorgegebenen Buckets; Unbekanntes separat.
-function tally(records, key, buckets) {
-  const counts = Object.create(null);
-  for (const b of buckets) counts[b] = 0;
-  let unbekannt = 0;
-  for (const rec of records) {
-    const raw = (rec && rec.fields) ? rec.fields[key] : "";
-    const v = String(raw == null ? "" : raw).trim().toLowerCase();
-    if (Object.prototype.hasOwnProperty.call(counts, v)) counts[v]++;
-    else unbekannt++;
-  }
-  return { counts, unbekannt };
+// Übersicht: knappe Abdeckungs-Zählung — wie viele der gespeicherten Flyer zeigen ueberhaupt
+// einen DJ-Block. Genau die sind die Lernbasis fuer die Platzierung einer FEHLENDEN DJ-Rolle.
+function coversDjBlock(rec) {
+  const t = String(((rec && rec.fields) || {}).dj_block || "").trim().toLowerCase();
+  if (!t) return false;
+  return !/kein|nicht vorhanden|keine dj|ohne dj|fehlt/.test(t); // Verneinung -> zeigt keinen Block
 }
 
-function overviewLine(label, buckets, tallied, labelMap) {
-  const parts = buckets.map((b) => {
-    const n = tallied.counts[b];
-    const name = (labelMap && labelMap[b]) || b;
-    return '<span class="dsgn-ov-item' + (n ? "" : " is-zero") + '">' + esc(name) + " <b>" + n + "</b></span>";
-  });
-  if (tallied.unbekannt) parts.push('<span class="dsgn-ov-item is-zero">ohne/unklar <b>' + tallied.unbekannt + "</b></span>");
-  return '<div class="dsgn-row"><div class="dsgn-k">' + esc(label) + '</div><div class="dsgn-v dsgn-ov">' + parts.join(" · ") + "</div></div>";
-}
-
-// Übersichts-Karte holen — und, falls das HTML sie (z. B. durch veraltetes/gecachtes
-// template-studio.html) NICHT enthält, selbst oben im Panel erzeugen. So haengt die
-// Übersicht nicht mehr davon ab, dass HTML und JS im selben Deploy-Stand sind.
+// Übersichts-Karte holen — und, falls das HTML sie NICHT enthält, selbst oben im Panel erzeugen.
 function ensureOverviewEls() {
   let card = $("dsgnOverview");
   let body = $("dsgnOverviewBody");
@@ -140,8 +112,8 @@ function ensureOverviewEls() {
   card.id = "dsgnOverview";
   card.hidden = true;
   card.innerHTML =
-    '<div class="st-head">Übersicht · Verteilung der Datensätze</div>' +
-    '<div class="st-mini-note">Reine Zählung aus den gespeicherten Datensätzen — zeigt, ob die Kategorien ausgewogen besetzt sind, bevor die volle Charge läuft.</div>' +
+    '<div class="st-head">Übersicht · Abdeckung der Datensätze</div>' +
+    '<div class="st-mini-note">Wie viele der analysierten Flyer einen DJ-Block zeigen — genau die sind die Lernbasis für die Platzierung einer fehlenden DJ-Rolle.</div>' +
     '<div id="dsgnOverviewBody"></div>';
   const note = panel.querySelector(".afr-note");
   if (note && note.nextSibling) panel.insertBefore(card, note.nextSibling);
@@ -155,15 +127,16 @@ function renderOverview(records) {
   if (!card || !body) return;
   if (!records.length) { card.hidden = true; body.innerHTML = ""; return; }
   card.hidden = false;
-  body.innerHTML =
-    overviewLine("Stil-Kategorie", STIL_KATEGORIEN, tally(records, "stil_kategorie", STIL_KATEGORIEN), null) +
-    overviewLine("Lautstärke", LAUTSTAERKEN, tally(records, "lautstaerke", LAUTSTAERKEN), LAUT_LABEL);
+  const mitDj = records.filter(coversDjBlock).length;
+  body.innerHTML = '<div class="dsgn-row"><div class="dsgn-k">DJ-Block vorhanden</div>' +
+    '<div class="dsgn-v dsgn-ov"><span class="dsgn-ov-item"><b>' + mitDj + "</b> von " + records.length +
+    " Flyern</span></div></div>";
 }
 
 function renderRecords(records) {
   const root = $("dsgnRecords");
   if (!root) return;
-  renderOverview(records);            // Verteilungs-Übersicht oben mitziehen
+  renderOverview(records);            // Abdeckungs-Übersicht oben mitziehen
   const n = records.length;
   const badge = $("dsgnCount");
   if (badge) badge.textContent = n ? n + (n === 1 ? " Datensatz" : " Datensätze") : "";
@@ -254,31 +227,28 @@ function renderRuleset(ruleset) {
   if (meta) meta.textContent = total ? total + " Datensätze · " + when : "";
   if (clearBtn) clearBtn.hidden = false;
 
+  const muster = typeof ruleset.anordnung_muster === "string" ? ruleset.anordnung_muster.trim() : "";
   const uni = Array.isArray(ruleset.universelle_regeln) ? ruleset.universelle_regeln : [];
-  const stil = (ruleset.stilabhaengige_regeln && typeof ruleset.stilabhaengige_regeln === "object") ? ruleset.stilabhaengige_regeln : {};
+  const hr = Array.isArray(ruleset.herleitung_rollen) ? ruleset.herleitung_rollen : [];
 
-  let html = '<div class="dsgn-rules-sec"><div class="dsgn-rules-h">Universelle Regeln</div>';
+  let html = "";
+  if (muster) {
+    html += '<div class="dsgn-rules-sec"><div class="dsgn-rules-h">Typische Anordnung (Muster)</div>' +
+      '<p class="dsgn-muster">' + esc(muster) + "</p></div>";
+  }
+
+  html += '<div class="dsgn-rules-sec"><div class="dsgn-rules-h">Anordnungsregeln</div>';
   html += uni.length
     ? '<ol class="dsgn-rules-list">' + uni.map((r) => ruleItemHtml(r, total)).join("") + "</ol>"
-    : '<div class="afr-empty">Keine universellen Regeln erkannt.</div>';
+    : '<div class="afr-empty">Keine Anordnungsregeln erkannt.</div>';
   html += "</div>";
 
-  const keys = Object.keys(stil).sort((a, b) => (stil[b].anzahl || 0) - (stil[a].anzahl || 0));
-  html += '<div class="dsgn-rules-sec"><div class="dsgn-rules-h">Stilabhängige Regeln</div>';
-  if (!keys.length) html += '<div class="afr-empty">Keine stilabhängigen Regeln erkannt.</div>';
-  for (const k of keys) {
-    const grp = stil[k] || {};
-    html += '<div class="dsgn-stil"><div class="dsgn-stil-h">' + esc(k) + ' <span class="dsgn-stil-n">' + (grp.anzahl || 0) + " Datensätze</span></div>";
-    const regeln = Array.isArray(grp.regeln) ? grp.regeln : [];
-    if (regeln.length) html += '<ol class="dsgn-rules-list">' + regeln.map((r) => ruleItemHtml(r, total)).join("") + "</ol>";
-    const hr = Array.isArray(grp.herleitung_rollen) ? grp.herleitung_rollen : [];
-    if (hr.length) {
-      html += '<div class="dsgn-hr-h">Herleitung fehlender Rollen</div>';
-      html += '<ul class="dsgn-rules-list dsgn-hr">' + hr.map((r) => ruleItemHtml(r, total)).join("") + "</ul>";
-    }
-    html += "</div>";
-  }
+  html += '<div class="dsgn-rules-sec"><div class="dsgn-rules-h">Herleitung fehlender Rollen</div>';
+  html += hr.length
+    ? '<ul class="dsgn-rules-list dsgn-hr">' + hr.map((r) => ruleItemHtml(r, total)).join("") + "</ul>"
+    : '<div class="afr-empty">Keine Rollen-Herleitung erkannt.</div>';
   html += "</div>";
+
   root.innerHTML = html;
 }
 
