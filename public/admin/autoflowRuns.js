@@ -200,7 +200,7 @@ function render(runs) {
     btns += '<button class="rbtn rbtn-danger afr-del" type="button" data-run="' + esc(r.runId) + '">Löschen</button>';
     return '<div class="afr-run" data-run="' + esc(r.runId) + '">' +
       '<div class="afr-head">' +
-        '<div class="afr-meta"><b>Auto-Flow ' + esc(r.flow || "?") + "</b> · " + esc(fmtTime(r.createdAt)) +
+        '<div class="afr-meta"><b>' + (r.flow === "clean" ? "Clean-Flow" : "Auto-Flow " + esc(r.flow || "?")) + "</b> · " + esc(fmtTime(r.createdAt)) +
           (r.mode ? " · " + esc(r.mode) : "") +
           // A/B auf einen Blick: ohne Marke lief der Lauf ohne Regelwerk.
           (r.regelwerk ? ' · <b class="afr-rules">Regelwerk</b>' : "") +

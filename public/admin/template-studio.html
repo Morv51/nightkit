@@ -38,6 +38,7 @@
         <button class="studio-tab" type="button" data-tab="dsgn" hidden>Grafik-Analyse</button>
         <button class="studio-tab active" type="button" data-tab="prompting">Prompting Tool</button>
         <button class="studio-tab" type="button" data-tab="auto">Auto-Flow</button>
+        <button class="studio-tab" type="button" data-tab="clean">Clean-Flow</button>
         <button class="studio-tab" type="button" data-tab="afruns" hidden>Letzte Läufe</button>
         <button class="studio-tab" type="button" data-tab="keywords">Schlagworte verwalten</button>
         <button class="studio-tab" type="button" data-tab="usage" hidden>Nutzung</button>
@@ -407,6 +408,36 @@
           </div>
 
           <div class="batch-list" id="af3List"></div>
+        </div>
+      </section>
+
+      <!-- Clean-Flow: eigenstaendiger Reiter. Kurzer, freier Prompt -> gpt-image (editImage,
+           Original als Eingabe). KEINE Textzonen, KEINE Rollen, KEIN Regelwerk. Ergebnis in
+           "Letzte Laeufe" wie gehabt. Nur Nachbau, noch keine Variante. -->
+      <section class="studio-panel" id="panel-clean" data-tab="clean" hidden>
+        <div class="studio-single">
+          <div class="st-card">
+            <div class="st-head">Clean-Flow <span class="beta-badge">BETA</span></div>
+            <div class="st-mini-note">Ein Upload → <b>ein</b> Template-Nachbau (9:16) über einen <b>kurzen, festen Prompt</b> an gpt-image, dein Flyer als Vorlage. Keine Analyse, keine Textzonen, keine Rollen, kein Regelwerk — das Modell komponiert Text und Grafik frei. Ergebnis erscheint im Reiter <b>Letzte Läufe</b>. Eigenständig, die anderen Flows bleiben unberührt. Upload, da die App in der Cloud läuft.</div>
+          </div>
+
+          <div class="st-card">
+            <div class="st-head">1 · Referenz-Flyer</div>
+            <label class="st-drop" id="clDrop">
+              <input type="file" id="clFile" accept="image/*" class="file-hidden">
+              <span id="clDropLabel">Flyer hierher ziehen, einfügen (⌘/Ctrl+V) oder klicken — PNG/JPG/WebP, ≤10&nbsp;MB</span>
+            </label>
+            <div class="batch-thumbs" id="clThumbs" hidden></div>
+          </div>
+
+          <div class="st-card">
+            <div class="st-head">2 · Start</div>
+            <div class="st-row">
+              <button class="rbtn rbtn-primary" id="clStart" type="button">▶ Nachbau erzeugen</button>
+              <span class="af-time" id="clStatus"></span>
+            </div>
+            <div class="st-mini-note">Der Lauf läuft auf dem Server weiter, auch wenn du den Tab schließt. Fortschritt und Ergebnis im Reiter „Letzte Läufe", dort als <b>Clean-Flow</b> markiert.</div>
+          </div>
         </div>
       </section>
 
