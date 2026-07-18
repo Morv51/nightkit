@@ -76,6 +76,56 @@ async function start(variants) {
   }
 }
 
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+// Prompt-Vorschau: laeuft bis zum fertigen Bildprompt und stoppt (kein editImage, keine
+// Bildkosten). Zeigt die N Varianten-Prompts im Volltext mit Kopieren-Knopf. Sonnet laeuft nur
+// bei Varianten (Slider-Anzahl); ein leerer Lauf waere nur der Nachbau-Prompt.
+async function preview() {
+  if (running) return;
+  if (!file) return notify("Erst einen Flyer hochladen", "info");
+  const n = variantCount();
+  const box = $("clPreview"); if (box) { box.hidden = false; box.innerHTML = '<div class="afr-empty">Baue Prompts …</div>'; }
+  const btn = $("clPreviewBtn"); if (btn) btn.disabled = true;
+  setStatus("Vorschau …");
+  try {
+    const res = await fetch("/admin/clean/preview", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Admin-Token": getToken() },
+      body: JSON.stringify({ variants: n, dataUrl: file.dataUrl }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.status !== 200 || !data.ok) throw new Error(data.error || ("HTTP " + res.status));
+    renderPreview(data.prompts || []);
+    setStatus("Vorschau bereit.");
+  } catch (e) {
+    if (box) box.innerHTML = '<div class="afr-empty">Vorschau fehlgeschlagen: ' + esc(e.message || e) + "</div>";
+    setStatus("");
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function renderPreview(prompts) {
+  const box = $("clPreview"); if (!box) return;
+  if (!prompts.length) { box.innerHTML = '<div class="afr-empty">Keine Prompts.</div>'; return; }
+  box.innerHTML = '<div class="afr-prompt-h">Prompt-Vorschau · ' + prompts.length + (prompts.length === 1 ? " Prompt" : " Prompts") + " (kein Bild erzeugt)</div>" +
+    prompts.map((p, i) => {
+      const title = (prompts.length === 1 && p.label === "Nachbau") ? "Nachbau" : ("Variante " + (i + 1) + (p.label ? " · " + p.label : ""));
+      return '<details class="afr-prompt-det"' + (i === 0 ? " open" : "") + '><summary>' + esc(title) +
+        ' <span class="afr-prompt-n">' + (p.prompt || "").length + " Zeichen</span>" +
+        '<button class="rbtn rbtn-ghost cl-copy" type="button" data-i="' + i + '">Kopieren</button></summary>' +
+        '<pre class="afr-prompt-pre" data-i="' + i + '">' + esc(p.prompt || "") + "</pre></details>";
+    }).join("");
+  box.querySelectorAll(".cl-copy").forEach((btn) => btn.addEventListener("click", (e) => {
+    e.preventDefault(); e.stopPropagation();
+    const pre = box.querySelector('.afr-prompt-pre[data-i="' + btn.dataset.i + '"]');
+    const text = pre ? pre.textContent : "";
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => notify("Prompt kopiert", "success")).catch(() => notify("Kopieren nicht möglich", "error"));
+    else notify("Kopieren nicht möglich", "error");
+  }));
+}
+
 export function initCleanflow() {
   const f = $("clFile");
   if (f) f.addEventListener("change", () => { if (f.files[0]) onFile(f.files[0]); f.value = ""; });
@@ -85,4 +135,5 @@ export function initCleanflow() {
   if (slider && val) { const sync = () => { val.textContent = slider.value; }; slider.addEventListener("input", sync); sync(); }
   if ($("clStart")) $("clStart").addEventListener("click", () => start(0));
   if ($("clVariants")) $("clVariants").addEventListener("click", () => start(variantCount()));
+  if ($("clPreviewBtn")) $("clPreviewBtn").addEventListener("click", preview);
 }
