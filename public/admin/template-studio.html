@@ -35,27 +35,40 @@
       <div class="studio-tabs" id="tabs">
         <button class="studio-tab" type="button" data-tab="manage" hidden>Bestandsverwaltung</button>
         <button class="studio-tab" type="button" data-tab="upload" hidden>Template Uploader</button>
-        <button class="studio-tab" type="button" data-tab="dsgn" hidden>Grafik-Analyse</button>
-        <button class="studio-tab active" type="button" data-tab="prompting">Prompting Tool</button>
-        <button class="studio-tab" type="button" data-tab="auto">Auto-Flow</button>
         <button class="studio-tab" type="button" data-tab="clean">Clean-Flow</button>
         <button class="studio-tab" type="button" data-tab="afruns" hidden>Letzte Läufe</button>
-        <button class="studio-tab" type="button" data-tab="keywords">Schlagworte verwalten</button>
+        <button class="studio-tab" type="button" data-tab="archiv">Archiv</button>
         <button class="studio-tab" type="button" data-tab="usage" hidden>Nutzung</button>
       </div>
       <button class="rbtn rbtn-ghost studio-lock" id="lockBtn" type="button" title="Sperren">⊘ Sperren</button>
     </header>
 
     <main class="studio-main">
+      <!-- Archiv: nur Oberflaeche. Die vier Werkzeuge (Grafik-Analyse, Prompting Tool,
+           Auto-Flow, Schlagworte) wandern aus der Hauptnavigation hierher. Nach der Auswahl
+           erscheint ihr Panel UNVERAENDERT darunter. Kein Code entfernt, keine Route
+           abgeschaltet, Lazy-Loading wie bisher. Nur bei aktivem Archiv-Reiter sichtbar. -->
+      <div class="studio-archiv" id="archivBar" hidden>
+        <div class="st-mini-note">📦 <b>Archiv</b> · nicht mehr aktiv gepflegt, aber voll funktionsfähig. Werkzeug wählen, das Panel erscheint unverändert darunter.</div>
+        <label class="archiv-pick">Werkzeug
+          <select id="archivSelect">
+            <option value="dsgn">Grafik-Analyse</option>
+            <option value="prompting">Prompting Tool</option>
+            <option value="auto">Auto-Flow</option>
+            <option value="keywords">Schlagworte verwalten</option>
+          </select>
+        </label>
+      </div>
+
       <!-- Modus 1: Flyer → Prompt (reiner PROMPT-Generator, keine Bildgenerierung) -->
       <!-- Prompting Tool: Unterauswahl zwischen Flyer→Template und Moodboard→Prompt.
            Die beiden Panels (IDs unverändert) bleiben funktional wie bisher. -->
-      <div class="studio-subnav" data-group="prompting">
+      <div class="studio-subnav" data-group="prompting" hidden>
         <button class="studio-subtab active" type="button" data-group="prompting" data-sub="mode1">Flyer → Template</button>
         <button class="studio-subtab" type="button" data-group="prompting" data-sub="mode2">Moodboard → Prompt</button>
         <button class="studio-subtab" type="button" data-group="prompting" data-sub="variants">Varianten-Prompts</button>
       </div>
-      <section class="studio-panel active" id="panel-mode1" data-tab="prompting" data-sub="mode1">
+      <section class="studio-panel" id="panel-mode1" data-tab="prompting" data-sub="mode1" hidden>
         <div class="studio-single">
           <div class="st-card">
             <div class="st-head">1 · Flyer</div>

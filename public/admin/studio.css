@@ -150,6 +150,12 @@ html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: aut
 .studio-main { padding: 20px 16px 48px; }
 .studio-panel { max-width: 1100px; margin: 0 auto; }
 .studio-panel[hidden] { display: none; }
+
+/* Archiv-Leiste (nur Oberflaeche): Hinweis + Werkzeug-Auswahl, nur bei aktivem Archiv-Reiter. */
+.studio-archiv { max-width: 1100px; margin: 0 auto 16px; padding: 12px 14px; border: 1px solid var(--color-border, #222); border-radius: var(--radius-md, 12px); background: var(--card-inset, #0d0d0d); }
+.studio-archiv[hidden] { display: none; }
+.archiv-pick { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; font-weight: 700; color: var(--color-text, #fff); }
+.archiv-pick select { font: inherit; font-weight: 600; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--color-border, #333); background: var(--color-surface-2, #1a1a1a); color: var(--color-text, #fff); }
 .studio-ph {
   display: grid;
   place-items: center;

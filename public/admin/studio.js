@@ -14,13 +14,15 @@ let adminResolved = false; // wurde der Admin-Standard schon aufgeloest?
 // Aktuelle Unterauswahl je Gruppen-Tab (Standard: Flyer→Template bzw. Auto-Flow 1).
 const subState = { prompting: "mode1", auto: "auto" };
 
-// Einen Tab aktivieren. Versteckte/fehlende Tabs werden nie aktiviert (kein leerer
-// Standard). Bei Gruppen-Tabs wird nur das Panel der aktiven Unterauswahl gezeigt.
-function activateTab(tab) {
-  const tabsEl = $("tabs");
-  const btn = tabsEl.querySelector('.studio-tab[data-tab="' + tab + '"]');
-  if (!btn || btn.hidden) return false;
-  for (const t of tabsEl.querySelectorAll(".studio-tab")) t.classList.toggle("active", t === btn);
+// Archiv: die vier ausgelagerten Werkzeuge. Ihre Panels/Module bleiben UNVERAENDERT; nur ihre
+// Sichtbarkeit wird jetzt vom Archiv-Reiter gesteuert statt von einem eigenen Haupt-Tab.
+const ARCHIV_TOOLS = ["dsgn", "prompting", "auto", "keywords"];
+let archivSel = "dsgn"; // zuletzt im Archiv gewaehltes Werkzeug
+
+// Panels + Subnavs fuer einen logischen Tab zeigen (ohne Nav-Highlight). Bei Gruppen-Tabs zeigt
+// die aktive Unterauswahl. Dieselbe Logik wie bisher, nur ausgelagert, damit das Archiv sie
+// mit einem Werkzeug-Namen wiederverwenden kann.
+function showPanelsFor(tab) {
   for (const p of document.querySelectorAll(".studio-panel")) {
     let on = p.dataset.tab === tab;
     if (on && p.dataset.sub) on = subState[tab] === p.dataset.sub;
@@ -28,15 +30,49 @@ function activateTab(tab) {
     p.classList.toggle("active", on);
   }
   for (const nav of document.querySelectorAll(".studio-subnav")) nav.hidden = nav.dataset.group !== tab;
+}
+
+// Im Archiv das gewaehlte Werkzeug anzeigen (dessen Panel[s] + ggf. Subnav) + Auswahl spiegeln.
+function applyArchiv() {
+  showPanelsFor(archivSel);
+  const sel = $("archivSelect");
+  if (sel && sel.value !== archivSel) sel.value = archivSel;
+}
+
+// Einen Tab aktivieren. Versteckte/fehlende Tabs werden nie aktiviert (kein leerer Standard).
+// "archiv" ist ein Sonderfall: die Archiv-Leiste erscheint und das gewaehlte Werkzeug wird
+// darunter gezeigt.
+function activateTab(tab) {
+  const tabsEl = $("tabs");
+  const btn = tabsEl.querySelector('.studio-tab[data-tab="' + tab + '"]');
+  if (!btn || btn.hidden) return false;
+  for (const t of tabsEl.querySelectorAll(".studio-tab")) t.classList.toggle("active", t === btn);
+  const bar = $("archivBar");
+  if (tab === "archiv") {
+    if (bar) bar.hidden = false;
+    applyArchiv();
+  } else {
+    if (bar) bar.hidden = true;
+    showPanelsFor(tab);
+  }
   return true;
 }
 
-// Unterauswahl innerhalb eines Gruppen-Tabs wechseln.
+// Unterauswahl innerhalb eines Gruppen-Tabs wechseln. Funktioniert auch, wenn die Gruppe
+// gerade IM ARCHIV gezeigt wird (dann ist der aktive Haupt-Tab "archiv", nicht die Gruppe).
 function activateSub(group, sub) {
   subState[group] = sub;
   for (const st of document.querySelectorAll('.studio-subtab[data-group="' + group + '"]')) st.classList.toggle("active", st.dataset.sub === sub);
   const active = $("tabs").querySelector(".studio-tab.active");
   if (active && active.dataset.tab === group) activateTab(group);
+  else if (active && active.dataset.tab === "archiv" && archivSel === group) applyArchiv();
+}
+
+// Werkzeug im Archiv wechseln (Dropdown).
+function selectArchivTool(tool) {
+  if (!ARCHIV_TOOLS.includes(tool)) return;
+  archivSel = tool;
+  applyArchiv();
 }
 
 function initTabs() {
@@ -52,6 +88,8 @@ function initTabs() {
     userPicked = true;
     activateSub(s.dataset.group, s.dataset.sub);
   });
+  const arch = $("archivSelect");
+  if (arch) arch.addEventListener("change", (e) => { userPicked = true; selectArchivTool(e.target.value); });
 }
 
 // Standard beim Oeffnen: ein Hash auf einen SICHTBAREN Tab gewinnt, sonst der immer
@@ -60,8 +98,11 @@ function initTabs() {
 // verborgen.
 function resolveInitial() {
   const hashTab = (location.hash || "").replace(/^#/, "");
+  // Deep-Link auf ein archiviertes Werkzeug (#dsgn/#prompting/#auto/#keywords) -> Archiv oeffnen
+  // und dieses Werkzeug vorwaehlen. So bleiben alte Links erreichbar.
+  if (ARCHIV_TOOLS.includes(hashTab)) { archivSel = hashTab; if (activateTab("archiv")) return; }
   if (hashTab && activateTab(hashTab)) return;
-  activateTab("prompting");
+  activateTab("clean"); // Standard: Clean-Flow (immer sichtbar; prompting ist jetzt im Archiv)
 }
 
 // Von manage-panel.js gefeuert, sobald die Bestandsverwaltung bei ADMIN_TOOLS=1 ihren
@@ -73,6 +114,7 @@ function onAdminReady() {
   adminResolved = true;
   if (userPicked) return;
   const hashTab = (location.hash || "").replace(/^#/, "");
+  if (ARCHIV_TOOLS.includes(hashTab)) { archivSel = hashTab; if (activateTab("archiv")) return; }
   if (hashTab && hashTab !== "manage" && activateTab(hashTab)) return;
   activateTab("manage");
 }
