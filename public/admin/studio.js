@@ -105,18 +105,18 @@ function resolveInitial() {
   activateTab("clean"); // Standard: Clean-Flow (immer sichtbar; prompting ist jetzt im Archiv)
 }
 
-// Von manage-panel.js gefeuert, sobald die Bestandsverwaltung bei ADMIN_TOOLS=1 ihren
-// Tab sichtbar gemacht hat: dann ist sie der Standard-Tab, sofern der Nutzer nicht
-// schon selbst gewaehlt hat und kein Hash auf einen anderen sichtbaren Tab zeigt
-// (der Redirect /admin/manage nutzt #manage und landet damit hier korrekt).
+// Von manage-panel.js gefeuert, sobald die Bestandsverwaltung (Reiter "Templates") bei
+// ADMIN_TOOLS=1 ihren Tab sichtbar gemacht hat. Standard-Startreiter ist "Erstellen" (clean);
+// ein Hash gewinnt weiterhin (der Redirect /admin/manage nutzt #manage und oeffnet damit den
+// jetzt sichtbaren Templates-Reiter korrekt).
 function onAdminReady() {
   if (adminResolved) return;
   adminResolved = true;
   if (userPicked) return;
   const hashTab = (location.hash || "").replace(/^#/, "");
   if (ARCHIV_TOOLS.includes(hashTab)) { archivSel = hashTab; if (activateTab("archiv")) return; }
-  if (hashTab && hashTab !== "manage" && activateTab(hashTab)) return;
-  activateTab("manage");
+  if (hashTab && activateTab(hashTab)) return; // inkl. #manage -> Templates (jetzt sichtbar)
+  activateTab("clean"); // Standard-Startreiter: Erstellen
 }
 
 function showStudio() {
