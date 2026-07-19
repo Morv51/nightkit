@@ -48,11 +48,15 @@ async function onFile(f) {
 
 // ── Modus-Umschalter: Slider + Hauptmotiv-Wahl nur bei Varianten, Startknopf folgt dem Modus ──
 function setMode(m) {
-  mode = m === "varianten" ? "varianten" : "nachbau";
-  const nb = $("clModeNachbau"), va = $("clModeVarianten"), opt = $("clVarOpt"), sopt = $("clSubjOpt");
-  if (nb) { nb.classList.toggle("is-on", mode === "nachbau"); nb.setAttribute("aria-selected", mode === "nachbau"); }
-  if (va) { va.classList.toggle("is-on", mode === "varianten"); va.setAttribute("aria-selected", mode === "varianten"); }
-  if (opt) opt.hidden = mode !== "varianten";
+  mode = (m === "varianten" || m === "artwork") ? m : "nachbau";
+  const map = { nachbau: "clModeNachbau", varianten: "clModeVarianten", artwork: "clModeArtwork" };
+  for (const [mm, id] of Object.entries(map)) {
+    const b = $(id); if (b) { b.classList.toggle("is-on", mode === mm); b.setAttribute("aria-selected", mode === mm); }
+  }
+  // Slider bei Varianten UND Artwork, nicht beim Nachbau. Motiv-Umschalter NUR bei Varianten
+  // (bei Artwork ist das Foto das Motiv, bei Nachbau gibt es keine Wahl).
+  const opt = $("clVarOpt"), sopt = $("clSubjOpt");
+  if (opt) opt.hidden = mode === "nachbau";
   if (sopt) sopt.hidden = mode !== "varianten";
   syncStartLabel();
 }
@@ -67,15 +71,21 @@ function setSubject(hasSubject) {
 
 function syncStartLabel() {
   const b = $("clStart");
-  if (b) b.textContent = mode === "varianten" ? ("▶ " + variantCount() + " Varianten erzeugen") : "▶ Nachbau erzeugen";
+  if (b) {
+    b.textContent = mode === "varianten" ? ("▶ " + variantCount() + " Varianten erzeugen")
+      : mode === "artwork" ? ("▶ " + variantCount() + " Artworks erzeugen")
+      : "▶ Nachbau erzeugen";
+  }
   const val = $("clCountVal"); if (val) val.textContent = String(variantCount());
 }
 
-// ── Start: Nachbau -> variants 0, Varianten -> Slider-Anzahl. Beides cleanFlow:true. ──
+// ── Start: Nachbau -> variants 0. Varianten/Artwork -> Slider-Anzahl. Alles cleanFlow:true. ──
 async function start() {
   if (running) return;
-  if (!file) return notify("Erst einen Flyer hochladen", "info");
-  const variants = mode === "varianten" ? variantCount() : 0;
+  if (!file) return notify("Erst ein Bild hochladen", "info");
+  const artwork = mode === "artwork";
+  const variants = mode === "nachbau" ? 0 : variantCount();
+  const modeLabel = mode === "artwork" ? (variants + " Artworks") : variants > 0 ? (variants + " Varianten") : "Nachbau";
   const btns = [$("clStart"), $("clPreviewBtn")];
   btns.forEach((b) => { if (b) b.disabled = true; });
   running = true; setStatus("Starte …");
@@ -85,9 +95,10 @@ async function start() {
       headers: { "Content-Type": "application/json", "X-Admin-Token": getToken() },
       body: JSON.stringify({
         flow: "clean", cleanFlow: true,
-        mode: variants > 0 ? variants + " Varianten" : "Nachbau",
+        mode: modeLabel,
         loose: false, textOnly: false, regelwerk: false, variants, refType: "single",
-        subject, // Varianten: Mit/Ohne Hauptmotiv (beim Nachbau ohne Wirkung)
+        subject,   // Varianten: Mit/Ohne Hauptmotiv (bei Nachbau/Artwork ohne Wirkung)
+        artwork,   // Artwork: Foto -> Flyer
         files: [{ name: file.name, dataUrl: file.dataUrl }],
       }),
     });
@@ -110,8 +121,9 @@ async function start() {
 //    Bildkosten). Gilt fuer den gewaehlten Modus. ──
 async function preview() {
   if (running) return;
-  if (!file) return notify("Erst einen Flyer hochladen", "info");
-  const variants = mode === "varianten" ? variantCount() : 0;
+  if (!file) return notify("Erst ein Bild hochladen", "info");
+  const artwork = mode === "artwork";
+  const variants = mode === "nachbau" ? 0 : variantCount();
   const box = $("clPreview"); if (box) { box.hidden = false; box.innerHTML = '<div class="afr-empty">Baue Prompts …</div>'; }
   const btn = $("clPreviewBtn"); if (btn) btn.disabled = true;
   setStatus("Vorschau …");
@@ -119,7 +131,7 @@ async function preview() {
     const res = await fetch("/admin/clean/preview", {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Admin-Token": getToken() },
-      body: JSON.stringify({ variants, subject, dataUrl: file.dataUrl }),
+      body: JSON.stringify({ variants, subject, artwork, dataUrl: file.dataUrl }),
     });
     const data = await res.json().catch(() => ({}));
     if (res.status !== 200 || !data.ok) throw new Error(data.error || ("HTTP " + res.status));
@@ -215,6 +227,7 @@ export function initCleanflow() {
   wirePaste($("panel-clean"), onFile);
   if ($("clModeNachbau")) $("clModeNachbau").addEventListener("click", () => setMode("nachbau"));
   if ($("clModeVarianten")) $("clModeVarianten").addEventListener("click", () => setMode("varianten"));
+  if ($("clModeArtwork")) $("clModeArtwork").addEventListener("click", () => setMode("artwork"));
   if ($("clSubjMit")) $("clSubjMit").addEventListener("click", () => setSubject(true));
   if ($("clSubjOhne")) $("clSubjOhne").addEventListener("click", () => setSubject(false));
   const slider = $("clCount");

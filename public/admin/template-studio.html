@@ -446,8 +446,9 @@
           <div class="st-card">
             <div class="st-head">2 · Modus &amp; Start</div>
             <div class="cl-seg" id="clModeSeg" role="tablist" aria-label="Modus">
-              <button class="cl-seg-btn is-on" id="clModeNachbau" type="button" data-mode="nachbau" role="tab" aria-selected="true">Nachbau</button>
-              <button class="cl-seg-btn" id="clModeVarianten" type="button" data-mode="varianten" role="tab" aria-selected="false">Varianten</button>
+              <button class="cl-seg-btn is-on" id="clModeNachbau" type="button" data-mode="nachbau" role="tab" aria-selected="true" title="Ein treues 1:1-Template aus deinem Flyer">Nachbau</button>
+              <button class="cl-seg-btn" id="clModeVarianten" type="button" data-mode="varianten" role="tab" aria-selected="false" title="Mehrere Bilder als Design-Familie">Varianten</button>
+              <button class="cl-seg-btn" id="clModeArtwork" type="button" data-mode="artwork" role="tab" aria-selected="false" title="Ein Flyer aus einem Foto ohne Vorlage">Artwork</button>
             </div>
             <div class="cl-opt" id="clVarOpt" hidden>
               <label for="clCount" class="st-mini-note" style="margin:0">Anzahl</label>
@@ -467,7 +468,7 @@
               <span class="af-time" id="clStatus"></span>
             </div>
             <div id="clPreview" class="cl-preview" hidden></div>
-            <div class="st-mini-note"><b>Nachbau</b> baut ein 1:1-Template. <b>Varianten</b> erzeugt N Bilder als Farb-Kollektion: ein Sonnet-Schritt entwirft je Variante nur eine neue Farbwelt, die erste bleibt nah am Original, alle als Familie mit rotem Faden. Stil, Fonts und Grafikelemente bleiben, das Hauptmotiv wird ersetzt, die Anordnung frei neu komponiert. <b>nur Prompts erzeugen</b> zeigt die fertigen Prompts ohne ein Bild zu erzeugen (keine Bildkosten). Der Lauf läuft auf dem Server weiter, Ergebnis im Reiter „Letzte Läufe", als <b>Clean-Flow</b> markiert.</div>
+            <div class="st-mini-note"><b>Nachbau</b> baut ein treues 1:1-Template aus deinem Flyer. <b>Varianten</b> erzeugt N Bilder als Design-Familie: ein Sonnet-Schritt entwirft je Variante nur eine neue Farbwelt, die erste bleibt nah am Original. <b>Artwork</b> baut einen Flyer aus einem reinen <b>Foto</b> ohne Vorlage: Sonnet wählt je Variante eine Akzent-Farbwelt, die zum Foto kontrastiert. <b>nur Prompts erzeugen</b> zeigt die fertigen Prompts ohne ein Bild zu erzeugen (keine Bildkosten). Der Lauf läuft auf dem Server weiter, Ergebnis im Reiter „Letzte Läufe", als <b>Clean-Flow</b> markiert.</div>
           </div>
         </div>
       </section>
