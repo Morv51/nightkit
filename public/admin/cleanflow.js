@@ -12,6 +12,7 @@ const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": 
 let file = null;        // { name, dataUrl }
 let running = false;
 let mode = "nachbau";   // "nachbau" | "varianten"
+let subject = true;     // Varianten: true = Mit Hauptmotiv (Default), false = Ohne Hauptmotiv
 let lastPrompts = [];   // zuletzt angezeigte Vorschau-Prompts
 const copied = new Set(); // Indizes der bereits kopierten Karten (persistent bis neue Vorschau)
 
@@ -45,14 +46,23 @@ async function onFile(f) {
   catch (e) { notify((e && e.message) || "Bild nicht lesbar", "error"); }
 }
 
-// ── Modus-Umschalter: Slider nur bei Varianten, Startknopf-Beschriftung folgt dem Modus ──
+// ── Modus-Umschalter: Slider + Hauptmotiv-Wahl nur bei Varianten, Startknopf folgt dem Modus ──
 function setMode(m) {
   mode = m === "varianten" ? "varianten" : "nachbau";
-  const nb = $("clModeNachbau"), va = $("clModeVarianten"), opt = $("clVarOpt");
+  const nb = $("clModeNachbau"), va = $("clModeVarianten"), opt = $("clVarOpt"), sopt = $("clSubjOpt");
   if (nb) { nb.classList.toggle("is-on", mode === "nachbau"); nb.setAttribute("aria-selected", mode === "nachbau"); }
   if (va) { va.classList.toggle("is-on", mode === "varianten"); va.setAttribute("aria-selected", mode === "varianten"); }
   if (opt) opt.hidden = mode !== "varianten";
+  if (sopt) sopt.hidden = mode !== "varianten";
   syncStartLabel();
+}
+
+// Hauptmotiv-Umschalter (nur Varianten): true = Mit, false = Ohne.
+function setSubject(hasSubject) {
+  subject = !!hasSubject;
+  const mit = $("clSubjMit"), ohne = $("clSubjOhne");
+  if (mit) { mit.classList.toggle("is-on", subject); mit.setAttribute("aria-selected", subject); }
+  if (ohne) { ohne.classList.toggle("is-on", !subject); ohne.setAttribute("aria-selected", !subject); }
 }
 
 function syncStartLabel() {
@@ -77,6 +87,7 @@ async function start() {
         flow: "clean", cleanFlow: true,
         mode: variants > 0 ? variants + " Varianten" : "Nachbau",
         loose: false, textOnly: false, regelwerk: false, variants, refType: "single",
+        subject, // Varianten: Mit/Ohne Hauptmotiv (beim Nachbau ohne Wirkung)
         files: [{ name: file.name, dataUrl: file.dataUrl }],
       }),
     });
@@ -108,7 +119,7 @@ async function preview() {
     const res = await fetch("/admin/clean/preview", {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Admin-Token": getToken() },
-      body: JSON.stringify({ variants, dataUrl: file.dataUrl }),
+      body: JSON.stringify({ variants, subject, dataUrl: file.dataUrl }),
     });
     const data = await res.json().catch(() => ({}));
     if (res.status !== 200 || !data.ok) throw new Error(data.error || ("HTTP " + res.status));
@@ -204,6 +215,8 @@ export function initCleanflow() {
   wirePaste($("panel-clean"), onFile);
   if ($("clModeNachbau")) $("clModeNachbau").addEventListener("click", () => setMode("nachbau"));
   if ($("clModeVarianten")) $("clModeVarianten").addEventListener("click", () => setMode("varianten"));
+  if ($("clSubjMit")) $("clSubjMit").addEventListener("click", () => setSubject(true));
+  if ($("clSubjOhne")) $("clSubjOhne").addEventListener("click", () => setSubject(false));
   const slider = $("clCount");
   if (slider) slider.addEventListener("input", syncStartLabel);
   if ($("clStart")) $("clStart").addEventListener("click", start);

@@ -454,6 +454,13 @@
               <input type="range" id="clCount" min="1" max="10" value="5" step="1">
               <b id="clCountVal">5</b>
             </div>
+            <div class="cl-opt" id="clSubjOpt" hidden>
+              <span class="st-mini-note" style="margin:0">Hauptmotiv</span>
+              <div class="cl-seg" id="clSubjSeg" role="tablist" aria-label="Hauptmotiv">
+                <button class="cl-seg-btn is-on" id="clSubjMit" type="button" data-subject="mit" role="tab" aria-selected="true">Mit Hauptmotiv</button>
+                <button class="cl-seg-btn" id="clSubjOhne" type="button" data-subject="ohne" role="tab" aria-selected="false">Ohne Hauptmotiv</button>
+              </div>
+            </div>
             <div class="st-row" style="margin-top:10px">
               <button class="rbtn rbtn-primary" id="clStart" type="button">▶ Nachbau erzeugen</button>
               <button class="rbtn rbtn-ghost" id="clPreviewBtn" type="button">👁 Prompt-Vorschau</button>
