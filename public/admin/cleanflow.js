@@ -135,7 +135,7 @@ async function preview() {
     });
     const data = await res.json().catch(() => ({}));
     if (res.status !== 200 || !data.ok) throw new Error(data.error || ("HTTP " + res.status));
-    renderPreview(data.prompts || []);
+    renderPreview(data.prompts || [], data.raw || "");
     setStatus("Vorschau bereit.");
   } catch (e) {
     if (box) box.innerHTML = '<div class="afr-empty">Vorschau fehlgeschlagen: ' + esc(e.message || e) + "</div>";
@@ -152,7 +152,7 @@ function cardTitle(p, i) {
 // Karten-Anzeige: pro Variante Nummer + Label, die color_world hervorgehoben als Kopfzeile, der
 // volle Prompt in Monospace scrollbar, Kopieren je Karte. Kopier-Status wird bei jeder neuen
 // Vorschau zurueckgesetzt.
-function renderPreview(prompts) {
+function renderPreview(prompts, raw) {
   const box = $("clPreview"); if (!box) return;
   lastPrompts = prompts || [];
   copied.clear();
@@ -162,6 +162,15 @@ function renderPreview(prompts) {
     '<span class="cl-count" id="clCopyCount"></span>' +
     (lastPrompts.length > 1 ? '<button class="rbtn rbtn-ghost cl-copyall" id="clCopyAll" type="button">Alle kopieren</button>' : "") +
     "</div>";
+  // Artwork: die ROHE Sonnet-Antwort ueber den Karten, damit sichtbar wird, ob Sonnet ins
+  // Beschreiben rutscht. Nur wenn geliefert -> Nachbau/Varianten sehen unveraendert aus.
+  const rawCard = raw ? '<div class="cl-card">' +
+      '<div class="cl-card-top">' +
+        '<span class="cl-card-num">Rohe Sonnet-Antwort</span>' +
+        '<span class="cl-card-n">' + raw.length + " Zeichen</span>" +
+      "</div>" +
+      '<pre class="cl-card-pre">' + esc(raw) + "</pre>" +
+    "</div>" : "";
   const cards = lastPrompts.map((p, i) => {
     const cw = (p.label && p.label !== "Nachbau") ? '<div class="cl-cw">' + esc(p.label) + "</div>" : "";
     return '<div class="cl-card" data-i="' + i + '">' +
@@ -173,7 +182,7 @@ function renderPreview(prompts) {
       '<pre class="cl-card-pre" data-i="' + i + '">' + esc(p.prompt || "") + "</pre>" +
     "</div>";
   }).join("");
-  box.innerHTML = head + cards;
+  box.innerHTML = head + rawCard + cards;
   box.querySelectorAll(".cl-card-copy").forEach((b) => b.addEventListener("click", () => copyOne(Number(b.dataset.i))));
   const all = $("clCopyAll"); if (all) all.addEventListener("click", copyAll);
   updateCounter();
