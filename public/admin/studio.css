@@ -689,6 +689,31 @@ html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: aut
 .afr-befund-m { margin-top: 4px; font-size: 11px; line-height: 1.5; color: var(--muted, rgba(245,245,240,0.8)); }
 .afr-ja { color: var(--color-accent, #ccff00); }
 .afr-nein { color: #ffb450; }
+
+/* ── Clean-Flow: Modus-Umschalter + Vorschau-Karten ────────────────────────── */
+.cl-seg { display: inline-flex; border: 1px solid var(--color-border, #222); border-radius: 10px; overflow: hidden; background: var(--card-inset, #0d0d0d); margin-bottom: 10px; }
+.cl-seg-btn { appearance: none; border: 0; background: transparent; color: var(--muted, rgba(245,245,240,0.7)); font: inherit; font-weight: 700; padding: 8px 20px; cursor: pointer; }
+.cl-seg-btn + .cl-seg-btn { border-left: 1px solid var(--color-border, #222); }
+.cl-seg-btn.is-on { background: var(--color-accent, #ccff00); color: #0a0a0a; }
+.cl-opt { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+.cl-opt input[type="range"] { flex: 1; max-width: 280px; }
+.cl-opt b { min-width: 1.5em; text-align: right; }
+
+.cl-preview { margin-top: 12px; }
+.cl-preview-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.cl-preview-title { font-size: 13px; font-weight: 700; color: var(--color-text, #fff); }
+.cl-count { font-size: 12px; font-weight: 600; color: var(--muted, rgba(245,245,240,0.6)); }
+.cl-count.is-all { color: var(--color-accent, #ccff00); }
+.cl-copyall { margin-left: auto; font-size: 11px; padding: 4px 10px; }
+.cl-card { border: 1px solid var(--color-border, #222); border-radius: 12px; background: var(--card-inset, #0d0d0d); padding: 10px 12px; margin: 8px 0; }
+.cl-card.is-copied { border-color: rgba(204,255,0,0.55); }
+.cl-card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.cl-card-num { font-size: 12px; font-weight: 700; color: var(--muted, rgba(245,245,240,0.7)); }
+.cl-card-n { font-size: 11px; color: var(--muted, rgba(245,245,240,0.45)); }
+.cl-card-copy { margin-left: auto; font-size: 11px; padding: 3px 10px; }
+.cl-card-copy.is-copied { background: var(--color-accent, #ccff00); color: #0a0a0a; border-color: var(--color-accent, #ccff00); }
+.cl-cw { font-size: 15px; font-weight: 800; color: var(--color-text, #fff); background: rgba(204,255,0,0.08); border-left: 3px solid var(--color-accent, #ccff00); border-radius: 6px; padding: 7px 10px; margin-bottom: 8px; word-break: break-word; }
+.cl-card-pre { max-height: 300px; overflow: auto; white-space: pre-wrap; word-break: break-word; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; line-height: 1.5; color: var(--color-text, #fff); background: #000; border: 1px solid var(--color-border, #222); border-radius: 8px; padding: 8px; margin: 0; }
 /* ── Grafik-Analyse: Datensatz-Anzeige (Wortlaut) ──────────────────────────── */
 .dsgn-rec { border: 1px solid var(--color-border, #222); border-radius: var(--radius-md, 12px); background: var(--card-inset, #0d0d0d); padding: 12px; margin-bottom: 10px; }
 .dsgn-rec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }

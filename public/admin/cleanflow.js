@@ -1,18 +1,27 @@
-// Clean-Flow (BETA) — eigenstaendiger Reiter. Ein Referenz-Flyer -> ein Template-Nachbau ueber
-// einen KURZEN, festen Prompt (server-seitig in lib/studio/cleanFlow.js). Keine Textzonen, keine
-// Rollen, kein Regelwerk. Nutzt den SERVER-Lauf (/admin/autoflow/start mit cleanFlow:true) und
-// damit denselben editImage-Weg + dieselbe Ablage wie die anderen Flows; Ergebnis in "Letzte
-// Laeufe". Beruehrt keine bestehende Flow-Logik.
+// Clean-Flow (BETA) — eigenstaendiger Reiter. Ein Referenz-Flyer -> Nachbau (fester Prompt) oder
+// N Varianten (Farb-Kollektion, Sonnet-Schritt). Nutzt den SERVER-Lauf (/admin/autoflow/start
+// mit cleanFlow:true), denselben editImage-Weg + dieselbe Ablage wie die anderen Flows; Ergebnis
+// in "Letzte Laeufe". Beruehrt keine bestehende Flow-Logik. Diese Datei ist reine Oberflaeche.
 
 import { getToken } from "./studioApi.js";
 import { fileToDataUrl, wireDropzone, wirePaste, notify } from "./studioUi.js";
 
 const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-let file = null;   // { name, dataUrl }
+let file = null;        // { name, dataUrl }
 let running = false;
+let mode = "nachbau";   // "nachbau" | "varianten"
+let lastPrompts = [];   // zuletzt angezeigte Vorschau-Prompts
+const copied = new Set(); // Indizes der bereits kopierten Karten (persistent bis neue Vorschau)
 
 function setStatus(t) { const el = $("clStatus"); if (el) el.textContent = t || ""; }
+
+// Anzahl Varianten vom Slider (1-10).
+function variantCount() {
+  const el = $("clCount");
+  return Math.max(1, Math.min(10, parseInt(el && el.value, 10) || 5));
+}
 
 function renderThumb() {
   const row = $("clThumbs");
@@ -36,18 +45,28 @@ async function onFile(f) {
   catch (e) { notify((e && e.message) || "Bild nicht lesbar", "error"); }
 }
 
-// Anzahl Varianten vom Slider (1-10).
-function variantCount() {
-  const el = $("clCount");
-  return Math.max(1, Math.min(10, parseInt(el && el.value, 10) || 5));
+// ── Modus-Umschalter: Slider nur bei Varianten, Startknopf-Beschriftung folgt dem Modus ──
+function setMode(m) {
+  mode = m === "varianten" ? "varianten" : "nachbau";
+  const nb = $("clModeNachbau"), va = $("clModeVarianten"), opt = $("clVarOpt");
+  if (nb) { nb.classList.toggle("is-on", mode === "nachbau"); nb.setAttribute("aria-selected", mode === "nachbau"); }
+  if (va) { va.classList.toggle("is-on", mode === "varianten"); va.setAttribute("aria-selected", mode === "varianten"); }
+  if (opt) opt.hidden = mode !== "varianten";
+  syncStartLabel();
 }
 
-// Server-getriebener Start. variants=0 -> Nachbau (fester Prompt). variants>0 -> Design-Familie
-// (ein Sonnet-Aufruf + N editImage-Laeufe). Beides cleanFlow:true, editImage-Weg, keine Regeln.
-async function start(variants) {
+function syncStartLabel() {
+  const b = $("clStart");
+  if (b) b.textContent = mode === "varianten" ? ("▶ " + variantCount() + " Varianten erzeugen") : "▶ Nachbau erzeugen";
+  const val = $("clCountVal"); if (val) val.textContent = String(variantCount());
+}
+
+// ── Start: Nachbau -> variants 0, Varianten -> Slider-Anzahl. Beides cleanFlow:true. ──
+async function start() {
   if (running) return;
   if (!file) return notify("Erst einen Flyer hochladen", "info");
-  const btns = [$("clStart"), $("clVariants")];
+  const variants = mode === "varianten" ? variantCount() : 0;
+  const btns = [$("clStart"), $("clPreviewBtn")];
   btns.forEach((b) => { if (b) b.disabled = true; });
   running = true; setStatus("Starte …");
   try {
@@ -76,15 +95,12 @@ async function start(variants) {
   }
 }
 
-const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-
-// Prompt-Vorschau: laeuft bis zum fertigen Bildprompt und stoppt (kein editImage, keine
-// Bildkosten). Zeigt die N Varianten-Prompts im Volltext mit Kopieren-Knopf. Sonnet laeuft nur
-// bei Varianten (Slider-Anzahl); ein leerer Lauf waere nur der Nachbau-Prompt.
+// ── Prompt-Vorschau: laeuft bis zum fertigen Bildprompt und stoppt (kein editImage, keine
+//    Bildkosten). Gilt fuer den gewaehlten Modus. ──
 async function preview() {
   if (running) return;
   if (!file) return notify("Erst einen Flyer hochladen", "info");
-  const n = variantCount();
+  const variants = mode === "varianten" ? variantCount() : 0;
   const box = $("clPreview"); if (box) { box.hidden = false; box.innerHTML = '<div class="afr-empty">Baue Prompts …</div>'; }
   const btn = $("clPreviewBtn"); if (btn) btn.disabled = true;
   setStatus("Vorschau …");
@@ -92,7 +108,7 @@ async function preview() {
     const res = await fetch("/admin/clean/preview", {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Admin-Token": getToken() },
-      body: JSON.stringify({ variants: n, dataUrl: file.dataUrl }),
+      body: JSON.stringify({ variants, dataUrl: file.dataUrl }),
     });
     const data = await res.json().catch(() => ({}));
     if (res.status !== 200 || !data.ok) throw new Error(data.error || ("HTTP " + res.status));
@@ -106,24 +122,79 @@ async function preview() {
   }
 }
 
+function cardTitle(p, i) {
+  return (lastPrompts.length === 1 && p.label === "Nachbau") ? "Nachbau" : ("Variante " + (i + 1));
+}
+
+// Karten-Anzeige: pro Variante Nummer + Label, die color_world hervorgehoben als Kopfzeile, der
+// volle Prompt in Monospace scrollbar, Kopieren je Karte. Kopier-Status wird bei jeder neuen
+// Vorschau zurueckgesetzt.
 function renderPreview(prompts) {
   const box = $("clPreview"); if (!box) return;
-  if (!prompts.length) { box.innerHTML = '<div class="afr-empty">Keine Prompts.</div>'; return; }
-  box.innerHTML = '<div class="afr-prompt-h">Prompt-Vorschau · ' + prompts.length + (prompts.length === 1 ? " Prompt" : " Prompts") + " (kein Bild erzeugt)</div>" +
-    prompts.map((p, i) => {
-      const title = (prompts.length === 1 && p.label === "Nachbau") ? "Nachbau" : ("Variante " + (i + 1) + (p.label ? " · " + p.label : ""));
-      return '<details class="afr-prompt-det"' + (i === 0 ? " open" : "") + '><summary>' + esc(title) +
-        ' <span class="afr-prompt-n">' + (p.prompt || "").length + " Zeichen</span>" +
-        '<button class="rbtn rbtn-ghost cl-copy" type="button" data-i="' + i + '">Kopieren</button></summary>' +
-        '<pre class="afr-prompt-pre" data-i="' + i + '">' + esc(p.prompt || "") + "</pre></details>";
-    }).join("");
-  box.querySelectorAll(".cl-copy").forEach((btn) => btn.addEventListener("click", (e) => {
-    e.preventDefault(); e.stopPropagation();
-    const pre = box.querySelector('.afr-prompt-pre[data-i="' + btn.dataset.i + '"]');
-    const text = pre ? pre.textContent : "";
-    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => notify("Prompt kopiert", "success")).catch(() => notify("Kopieren nicht möglich", "error"));
-    else notify("Kopieren nicht möglich", "error");
-  }));
+  lastPrompts = prompts || [];
+  copied.clear();
+  if (!lastPrompts.length) { box.innerHTML = '<div class="afr-empty">Keine Prompts.</div>'; return; }
+  const head = '<div class="cl-preview-head">' +
+    '<span class="cl-preview-title">Prompt-Vorschau (kein Bild erzeugt)</span>' +
+    '<span class="cl-count" id="clCopyCount"></span>' +
+    (lastPrompts.length > 1 ? '<button class="rbtn rbtn-ghost cl-copyall" id="clCopyAll" type="button">Alle kopieren</button>' : "") +
+    "</div>";
+  const cards = lastPrompts.map((p, i) => {
+    const cw = (p.label && p.label !== "Nachbau") ? '<div class="cl-cw">' + esc(p.label) + "</div>" : "";
+    return '<div class="cl-card" data-i="' + i + '">' +
+      '<div class="cl-card-top">' +
+        '<span class="cl-card-num">' + esc(cardTitle(p, i)) + "</span>" +
+        '<span class="cl-card-n">' + (p.prompt || "").length + " Zeichen</span>" +
+        '<button class="rbtn rbtn-ghost cl-card-copy" type="button" data-i="' + i + '">Kopieren</button>' +
+      "</div>" + cw +
+      '<pre class="cl-card-pre" data-i="' + i + '">' + esc(p.prompt || "") + "</pre>" +
+    "</div>";
+  }).join("");
+  box.innerHTML = head + cards;
+  box.querySelectorAll(".cl-card-copy").forEach((b) => b.addEventListener("click", () => copyOne(Number(b.dataset.i))));
+  const all = $("clCopyAll"); if (all) all.addEventListener("click", copyAll);
+  updateCounter();
+}
+
+function writeClip(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text);
+  return Promise.reject(new Error("no clipboard"));
+}
+
+function markCopied(i) {
+  copied.add(i);
+  const card = document.querySelector('.cl-card[data-i="' + i + '"]');
+  if (card) {
+    card.classList.add("is-copied");
+    const b = card.querySelector(".cl-card-copy");
+    if (b) { b.textContent = "✓ Kopiert"; b.classList.add("is-copied"); }
+  }
+  updateCounter();
+}
+
+function updateCounter() {
+  const el = $("clCopyCount"); if (!el) return;
+  const total = lastPrompts.length, n = copied.size;
+  el.textContent = n + " von " + total + " kopiert";
+  el.classList.toggle("is-all", n > 0 && n === total);
+}
+
+function copyOne(i) {
+  const p = lastPrompts[i]; if (!p) return;
+  writeClip(p.prompt || "").then(() => { markCopied(i); notify("Prompt kopiert", "success"); })
+    .catch(() => notify("Kopieren nicht möglich", "error"));
+}
+
+// Alle Prompts nacheinander nummeriert in die Zwischenablage.
+function copyAll() {
+  if (!lastPrompts.length) return;
+  const text = lastPrompts.map((p, i) =>
+    "=== " + cardTitle(p, i) + (p.label && p.label !== "Nachbau" ? " · " + p.label : "") + " ===\n" + (p.prompt || "")
+  ).join("\n\n\n");
+  writeClip(text).then(() => {
+    lastPrompts.forEach((_, i) => markCopied(i));
+    notify(lastPrompts.length + " Prompts kopiert", "success");
+  }).catch(() => notify("Kopieren nicht möglich", "error"));
 }
 
 export function initCleanflow() {
@@ -131,9 +202,11 @@ export function initCleanflow() {
   if (f) f.addEventListener("change", () => { if (f.files[0]) onFile(f.files[0]); f.value = ""; });
   wireDropzone($("clDrop"), onFile);
   wirePaste($("panel-clean"), onFile);
-  const slider = $("clCount"), val = $("clCountVal");
-  if (slider && val) { const sync = () => { val.textContent = slider.value; }; slider.addEventListener("input", sync); sync(); }
-  if ($("clStart")) $("clStart").addEventListener("click", () => start(0));
-  if ($("clVariants")) $("clVariants").addEventListener("click", () => start(variantCount()));
+  if ($("clModeNachbau")) $("clModeNachbau").addEventListener("click", () => setMode("nachbau"));
+  if ($("clModeVarianten")) $("clModeVarianten").addEventListener("click", () => setMode("varianten"));
+  const slider = $("clCount");
+  if (slider) slider.addEventListener("input", syncStartLabel);
+  if ($("clStart")) $("clStart").addEventListener("click", start);
   if ($("clPreviewBtn")) $("clPreviewBtn").addEventListener("click", preview);
+  setMode("nachbau");
 }
