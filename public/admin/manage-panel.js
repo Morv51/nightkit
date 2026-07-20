@@ -9,7 +9,11 @@
 import { getToken, clearToken, post } from "./studioApi.js";
 
 // fmtCat: Format-Filter "" (alle) | "916" | "23" | "other" (reine Anzeige-Filterung).
-const state = { data: { templates: [], categories: [], counts: {} }, sub: "manage", filter: null, fmtCat: "" };
+const state = { data: { templates: [], categories: [], counts: {} }, sub: "manage", filter: null, fmtCat: "",
+  // Mehrfachauswahl fuer Redesign. Muster aus autoflowRuns.js (selected: Set). Bewusst
+  // umschaltbar: im Auswahlmodus faengt der Klick die Kachel ab, sonst blieben Lightbox,
+  // Umbenennen und Ziehsortierung nicht erreichbar. Im PAPIERKORB immer aus.
+  selecting: false, selected: new Set() };
 let moveFile = null, renameFrom = null;
 
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -76,6 +80,22 @@ function renderShell(p) {
     '    <button class="rbtn rbtn-danger" id="mngReformat916" type="button">Alle 2:3-nah auf 9:16 umformen und aktiv schalten</button>',
     '    <span class="mng-batch-note">Formt alle aktiven 2:3-nah-Templates per teurem flux-2-pro auf 9:16 um und schaltet sie aktiv. Die 2:3-Originale wandern in den Papierkorb (wiederherstellbar), sie werden nicht gelöscht. Läuft im Hintergrund und kann eine Weile dauern, bitte die Seite offen lassen. Fehlgeschlagene bleiben unverändert aktiv und lassen sich später erneut laufen lassen.</span>',
     '    <div class="mng-batch-result" id="mngReformatResult"></div>',
+    '  </div>',
+    // Mehrfachauswahl + Redesign. Der Umschalter steht immer da, die Leiste nur im Auswahlmodus.
+    '  <div class="mng-selbox" id="mngSelBox">',
+    '    <div class="mng-selhead">',
+    '      <button class="rbtn" id="mngSelToggle" type="button">Mehrfachauswahl</button>',
+    '      <span class="mng-batch-note">Templates antippen, dann per Redesign die Textsetzung neu komponieren lassen. Das Bild, die Komposition und die Farbwelt bleiben. Ergebnisse erscheinen im Reiter Läufe, dort lässt sich jeder Kandidat neben seinem Original ansehen und tauschen.</span>',
+    '    </div>',
+    '    <div class="mng-selbar" id="mngSelBar" hidden>',
+    '      <b id="mngSelN">0 ausgewählt</b>',
+    '      <button class="rbtn rbtn-ghost" id="mngSelAll" type="button">Alle in dieser Ansicht</button>',
+    '      <button class="rbtn rbtn-ghost" id="mngSelNone" type="button">Auswahl leeren</button>',
+    '      <span class="spacer"></span>',
+    '      <button class="rbtn rbtn-ghost" id="mngSelPrompts" type="button">Nur Prompts</button>',
+    '      <button class="rbtn rbtn-primary" id="mngSelRedesign" type="button">Redesign starten (0)</button>',
+    '    </div>',
+    '    <div class="mng-sel-result" id="mngSelResult"></div>',
     '  </div>',
     '  <div class="mng-catnav" id="mngCatnav"></div>',
     '  <div id="mngGrid"></div>',
@@ -147,7 +167,13 @@ function tileHTML(t, kind, index) {
     ? '<span class="mng-fmtbadge ' + fmtCls + '" title="' + t.dims.w + '×' + t.dims.h + ' · Verhältnis ' + t.dims.ratio + '">' + fmtLbl + "</span>"
     : "";
   const dimsText = t.dims ? '<div class="dim" title="Breite×Höhe · Verhältnis">' + t.dims.w + "×" + t.dims.h + " · " + t.dims.ratio + "</div>" : "";
-  return '<div class="mng-tile' + (isCover ? " is-cover" : "") + '" data-file="' + esc(t.file) + '">' +
+  // Auswahlmodus: NUR in der Verwaltung, nie im Papierkorb (dort wäre die Auswahl sinnlos,
+  // gelöschte Templates sollen nicht ins Redesign wandern).
+  const selectable = state.selecting && kind !== "trash";
+  const isSel = selectable && state.selected.has(t.file);
+  const tick = selectable ? '<span class="mng-tick" aria-hidden="true"></span>' : "";
+  return '<div class="mng-tile' + (isCover ? " is-cover" : "") + (selectable ? " mng-selectable" : "") +
+      (isSel ? " is-sel" : "") + '" data-file="' + esc(t.file) + '">' + tick +
     orderBar +
     '<div class="tw" data-big="' + esc(big) + '" data-name="' + esc(t.name) + '">' + coverBadge + dimsBadge + '<img loading="lazy" draggable="false" src="' + esc(t.thumb) + '" alt=""></div>' +
     '<div class="m"><div class="nm" title="Klicken zum Umbenennen" data-editname data-file="' + esc(t.file) + '" data-cur="' + esc(t.name) + '">' + esc(t.name) + '</div>' + cat + dimsText + "</div>" +
@@ -238,11 +264,134 @@ function renderTrash() {
     : '<div class="mng-empty">Der Papierkorb ist leer.</div>';
 }
 
+// ── Mehrfachauswahl + Redesign ──────────────────────────────────────────────
+// Die aktuell SICHTBAREN Templates (Kategorie- und Formatfilter angewandt, ohne Papierkorb).
+// Grundmenge fuer "Alle in dieser Ansicht" — es soll nie mehr ausgewaehlt werden, als man sieht.
+function visibleFiles() {
+  const by = visibleByCat();
+  const cats = state.filter === null ? catList() : [state.filter];
+  const out = [];
+  for (const c of cats) for (const t of fmtFiltered(by[c] || [])) out.push(t.file);
+  return out;
+}
+
+function syncSelBar() {
+  const box = q("#mngSelBox"), bar = q("#mngSelBar"), tog = q("#mngSelToggle");
+  if (!box) return;
+  // Der ganze Kasten hat im Papierkorb nichts zu suchen.
+  box.hidden = state.sub !== "manage";
+  if (tog) { tog.classList.toggle("is-on", state.selecting); tog.textContent = state.selecting ? "Auswahl beenden" : "Mehrfachauswahl"; }
+  if (bar) bar.hidden = !state.selecting;
+  const n = state.selected.size;
+  const nEl = q("#mngSelN"); if (nEl) nEl.textContent = n + (n === 1 ? " ausgewählt" : " ausgewählt");
+  const go = q("#mngSelRedesign");
+  if (go) { go.textContent = "Redesign starten (" + n + ")"; go.disabled = n < 1; }
+  const pr = q("#mngSelPrompts"); if (pr) pr.disabled = n < 1;
+}
+
+function setSelecting(on) {
+  state.selecting = !!on;
+  if (!state.selecting) state.selected.clear();
+  renderGrid();
+  syncSelBar();
+}
+
+function toggleFile(file) {
+  if (state.selected.has(file)) state.selected.delete(file); else state.selected.add(file);
+  const tile = q('.mng-tile[data-file="' + CSS.escape(file) + '"]');
+  if (tile) tile.classList.toggle("is-sel", state.selected.has(file));
+  syncSelBar();
+}
+
+// Ausgewaehlte als [{ template, name }] — der Anzeigename wandert mit in den Lauf.
+function selectedFiles() {
+  return [...state.selected].map((f) => {
+    const t = state.data.templates.find((x) => x.file === f);
+    return { template: f, name: (t && t.name) || f };
+  });
+}
+
+const selResult = () => q("#mngSelResult");
+
+// "Nur Prompts": ein Sonnet-Aufruf je Vorlage, KEIN Bild. Zeigt den fertigen Bildprompt und
+// die rohe Sonnet-Antwort (letztere, damit sichtbar wird, ob Sonnet ins Beschreiben rutscht).
+async function doRedesignPreview() {
+  const files = selectedFiles();
+  if (!files.length) return;
+  const box = selResult(); if (box) box.innerHTML = '<div class="mng-empty">Baue Prompts … (ein Sonnet-Aufruf je Vorlage)</div>';
+  const btn = q("#mngSelPrompts"); if (btn) btn.disabled = true;
+  let r;
+  try { r = await adminPost("/admin/redesign/preview", { files }); }
+  catch (e) { if (box) box.innerHTML = '<div class="mng-empty">Vorschau fehlgeschlagen.</div>'; if (btn) btn.disabled = false; return; }
+  if (btn) btn.disabled = false;
+  if (r.http === 401) { toast("Sitzung abgelaufen, bitte neu entsperren", "err"); return; }
+  if (r.http !== 200 || !r.data || !r.data.items) {
+    if (box) box.innerHTML = '<div class="mng-empty">Vorschau fehlgeschlagen: ' + esc((r.data && r.data.error) || ("HTTP " + r.http)) + "</div>";
+    return;
+  }
+  if (box) box.innerHTML = r.data.items.map((it) => {
+    if (it.error) return '<div class="mng-selcard"><div class="mng-selcard-h">' + esc(it.name) + '</div><div class="mng-empty">' + esc(it.error) + "</div></div>";
+    return '<div class="mng-selcard">' +
+      '<div class="mng-selcard-h">' + esc(it.name) + ' <span class="mng-selcard-n">' + (it.prompt || "").length + " Zeichen</span></div>" +
+      (it.raw ? '<details class="mng-selraw"><summary>Rohe Sonnet-Antwort</summary><pre>' + esc(it.raw) + "</pre></details>" : "") +
+      "<pre>" + esc(it.prompt) + "</pre></div>";
+  }).join("");
+}
+
+// Geschaetzte Kosten je Vorlage: ein Sonnet-Aufruf (Regie) + ein Bild. Die Richtpreise kommen
+// LIVE aus dem Nutzungs-Dashboard (dort editierbar); schlaegt das fehl, gelten die Standardwerte.
+const PREIS_FALLBACK = { claude_redesignspecs: 0.02, openai_gptimage: 0.08 };
+async function preisJeVorlage() {
+  try {
+    const res = await fetch("/admin/usage/data", { headers: { "X-Admin-Token": getToken() } });
+    const d = await res.json();
+    const rows = (d && d.rows) || [];
+    const p = (k) => { const r = rows.find((x) => x.key === k); return (r && typeof r.price === "number") ? r.price : PREIS_FALLBACK[k]; };
+    return p("claude_redesignspecs") + p("openai_gptimage");
+  } catch (_) {
+    return PREIS_FALLBACK.claude_redesignspecs + PREIS_FALLBACK.openai_gptimage;
+  }
+}
+
+// "Redesign starten": ein Lauf ueber ALLE ausgewaehlten Vorlagen, je Vorlage genau EIN Kandidat.
+// Bestaetigung mit Anzahl und geschaetzten Kosten (Muster: doReformatBatch).
+async function doRedesignStart() {
+  const files = selectedFiles();
+  if (!files.length) return;
+  const proStueck = await preisJeVorlage();
+  const kosten = (files.length * proStueck).toFixed(2);
+  if (!confirm(
+    "Jetzt Redesign für " + files.length + (files.length === 1 ? " Vorlage" : " Vorlagen") + " starten?\n\n" +
+    "Geschätzte Kosten rund $" + kosten + " (je Vorlage ein Sonnet-Aufruf für die Regie und ein Bild).\n" +
+    "Je Vorlage entsteht genau ein Kandidat.\n" +
+    "Im Bestand ändert sich dabei NICHTS — getauscht wird erst später von Hand im Reiter Läufe.\n\n" +
+    "Der Lauf läuft im Hintergrund weiter, auch wenn du den Tab schließt."
+  )) return;
+  const btn = q("#mngSelRedesign"); if (btn) btn.disabled = true;
+  let r;
+  try {
+    r = await adminPost("/admin/autoflow/start", {
+      flow: "clean", cleanFlow: true, redesign: true,
+      mode: files.length + (files.length === 1 ? " Redesign" : " Redesigns"),
+      loose: false, textOnly: false, regelwerk: false,
+      variants: 1, // fest: genau EIN Kandidat je Vorlage
+      refType: "single", files,
+    });
+  } catch (e) { if (btn) btn.disabled = false; toast("Start fehlgeschlagen", "err"); return; }
+  if (btn) btn.disabled = false;
+  if (r.http !== 200 || !r.data || !r.data.runId) { toast("Start fehlgeschlagen: " + ((r.data && r.data.error) || ("HTTP " + r.http)), "err"); return; }
+  toast("Redesign gestartet. Ergebnis im Reiter Läufe.", "good");
+  setSelecting(false);
+  const tab = document.querySelector('.studio-tab[data-tab="afruns"]');
+  if (tab) tab.click();
+}
+
 function renderAll() {
   renderFormatBar();
   renderCatnav();
   renderGrid();
   renderTrash();
+  syncSelBar();
   q("#mngManageView").hidden = state.sub !== "manage";
   q("#mngTrashView").hidden = state.sub !== "trash";
   for (const b of panel().querySelectorAll(".mng-subbtn")) b.classList.toggle("active", b.dataset.sub === state.sub);
@@ -559,6 +708,17 @@ function wireEvents(p) {
     if (fchip) { state.fmtCat = fchip.dataset.fmt; renderFormatBar(); renderGrid(); return; }
     if (e.target.closest("#mngFmtRecompute")) { doRecomputeDims(); return; }
     if (e.target.closest("#mngReformat916")) { doReformatBatch(); return; }
+    // ── Auswahlmodus: Knöpfe der Leiste, dann der Kachel-Klick. Der Kachel-Fang muss VOR
+    //    .tw (Lightbox) und button[data-act] stehen, sonst öffnet der Klick die Großansicht.
+    if (e.target.closest("#mngSelToggle")) { setSelecting(!state.selecting); return; }
+    if (e.target.closest("#mngSelAll")) { for (const f of visibleFiles()) state.selected.add(f); renderGrid(); syncSelBar(); return; }
+    if (e.target.closest("#mngSelNone")) { state.selected.clear(); renderGrid(); syncSelBar(); return; }
+    if (e.target.closest("#mngSelPrompts")) { doRedesignPreview(); return; }
+    if (e.target.closest("#mngSelRedesign")) { doRedesignStart(); return; }
+    if (state.selecting && state.sub === "manage") {
+      const selTile = e.target.closest(".mng-tile.mng-selectable");
+      if (selTile) { e.preventDefault(); e.stopPropagation(); toggleFile(selTile.dataset.file); return; }
+    }
     const pen = e.target.closest(".pen");
     if (pen) { e.stopPropagation(); openRename(pen.dataset.rename); return; }
     const catEl = e.target.closest(".mng-cat");

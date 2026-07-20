@@ -308,3 +308,31 @@
 #panel-manage .mng-batch-bar > span { display: block; height: 100%; background: var(--color-accent); transition: width .3s; }
 #panel-manage .mng-batch-failhead { margin-top: 10px; font-weight: 600; color: #ffb0b0; }
 #panel-manage .mng-batch-faillist { margin: 4px 0 0; padding-left: 18px; font-size: var(--font-size-xs); color: #ffc9c9; max-height: 220px; overflow: auto; }
+
+/* ── Mehrfachauswahl + Redesign (additiv; ohne Auswahlmodus ändert sich nichts) ── */
+.mng-selbox { margin: 10px 0 14px; padding: 12px 14px; border: 1px solid var(--line, #262626);
+  border-radius: 12px; background: rgba(255,255,255,.02); }
+.mng-selhead { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.mng-selhead .mng-batch-note { flex: 1 1 320px; }
+.mng-selbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px;
+  padding-top: 10px; border-top: 1px solid var(--line, #262626); }
+.mng-selbar .spacer { flex: 1 1 auto; }
+#mngSelToggle.is-on { background: var(--accent, #c8f751); color: #0a0a0a; border-color: transparent; }
+.mng-tile.mng-selectable { cursor: pointer; }
+.mng-tile.mng-selectable .tw { pointer-events: none; }
+.mng-tile.mng-selectable:hover { outline: 1px solid rgba(200,247,81,.45); outline-offset: 2px; }
+.mng-tile.is-sel { outline: 2px solid var(--accent, #c8f751); outline-offset: 2px; }
+.mng-tick { position: absolute; top: 8px; left: 8px; z-index: 3; width: 20px; height: 20px;
+  border-radius: 50%; border: 2px solid rgba(255,255,255,.55); background: rgba(0,0,0,.45); }
+.mng-tile.is-sel .mng-tick { background: var(--accent, #c8f751); border-color: transparent; }
+.mng-tile.is-sel .mng-tick::after { content: "✓"; position: absolute; inset: 0; color: #0a0a0a;
+  font-size: 13px; line-height: 20px; text-align: center; font-weight: 700; }
+.mng-sel-result:not(:empty) { margin-top: 12px; display: grid; gap: 10px; }
+.mng-selcard { border: 1px solid var(--line, #262626); border-radius: 10px; padding: 10px 12px;
+  background: rgba(0,0,0,.25); }
+.mng-selcard-h { font-weight: 600; margin-bottom: 6px; }
+.mng-selcard-n { opacity: .55; font-weight: 400; font-size: 12px; }
+.mng-selcard pre, .mng-selraw pre { white-space: pre-wrap; word-break: break-word; margin: 6px 0 0;
+  font-size: 12px; line-height: 1.5; max-height: 320px; overflow: auto;
+  background: rgba(0,0,0,.35); border-radius: 8px; padding: 10px; }
+.mng-selraw summary { cursor: pointer; font-size: 12px; opacity: .75; }

@@ -87,6 +87,87 @@ function tileHtml(im, st) {
     '<span class="afr-cap">' + esc(labelFor(im.index)) + "</span></a>";
 }
 
+// ── REDESIGN: Kandidat NEBEN seinem Original, plus die zwei Aktionen. Greift nur bei
+//    Redesign-Läufen (r.redesign); alle anderen Läufe rendern unverändert über tileHtml.
+//    Die Zuordnung läuft über die fnum im Kachel-Index ("<fnum>-v<k>") auf r.sources.
+function srcFor(r, index) {
+  const fnum = parseInt(String(index).split("-")[0], 10);
+  return (r.sources || []).find((s) => s.fnum === fnum) || null;
+}
+
+function redesignPairHtml(r, im) {
+  const src = srcFor(r, im.index);
+  const origThumb = src ? "/api/thumb?w=360&file=" + encodeURIComponent(src.template) : "";
+  const origFull = src ? "/api/template-image?file=" + encodeURIComponent(src.template) : "";
+  const erledigt = im.swapped || im.discarded;
+  // EIGENE Marken-Klasse: .afr-adopted-badge ist absolut positioniert (sie sitzt auf einer
+  // Kachel). In dieser Kopfzeile braucht es eine statische Marke, sonst ist sie unsichtbar.
+  const marke = im.swapped ? '<span class="afr-rd-badge">✓ ersetzt</span>'
+    : im.discarded ? '<span class="afr-rd-badge is-discarded">verworfen</span>' : "";
+  const actions = erledigt ? ""
+    : '<div class="afr-rd-actions">' +
+        '<button class="rbtn rbtn-primary afr-rd-swap" type="button" data-run="' + esc(r.runId) + '" data-index="' + esc(im.index) + '">Original ersetzen</button>' +
+        '<button class="rbtn rbtn-ghost afr-rd-discard" type="button" data-run="' + esc(r.runId) + '" data-index="' + esc(im.index) + '">Kandidat verwerfen</button>' +
+      "</div>";
+  const links = (href, thumb, cap) => href
+    ? '<a class="afr-rd-side" href="' + esc(href) + '" target="_blank" rel="noopener">' +
+      '<img loading="lazy" src="' + esc(thumb) + '" alt=""><span class="afr-cap">' + cap + "</span></a>"
+    : '<div class="afr-rd-side afr-rd-missing"><span class="afr-cap">' + cap + " fehlt</span></div>";
+  return '<div class="afr-rd' + (erledigt ? " is-done" : "") + '" data-index="' + esc(im.index) + '">' +
+    '<div class="afr-rd-h">' + esc(src ? src.name : im.index) + marke + "</div>" +
+    '<div class="afr-rd-pair">' +
+      links(origFull, origThumb, "Original") +
+      links(im.full, im.thumb, "Kandidat") +
+    "</div>" +
+    '<div class="afr-rd-warn" hidden></div>' + actions +
+  "</div>";
+}
+
+// Seitenverhältnis-Warnung: gpt-image liefert im edit-Weg feste Größen zurück, ein 9:16-Original
+// kann als 2:3 zurückkommen. Das wird NICHT geblockt, nur deutlich angezeigt — gemessen an den
+// geladenen Bildern selbst (die Thumbnails behalten das Verhältnis), also ohne Zusatz-Abrufe.
+const RATIO_TOLERANZ = 0.02; // relativ; deckt Rundung/Skalierung ab, 9:16 vs 2:3 sind 18 %
+const alsText = (r) => { const m = [[0.5625, "9:16"], [0.6667, "2:3"], [0.75, "3:4"], [1, "1:1"]]
+  .find(([v]) => Math.abs(r - v) / v <= 0.03); return (m ? m[1] + " " : "") + "(" + r.toFixed(3) + ")"; };
+
+// Verhaeltnis je Bild-URL, EINMAL gemessen und gemerkt. Bewusst NICHT ueber die eingebetteten
+// <img>: die tragen loading="lazy" und bleiben ungeladen, solange die Karte nicht im Sichtfeld
+// ist — dann gaebe es keine Warnung. Ein eigenes Image-Objekt laedt zuverlaessig und trifft
+// denselben HTTP-Cache wie die Kachel, kostet also keinen zweiten echten Abruf.
+const ratioCache = new Map(); // url -> Promise<number> (0 = nicht messbar)
+function ratioOfUrl(url) {
+  if (!url) return Promise.resolve(0);
+  if (!ratioCache.has(url)) {
+    ratioCache.set(url, new Promise((res) => {
+      const i = new Image();
+      i.onload = () => res(i.naturalHeight ? i.naturalWidth / i.naturalHeight : 0);
+      i.onerror = () => res(0);
+      i.src = url;
+    }));
+  }
+  return ratioCache.get(url);
+}
+
+async function pruefeVerhaeltnis(karte) {
+  const box = karte.querySelector(".afr-rd-warn"); if (!box) return;
+  const imgs = karte.querySelectorAll(".afr-rd-side img");
+  if (imgs.length < 2) return;
+  const [a, b] = await Promise.all([ratioOfUrl(imgs[0].getAttribute("src")), ratioOfUrl(imgs[1].getAttribute("src"))]);
+  if (!karte.isConnected) return;           // Karte wurde vom 4-s-Poll ersetzt
+  if (!a || !b) { karte.dataset.ratioWarn = "?"; return; } // nicht messbar -> Rueckfrage sagt es
+  const ab = Math.abs(a - b) / a;
+  karte.dataset.ratioWarn = ab > RATIO_TOLERANZ ? "1" : "";
+  if (ab <= RATIO_TOLERANZ) { box.hidden = true; box.textContent = ""; return; }
+  box.hidden = false;
+  box.textContent = "⚠ Anderes Seitenverhältnis: Original " + alsText(a) + ", Kandidat " + alsText(b) +
+    ". Beim Ersetzen wandert das Format des Kandidaten in den Bestand.";
+}
+
+// Nach jedem Render alle Paare messen (unabhaengig davon, ob sie im Sichtfeld liegen).
+function verhaeltnissePruefen(root) {
+  for (const karte of root.querySelectorAll(".afr-rd")) pruefeVerhaeltnis(karte);
+}
+
 function adoptBarHtml(st) {
   const n = st.selected.size;
   const cat = (st.newCat || "").trim() || st.cat;
@@ -187,8 +268,11 @@ function render(runs) {
     const incomplete = total > 0 && done < total;
     const pct = total ? Math.round((done / total) * 100) : ((r.images && r.images.length) ? 100 : 0);
     const stLabel = STATUS_LABEL[r.status] || r.status || "";
-    const hasFree = (r.images || []).some((im) => !im.adopted);
-    const imgs = (r.images || []).map((im) => tileHtml(im, st)).join("");
+    // Redesign-Läufe zeigen Paare (Original neben Kandidat) statt einzelner Kacheln; die
+    // Übernahme-Leiste entfällt dort, getauscht wird über "Original ersetzen".
+    const isRedesign = !!r.redesign;
+    const hasFree = !isRedesign && (r.images || []).some((im) => !im.adopted);
+    const imgs = (r.images || []).map((im) => isRedesign ? redesignPairHtml(r, im) : tileHtml(im, st)).join("");
     const progress = total
       ? '<div class="afr-prog"><span style="width:' + pct + '%"></span></div>' +
         '<div class="afr-progtext">' + done + " von " + total + " fertig" + (failed ? ", " + failed + " fehlgeschlagen" : "") + (running ? " · läuft …" : "") + "</div>"
@@ -212,10 +296,11 @@ function render(runs) {
         '<div class="afr-btns">' + btns + "</div>" +
       "</div>" + progress +
       promptPanelHtml(r.runId, st) +
-      '<div class="afr-grid">' + imgs + "</div>" +
+      '<div class="' + (isRedesign ? "afr-rd-grid" : "afr-grid") + '">' + imgs + "</div>" +
       (st.adopting ? adoptBarHtml(st) : "") +
     "</div>";
   }).join("");
+  verhaeltnissePruefen(root);
 }
 
 // Gezielte DOM-Aktualisierung der Uebernahme-Leiste (ohne Voll-Neurender -> Fokus/Eingaben
@@ -368,6 +453,32 @@ async function delRun(runId) {
   else notify("Löschen fehlgeschlagen: " + ((r.data && r.data.error) || ("HTTP " + r.http)), "error");
 }
 
+// ── Redesign: Original ersetzen / Kandidat verwerfen ────────────────────────
+async function redesignSwap(runId, index) {
+  if (!runId || !index) return;
+  // Format-Warnung aus der gemessenen Karte in die Rückfrage ziehen (blockt nicht).
+  const karte = $("afRunsRoot") && $("afRunsRoot").querySelector('.afr-rd[data-index="' + CSS.escape(index) + '"]');
+  const flag = karte && karte.dataset.ratioWarn;
+  const warnung = flag === "1"
+    ? "ACHTUNG: " + (karte.querySelector(".afr-rd-warn") || {}).textContent.replace(/^⚠\s*/, "") + "\n\n"
+    : flag === "?" ? "Hinweis: Das Seitenverhältnis konnte nicht geprüft werden.\n\n" : "";
+  if (!confirm(warnung + "Das Original durch diesen Kandidaten ersetzen?\n\n" +
+    "Der Kandidat übernimmt Name, Kategorie, Schlagworte, Position und, falls vorhanden, das " +
+    "Kategoriebild. Das Original wandert in den Papierkorb und bleibt wiederherstellbar.")) return;
+  const r = await api("/admin/redesign/swap", { runId, index });
+  if (r.http === 200 && r.data && r.data.ok) {
+    notify(r.data.already ? "War bereits ersetzt" : ("Ersetzt" + (r.data.coverMoved ? " (inkl. Kategoriebild)" : "")), "success");
+    load();
+  } else notify("Ersetzen fehlgeschlagen: " + ((r.data && r.data.error) || ("HTTP " + r.http)), "error");
+}
+
+async function redesignDiscard(runId, index) {
+  if (!runId || !index) return;
+  const r = await api("/admin/redesign/discard", { runId, index });
+  if (r.http === 200 && r.data && r.data.ok) { notify("Kandidat verworfen, im Bestand unverändert", "success"); load(); }
+  else notify("Verwerfen fehlgeschlagen: " + ((r.data && r.data.error) || ("HTTP " + r.http)), "error");
+}
+
 // Prompt-Einblick auf Abruf holen (nicht im 4-s-Poll) und im UI-Zustand halten.
 async function togglePrompt(runId) {
   const st = uiState(runId);
@@ -415,6 +526,9 @@ export function initAutoflowRuns() {
     const del = e.target.closest(".afr-del"); if (del) { e.preventDefault(); return delRun(del.dataset.run); }
     const c = e.target.closest(".afr-cancel"); if (c) { e.preventDefault(); return cancel(c.dataset.run); }
     const rs = e.target.closest(".afr-resume"); if (rs) { e.preventDefault(); return resume(rs.dataset.run); }
+    // Redesign: tauschen bzw. verwerfen (nur bei Redesign-Läufen gerendert).
+    const sw = e.target.closest(".afr-rd-swap"); if (sw) { e.preventDefault(); return redesignSwap(sw.dataset.run, sw.dataset.index); }
+    const dc = e.target.closest(".afr-rd-discard"); if (dc) { e.preventDefault(); return redesignDiscard(dc.dataset.run, dc.dataset.index); }
   });
   // Formularwerte der Uebernahme-Leiste in den UI-Zustand spiegeln (ohne Neurender).
   root.addEventListener("input", (e) => {
