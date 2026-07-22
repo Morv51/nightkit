@@ -57,6 +57,8 @@ export async function initManage() {
   renderShell(p);
   renderAll();
   probeBatch();           // nur einen LAUFENDEN Stapel-Lauf wieder anzeigen (Reconnect)
+  ladePreise();           // Richtpreise EINMAL holen, damit der Auswahl-Zaehler live rechnen kann
+  wireScrollTop();        // Nach-oben-Knopf (596 Templates ueber 40 Kategorien sind ein weiter Weg)
   // Bei ADMIN_TOOLS=1 ist die Bestandsverwaltung der Standard-Tab. studio.js zieht das
   // nach (respektiert #manage-Anker und eine bereits getroffene Nutzerwahl).
   document.dispatchEvent(new CustomEvent("nk-admin-ready"));
@@ -76,18 +78,35 @@ function renderShell(p) {
     '</div>',
     '<div id="mngManageView">',
     '  <div class="mng-formatbar" id="mngFormatBar"></div>',
-    '  <div class="mng-batchbox" id="mngBatchBox">',
-    '    <button class="rbtn rbtn-danger" id="mngReformat916" type="button">Alle 2:3-nah auf 9:16 umformen und aktiv schalten</button>',
-    '    <span class="mng-batch-note">Formt alle aktiven 2:3-nah-Templates per teurem flux-2-pro auf 9:16 um und schaltet sie aktiv. Die 2:3-Originale wandern in den Papierkorb (wiederherstellbar), sie werden nicht gelöscht. Läuft im Hintergrund und kann eine Weile dauern, bitte die Seite offen lassen. Fehlgeschlagene bleiben unverändert aktiv und lassen sich später erneut laufen lassen.</span>',
-    '    <div class="mng-batch-result" id="mngReformatResult"></div>',
-    '  </div>',
-    // Mehrfachauswahl + Redesign. Der Umschalter steht immer da, die Leiste nur im Auswahlmodus.
+    // Umform-Stapel: eingeklappt, weil er nur noch einen Restbestand betrifft. Titel und
+    // Sichtbarkeit setzt syncBatchBox() aus dimsSummary.near23 — die Zahl steht erst nach dem
+    // Laden fest, darum nicht hier fest verdrahtet.
+    '  <details class="mng-batchbox" id="mngBatchBox" hidden>',
+    '    <summary id="mngBatchSummary">2:3-Altbestand umformen</summary>',
+    '    <div class="mng-batch-body">',
+    '      <button class="rbtn rbtn-danger" id="mngReformat916" type="button">Alle 2:3-nah auf 9:16 umformen und aktiv schalten</button>',
+    '      <span class="mng-batch-note">Formt alle aktiven 2:3-nah-Templates per teurem flux-2-pro auf 9:16 um und schaltet sie aktiv. Die 2:3-Originale wandern in den Papierkorb (wiederherstellbar), sie werden nicht gelöscht. Läuft im Hintergrund und kann eine Weile dauern, bitte die Seite offen lassen. Fehlgeschlagene bleiben unverändert aktiv und lassen sich später erneut laufen lassen.</span>',
+    '      <div class="mng-batch-result" id="mngReformatResult"></div>',
+    '    </div>',
+    '  </details>',
+    // Redesign. Der Umschalter samt Erklaertext bleibt im Kasten und darf wegscrollen; die
+    // Aktionsleiste wird beim Einschalten zu einem EIGENEN sticky Streifen darunter, damit
+    // Auswaehlen und Starten beim Scrollen durch die Kategorien erreichbar bleiben.
     '  <div class="mng-selbox" id="mngSelBox">',
     '    <div class="mng-selhead">',
-    '      <button class="rbtn" id="mngSelToggle" type="button">Mehrfachauswahl</button>',
+    '      <button class="rbtn" id="mngSelToggle" type="button">Redesign</button>',
     '      <span class="mng-batch-note">Templates antippen, dann per Redesign die Textsetzung neu komponieren lassen. Das Bild, die Komposition und die Farbwelt bleiben. Ergebnisse erscheinen im Reiter Läufe, dort lässt sich jeder Kandidat neben seinem Original ansehen und tauschen.</span>',
     '    </div>',
-    '    <div class="mng-selbar" id="mngSelBar" hidden>',
+    '  </div>',
+    // Platzhalter: die Leiste liegt FIXIERT und damit ausserhalb des Flusses. Ohne diesen
+    // Streifen spraenge der Inhalt beim Einschalten um ihre Hoehe nach oben.
+    '  <div id="mngSelBarSlot"></div>',
+    // Voll-breit fixiert (kein sticky: der <body> traegt ein overflow-y, dadurch klebte sticky
+    // an einem Scrollport, der selbst nie scrollt). Der innere Wrapper hat dieselbe max-width
+    // wie der Content (1100, zentriert) — so sitzt die Leiste ohne JS-Breitenmessung ueber der
+    // Spalte statt am Fensterrand.
+    '  <div class="mng-selbar" id="mngSelBar" hidden>',
+    '    <div class="mng-selbar-inner">',
     '      <b id="mngSelN">0 ausgewählt</b>',
     '      <button class="rbtn rbtn-ghost" id="mngSelAll" type="button">Alle in dieser Ansicht</button>',
     '      <button class="rbtn rbtn-ghost" id="mngSelNone" type="button">Auswahl leeren</button>',
@@ -95,13 +114,14 @@ function renderShell(p) {
     '      <button class="rbtn rbtn-ghost" id="mngSelPrompts" type="button">Nur Prompts</button>',
     '      <button class="rbtn rbtn-primary" id="mngSelRedesign" type="button">Redesign starten (0)</button>',
     '    </div>',
-    '    <div class="mng-sel-result" id="mngSelResult"></div>',
     '  </div>',
+    '  <div class="mng-sel-result" id="mngSelResult"></div>',
     '  <div class="mng-catnav" id="mngCatnav"></div>',
     '  <div id="mngGrid"></div>',
     '</div>',
     '<div id="mngTrashView" hidden>',
     '  <p class="mng-hint">Gelöschte Templates sind hier geparkt und aus Galerie und edit-Flow ausgeblendet. Die Bilddateien bleiben unangetastet und lassen sich jederzeit wiederherstellen.</p>',
+    '  <p class="mng-hint mng-trash-split" id="mngTrashHint" hidden></p>',
     '  <div class="mng-grid" id="mngTrashGrid"></div>',
     '  <div class="mng-purge"><b>Endgültig löschen</b> kommt bewusst als getrennter, späterer Schritt. Hier wird nichts unwiderruflich entfernt.',
     '    <button class="rbtn rbtn-danger" type="button" disabled title="Noch nicht aktiv" style="margin-left:8px">Endgültig löschen (später)</button></div>',
@@ -172,10 +192,12 @@ function tileHTML(t, kind, index) {
   const selectable = state.selecting && kind !== "trash";
   const isSel = selectable && state.selected.has(t.file);
   const tick = selectable ? '<span class="mng-tick" aria-hidden="true"></span>' : "";
+  // Das Haekchen sitzt IM Bildbereich (.tw), nicht daneben: im Auswahlmodus waehlt genau der
+  // Klick aufs Bild aus, die Knopfleiste darunter bleibt normal bedienbar.
   return '<div class="mng-tile' + (isCover ? " is-cover" : "") + (selectable ? " mng-selectable" : "") +
-      (isSel ? " is-sel" : "") + '" data-file="' + esc(t.file) + '">' + tick +
+      (isSel ? " is-sel" : "") + '" data-file="' + esc(t.file) + '">' +
     orderBar +
-    '<div class="tw" data-big="' + esc(big) + '" data-name="' + esc(t.name) + '">' + coverBadge + dimsBadge + '<img loading="lazy" draggable="false" src="' + esc(t.thumb) + '" alt=""></div>' +
+    '<div class="tw" data-big="' + esc(big) + '" data-name="' + esc(t.name) + '">' + tick + coverBadge + dimsBadge + '<img loading="lazy" draggable="false" src="' + esc(t.thumb) + '" alt=""></div>' +
     '<div class="m"><div class="nm" title="Klicken zum Umbenennen" data-editname data-file="' + esc(t.file) + '" data-cur="' + esc(t.name) + '">' + esc(t.name) + '</div>' + cat + dimsText + "</div>" +
     '<div class="acts">' + acts + "</div></div>";
 }
@@ -220,6 +242,13 @@ function fmtFiltered(list) {
 }
 const FMT_LABEL = { "916": "9:16-nah", "23": "2:3-nah", "other": "sonstige" };
 
+// Sobald ueberhaupt etwas gewaehlt ist, nehmen die ungewaehlten Kacheln optisch zurueck.
+// Als Klasse am Raster, damit toggleFile() sie ohne Neuaufbau umschalten kann.
+function syncPicking() {
+  const an = state.selecting && state.selected.size > 0;
+  for (const g of panel().querySelectorAll("#mngGrid .mng-grid")) g.classList.toggle("is-picking", an);
+}
+
 function renderGrid() {
   const grid = q("#mngGrid");
   const by = visibleByCat();
@@ -234,6 +263,7 @@ function renderGrid() {
       '<div class="mng-catblock"><h3>' + esc(c) + " · " + items.length + (fcat ? " " + esc(fLbl) : "") + "</h3>" +
       '<div class="mng-grid">' + items.map((t) => tileHTML(t, "manage")).join("") + "</div></div>"
     ).join("");
+    syncPicking();
     return;
   }
   // Einzelkategorie: mit Format-Filter ein einfaches (nicht sortierbares) Raster der gefilterten.
@@ -244,6 +274,7 @@ function renderGrid() {
     grid.innerHTML = items.length
       ? '<div class="mng-grid">' + items.map((t) => tileHTML(t, "manage")).join("") + "</div>"
       : '<div class="mng-empty">Keine Templates in „' + esc(fLbl) + "“ in dieser Kategorie.</div>";
+    syncPicking();
     return;
   }
   if (!items.length) { grid.innerHTML = '<div class="mng-empty">Keine sichtbaren Templates.</div>'; return; }
@@ -254,11 +285,40 @@ function renderGrid() {
     '<div class="mng-grid mng-sortable" id="mngSortable" data-cat="' + esc(cat) + '">' +
     items.map((t, i) => tileHTML(t, "order", i + 1)).join("") + "</div>";
   wireSortable();
+  syncPicking();
+}
+
+// Ein Papierkorb-Eintrag gilt als ERSETZT, wenn im aktiven Bestand eine Datei mit seinem
+// Basisnamen plus dem Suffix des jeweiligen Weges liegt: "-916" aus der Umformung
+// (reformat916.js) oder "-redesign" aus dem Tausch (swapTemplate.js). Damit laesst sich die
+// grosse Zahl im Reiter zerlegen, statt sie unerklaert stehen zu lassen.
+function ersetztZerlegung(hidden) {
+  const aktiv = new Set(state.data.templates.filter((t) => !t.hidden).map((t) => t.file));
+  const basis = (f) => String(f).replace(/\.(jpe?g|png|webp)$/i, "");
+  let um = 0, rd = 0;
+  for (const t of hidden) {
+    const b = basis(t.file);
+    if ([...aktiv].some((a) => basis(a) === b + "-916")) um++;
+    else if ([...aktiv].some((a) => basis(a) === b + "-redesign")) rd++;
+  }
+  return { um, rd };
 }
 
 function renderTrash() {
   const hidden = state.data.templates.filter((t) => t.hidden);
   q("#mngTrashN").textContent = "(" + hidden.length + ")";
+  const { um, rd } = ersetztZerlegung(hidden);
+  const hint = q("#mngTrashHint");
+  if (hint) {
+    const teile = [];
+    if (um) teile.push(um + " durch Umformung ersetzt");
+    if (rd) teile.push(rd + " durch Redesign ersetzt");
+    hint.hidden = !teile.length;
+    hint.textContent = teile.length
+      ? "Von den " + hidden.length + " Einträgen sind " + teile.join(" und ") +
+        " — ihre Nachfolger sind aktiv, die Originale liegen hier nur als Sicherung."
+      : "";
+  }
   q("#mngTrashGrid").innerHTML = hidden.length
     ? hidden.map((t) => tileHTML(t, "trash")).join("")
     : '<div class="mng-empty">Der Papierkorb ist leer.</div>';
@@ -275,23 +335,53 @@ function visibleFiles() {
   return out;
 }
 
+// Name der aktuell sichtbaren Menge, fuer den "Alle in …"-Knopf. Kategorie- und Formatfilter
+// werden von visibleFiles() bereits angewandt; hier wird die Beschriftung nur ehrlich.
+function sichtName() {
+  const kat = state.filter === null ? "allen Kategorien" : state.filter;
+  const fmt = state.fmtCat ? " · " + (FMT_LABEL[state.fmtCat] || state.fmtCat) : "";
+  return kat + fmt;
+}
+
 function syncSelBar() {
   const box = q("#mngSelBox"), bar = q("#mngSelBar"), tog = q("#mngSelToggle");
   if (!box) return;
-  // Der ganze Kasten hat im Papierkorb nichts zu suchen.
+  // Kasten und Leiste haben im Papierkorb nichts zu suchen.
   box.hidden = state.sub !== "manage";
-  if (tog) { tog.classList.toggle("is-on", state.selecting); tog.textContent = state.selecting ? "Auswahl beenden" : "Mehrfachauswahl"; }
-  if (bar) bar.hidden = !state.selecting;
+  if (tog) { tog.classList.toggle("is-on", state.selecting); tog.textContent = state.selecting ? "Auswahl beenden" : "Redesign"; }
+  if (bar) bar.hidden = !state.selecting || state.sub !== "manage";
   const n = state.selected.size;
-  const nEl = q("#mngSelN"); if (nEl) nEl.textContent = n + (n === 1 ? " ausgewählt" : " ausgewählt");
+  // Kosten live, ABER nur wenn die Richtpreise wirklich vorliegen. Ohne sie bleibt der Zaehler
+  // nackt — eine geratene Zahl waere schlimmer als keine, der Dialog rechnet ohnehin frisch.
+  const nEl = q("#mngSelN");
+  if (nEl) {
+    const kosten = (n && preisCache !== null) ? ", ca. $" + (n * preisCache).toFixed(2) : "";
+    nEl.textContent = n + " ausgewählt" + kosten;
+  }
+  const alle = q("#mngSelAll");
+  if (alle) {
+    const m = visibleFiles().length;
+    alle.textContent = "Alle in " + sichtName() + " (" + m + ")";
+    alle.disabled = m < 1;
+  }
   const go = q("#mngSelRedesign");
   if (go) { go.textContent = "Redesign starten (" + n + ")"; go.disabled = n < 1; }
   const pr = q("#mngSelPrompts"); if (pr) pr.disabled = n < 1;
+  syncSelBarGeometry();
+}
+
+// Die Leiste ist voll-breit fixiert und per CSS einzeilig (nowrap). Hoehe und Breite regelt
+// ausschliesslich CSS — bewusst KEINE getBoundingClientRect/offsetHeight-Messung: die haengt an
+// Layout, das je nach Umgebung nicht verlaesslich vorliegt. Der Platzhalter bekommt seine feste
+// Hoehe (auf die Leiste abgestimmt) ueber eine Klasse, nicht ueber gemessene Pixel.
+function syncSelBarGeometry() {
+  const slot = q("#mngSelBarSlot"), bar = q("#mngSelBar");
+  if (slot && bar) slot.classList.toggle("on", !bar.hidden);
 }
 
 function setSelecting(on) {
   state.selecting = !!on;
-  if (!state.selecting) state.selected.clear();
+  if (!state.selecting) { state.selected.clear(); clearPromptCards(); }
   renderGrid();
   syncSelBar();
 }
@@ -300,6 +390,7 @@ function toggleFile(file) {
   if (state.selected.has(file)) state.selected.delete(file); else state.selected.add(file);
   const tile = q('.mng-tile[data-file="' + CSS.escape(file) + '"]');
   if (tile) tile.classList.toggle("is-sel", state.selected.has(file));
+  syncPicking();
   syncSelBar();
 }
 
@@ -312,6 +403,71 @@ function selectedFiles() {
 }
 
 const selResult = () => q("#mngSelResult");
+
+// ── Prompt-Karten: Kopieren je Karte + alle. Muster aus der Clean-Flow-Vorschau. ──
+let lastPrompts = [];              // die Antwort-Eintraege der letzten Vorschau
+const copiedCards = new Set();     // welche Karten schon kopiert wurden
+
+function clearPromptCards() {
+  lastPrompts = []; copiedCards.clear();
+  const box = selResult(); if (box) box.innerHTML = "";
+}
+
+function writeClip(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text);
+  return Promise.reject(new Error("no clipboard"));
+}
+
+function markCopied(i) {
+  copiedCards.add(i);
+  const card = q('.mng-selcard[data-i="' + i + '"]');
+  if (card) {
+    card.classList.add("is-copied");
+    const b = card.querySelector(".mng-selcard-copy");
+    if (b) { b.textContent = "✓ Kopiert"; b.classList.add("is-copied"); }
+  }
+  const el = q("#mngSelCopyCount");
+  if (el) {
+    const total = lastPrompts.filter((x) => x.prompt).length;
+    el.textContent = copiedCards.size + " von " + total + " kopiert";
+    el.classList.toggle("is-all", copiedCards.size > 0 && copiedCards.size === total);
+  }
+}
+
+function copyOnePrompt(i) {
+  const it = lastPrompts[i]; if (!it || !it.prompt) return;
+  writeClip(it.prompt).then(() => { markCopied(i); toast("Prompt kopiert", "good"); })
+    .catch(() => toast("Kopieren nicht möglich", "err"));
+}
+
+function copyAllPrompts() {
+  const mit = lastPrompts.map((it, i) => ({ it, i })).filter((x) => x.it.prompt);
+  if (!mit.length) return;
+  const text = mit.map(({ it }) => "=== " + it.name + " ===\n" + it.prompt).join("\n\n\n");
+  writeClip(text).then(() => {
+    mit.forEach(({ i }) => markCopied(i));
+    toast(mit.length + " Prompts kopiert", "good");
+  }).catch(() => toast("Kopieren nicht möglich", "err"));
+}
+
+function renderPromptCards(items) {
+  const box = selResult(); if (!box) return;
+  lastPrompts = items || []; copiedCards.clear();
+  const mit = lastPrompts.filter((x) => x.prompt).length;
+  const kopf = mit
+    ? '<div class="mng-selres-head"><b>Prompt-Vorschau</b> <span class="mng-selres-n" id="mngSelCopyCount">0 von ' + mit + " kopiert</span>" +
+      (mit > 1 ? '<button class="rbtn rbtn-ghost" id="mngSelCopyAll" type="button">Alle kopieren</button>' : "") + "</div>"
+    : "";
+  box.innerHTML = kopf + lastPrompts.map((it, i) => {
+    if (it.error) return '<div class="mng-selcard"><div class="mng-selcard-h">' + esc(it.name) + '</div><div class="mng-empty">' + esc(it.error) + "</div></div>";
+    return '<div class="mng-selcard" data-i="' + i + '">' +
+      '<div class="mng-selcard-h">' + esc(it.name) +
+        ' <span class="mng-selcard-n">' + (it.prompt || "").length + " Zeichen</span>" +
+        '<button class="rbtn rbtn-ghost mng-selcard-copy" type="button" data-i="' + i + '">Kopieren</button></div>' +
+      (it.raw ? '<details class="mng-selraw"><summary>Rohe Sonnet-Antwort</summary><pre>' + esc(it.raw) + "</pre></details>" : "") +
+      "<pre>" + esc(it.prompt) + "</pre></div>";
+  }).join("");
+}
 
 // "Nur Prompts": ein Sonnet-Aufruf je Vorlage, KEIN Bild. Zeigt den fertigen Bildprompt und
 // die rohe Sonnet-Antwort (letztere, damit sichtbar wird, ob Sonnet ins Beschreiben rutscht).
@@ -329,28 +485,31 @@ async function doRedesignPreview() {
     if (box) box.innerHTML = '<div class="mng-empty">Vorschau fehlgeschlagen: ' + esc((r.data && r.data.error) || ("HTTP " + r.http)) + "</div>";
     return;
   }
-  if (box) box.innerHTML = r.data.items.map((it) => {
-    if (it.error) return '<div class="mng-selcard"><div class="mng-selcard-h">' + esc(it.name) + '</div><div class="mng-empty">' + esc(it.error) + "</div></div>";
-    return '<div class="mng-selcard">' +
-      '<div class="mng-selcard-h">' + esc(it.name) + ' <span class="mng-selcard-n">' + (it.prompt || "").length + " Zeichen</span></div>" +
-      (it.raw ? '<details class="mng-selraw"><summary>Rohe Sonnet-Antwort</summary><pre>' + esc(it.raw) + "</pre></details>" : "") +
-      "<pre>" + esc(it.prompt) + "</pre></div>";
-  }).join("");
+  renderPromptCards(r.data.items);
 }
 
 // Geschaetzte Kosten je Vorlage: ein Sonnet-Aufruf (Regie) + ein Bild. Die Richtpreise kommen
-// LIVE aus dem Nutzungs-Dashboard (dort editierbar); schlaegt das fehl, gelten die Standardwerte.
+// LIVE aus dem Nutzungs-Dashboard (dort editierbar). EINMAL beim Oeffnen geholt und gecacht,
+// damit der Zaehler sie live zeigen kann. Schlaegt der Abruf fehl, bleibt preisCache null und
+// der Zaehler zeigt KEINE Kosten — eine geratene Zahl waere schlimmer als keine. Der
+// Bestaetigungs-Dialog rechnet ohnehin mit den Standardwerten weiter.
 const PREIS_FALLBACK = { claude_redesignspecs: 0.02, openai_gptimage: 0.08 };
-async function preisJeVorlage() {
+let preisCache = null;
+
+async function ladePreise() {
   try {
     const res = await fetch("/admin/usage/data", { headers: { "X-Admin-Token": getToken() } });
     const d = await res.json();
     const rows = (d && d.rows) || [];
     const p = (k) => { const r = rows.find((x) => x.key === k); return (r && typeof r.price === "number") ? r.price : PREIS_FALLBACK[k]; };
-    return p("claude_redesignspecs") + p("openai_gptimage");
-  } catch (_) {
-    return PREIS_FALLBACK.claude_redesignspecs + PREIS_FALLBACK.openai_gptimage;
-  }
+    preisCache = p("claude_redesignspecs") + p("openai_gptimage");
+  } catch (_) { preisCache = null; }
+  syncSelBar();
+}
+
+function preisJeVorlage() {
+  return preisCache !== null ? preisCache
+    : PREIS_FALLBACK.claude_redesignspecs + PREIS_FALLBACK.openai_gptimage;
 }
 
 // "Redesign starten": ein Lauf ueber ALLE ausgewaehlten Vorlagen, je Vorlage genau EIN Kandidat.
@@ -358,8 +517,7 @@ async function preisJeVorlage() {
 async function doRedesignStart() {
   const files = selectedFiles();
   if (!files.length) return;
-  const proStueck = await preisJeVorlage();
-  const kosten = (files.length * proStueck).toFixed(2);
+  const kosten = (files.length * preisJeVorlage()).toFixed(2);
   if (!confirm(
     "Jetzt Redesign für " + files.length + (files.length === 1 ? " Vorlage" : " Vorlagen") + " starten?\n\n" +
     "Geschätzte Kosten rund $" + kosten + " (je Vorlage ein Sonnet-Aufruf für die Regie und ein Bild).\n" +
@@ -386,8 +544,22 @@ async function doRedesignStart() {
   if (tab) tab.click();
 }
 
+// Der Umform-Stapel betrifft nur noch einen Restbestand. Er steht darum eingeklappt und
+// verschwindet ganz, sobald nichts mehr umzuformen ist. Die Zahl kommt aus dimsSummary und
+// steht erst nach dem Laden fest — daher hier und nicht in renderShell.
+function syncBatchBox() {
+  const box = q("#mngBatchBox"); if (!box) return;
+  const s = state.data.dimsSummary || {};
+  const n = typeof s.near23 === "number" ? s.near23 : 0;
+  box.hidden = n < 1;
+  if (n < 1) box.open = false;
+  const sum = q("#mngBatchSummary");
+  if (sum) sum.textContent = "2:3-Altbestand umformen (" + n + ")";
+}
+
 function renderAll() {
   renderFormatBar();
+  syncBatchBox();
   renderCatnav();
   renderGrid();
   renderTrash();
@@ -708,16 +880,26 @@ function wireEvents(p) {
     if (fchip) { state.fmtCat = fchip.dataset.fmt; renderFormatBar(); renderGrid(); return; }
     if (e.target.closest("#mngFmtRecompute")) { doRecomputeDims(); return; }
     if (e.target.closest("#mngReformat916")) { doReformatBatch(); return; }
-    // ── Auswahlmodus: Knöpfe der Leiste, dann der Kachel-Klick. Der Kachel-Fang muss VOR
-    //    .tw (Lightbox) und button[data-act] stehen, sonst öffnet der Klick die Großansicht.
+    // ── Auswahlmodus: Knöpfe der Leiste, dann der Kachel-Klick.
     if (e.target.closest("#mngSelToggle")) { setSelecting(!state.selecting); return; }
     if (e.target.closest("#mngSelAll")) { for (const f of visibleFiles()) state.selected.add(f); renderGrid(); syncSelBar(); return; }
     if (e.target.closest("#mngSelNone")) { state.selected.clear(); renderGrid(); syncSelBar(); return; }
     if (e.target.closest("#mngSelPrompts")) { doRedesignPreview(); return; }
     if (e.target.closest("#mngSelRedesign")) { doRedesignStart(); return; }
+    if (e.target.closest("#mngSelCopyAll")) { copyAllPrompts(); return; }
+    const cp = e.target.closest(".mng-selcard-copy");
+    if (cp) { copyOnePrompt(Number(cp.dataset.i)); return; }
+    // Der Fang gilt NUR fuer den Bildbereich (.tw). Frueher fing er die ganze Kachel ab, damit
+    // waren ⬇ Original, Verschieben und Löschen im Auswahlmodus blockiert. Die Lightbox darunter
+    // wird im Auswahlmodus uebersprungen, sonst oeffnete derselbe Klick zusaetzlich die Großansicht.
     if (state.selecting && state.sub === "manage") {
-      const selTile = e.target.closest(".mng-tile.mng-selectable");
-      if (selTile) { e.preventDefault(); e.stopPropagation(); toggleFile(selTile.dataset.file); return; }
+      const bild = e.target.closest(".mng-tile.mng-selectable .tw");
+      if (bild) {
+        e.preventDefault(); e.stopPropagation();
+        const tile = bild.closest(".mng-tile");
+        if (tile) toggleFile(tile.dataset.file);
+        return;
+      }
     }
     const pen = e.target.closest(".pen");
     if (pen) { e.stopPropagation(); openRename(pen.dataset.rename); return; }
@@ -767,6 +949,35 @@ function wireEvents(p) {
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") { closeLightbox(); q("#mngMove").classList.remove("show"); q("#mngRenameM").classList.remove("show"); } });
   // Nach einem Upload (anderes Panel) die Verwaltung neu laden, damit neue Templates erscheinen.
   document.addEventListener("nk-templates-changed", reload);
+}
+
+// ── Nach-oben-Knopf. Bewusst KEIN zweites klebendes Element am oberen Rand: er kostet keine
+// Hoehe, hilft auch ausserhalb des Auswahlmodus und erscheint erst, wenn er gebraucht wird.
+// Der Knopf haengt am Dokument, nicht am Panel — er soll auch neben dem Raster erreichbar sein.
+// Scroll-Ereignisse erreichen im Studio NICHT das window (gemessen: null Ereignisse) — der
+// <body> traegt ein overflow-y, gescrollt wird das Wurzelelement. Darum wird in der
+// CAPTURE-Phase am document gelauscht und die Position an document.scrollingElement gelesen.
+const scrollTop = () => (document.scrollingElement || document.documentElement).scrollTop || 0;
+
+function wireScrollTop() {
+  if (document.getElementById("mngTopBtn")) return;
+  const b = document.createElement("button");
+  b.id = "mngTopBtn"; b.type = "button"; b.className = "mng-topbtn"; b.hidden = true;
+  b.title = "Nach oben"; b.textContent = "↑";
+  b.addEventListener("click", () => {
+    const se = document.scrollingElement || document.documentElement;
+    if (se.scrollTo) se.scrollTo({ top: 0, behavior: "smooth" }); else se.scrollTop = 0;
+  });
+  document.body.appendChild(b);
+  const sync = () => {
+    const p = panel();
+    const sichtbar = !!p && !p.hidden && p.offsetParent !== null;
+    b.hidden = !sichtbar || scrollTop() < 600;
+    syncSelBarGeometry();
+  };
+  document.addEventListener("scroll", sync, { capture: true, passive: true });
+  window.addEventListener("resize", sync, { passive: true });
+  sync();
 }
 
 // Anzeigenamen per Klick ändern (schreibt ins Anzeigename-Overlay; Pfad/Keywords/
