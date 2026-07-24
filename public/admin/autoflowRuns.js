@@ -113,12 +113,23 @@ function redesignPairHtml(r, im) {
     ? '<a class="afr-rd-side" href="' + esc(href) + '" target="_blank" rel="noopener">' +
       '<img loading="lazy" src="' + esc(thumb) + '" alt=""><span class="afr-cap">' + cap + "</span></a>"
     : '<div class="afr-rd-side afr-rd-missing"><span class="afr-cap">' + cap + " fehlt</span></div>";
+  // Redesign v2: Karten-Kombination + Gate-Urteil je Kandidat.
+  const combo = im.cards
+    ? '<span class="afr-rd-combo">' + esc(im.cards.layoutKey) + " · " + esc(im.cards.mediumKey) + (im.reroll ? " · Nachwurf" : "") + "</span>"
+    : "";
+  let gate = "";
+  if (im.gate && im.gate.verdict === "pass") gate = '<span class="afr-rd-gate is-pass">Gate ✓</span>';
+  else if (im.gate && im.gate.verdict === "fail") gate = '<span class="afr-rd-gate is-fail">Gate ✗</span>';
+  else if (im.gate && im.gate.verdict === "error") gate = '<span class="afr-rd-gate is-err">Gate ?</span>';
+  const reasons = (im.gate && im.gate.reasons && im.gate.reasons.length)
+    ? '<div class="afr-rd-reasons">' + im.gate.reasons.map((x) => "• " + esc(x)).join("<br>") + "</div>"
+    : "";
   return '<div class="afr-rd' + (erledigt ? " is-done" : "") + '" data-index="' + esc(im.index) + '">' +
-    '<div class="afr-rd-h">' + esc(src ? src.name : im.index) + marke + "</div>" +
+    '<div class="afr-rd-h">' + esc(src ? src.name : im.index) + " " + combo + " " + gate + marke + "</div>" +
     '<div class="afr-rd-pair">' +
       links(origFull, origThumb, "Original") +
       links(im.full, im.thumb, "Kandidat") +
-    "</div>" +
+    "</div>" + reasons +
     '<div class="afr-rd-warn" hidden></div>' + actions +
   "</div>";
 }
@@ -272,7 +283,30 @@ function render(runs) {
     // Übernahme-Leiste entfällt dort, getauscht wird über "Original ersetzen".
     const isRedesign = !!r.redesign;
     const hasFree = !isRedesign && (r.images || []).some((im) => !im.adopted);
-    const imgs = (r.images || []).map((im) => isRedesign ? redesignPairHtml(r, im) : tileHtml(im, st)).join("");
+    // Bauteil 4: durchgefallene Kandidaten (Gate) in einen eingeklappten „Aussortiert"-Bereich,
+    // nicht gelöscht, Begründungen beim Aufklappen sichtbar. Alles andere bleibt im Hauptraster.
+    let imgs = "", binHtml = "";
+    if (isRedesign) {
+      const alle = r.images || [];
+      const raus = alle.filter((im) => im.gate && im.gate.verdict === "fail");
+      const bleibt = alle.filter((im) => !(im.gate && im.gate.verdict === "fail"));
+      imgs = bleibt.map((im) => redesignPairHtml(r, im)).join("");
+      if (raus.length) {
+        binHtml = '<details class="afr-rd-bin"><summary>Aussortiert (' + raus.length + ")</summary>" +
+          '<div class="afr-rd-grid">' + raus.map((im) => redesignPairHtml(r, im)).join("") + "</div></details>";
+      }
+    } else {
+      imgs = (r.images || []).map((im) => tileHtml(im, st)).join("");
+    }
+    // Bauteil 5: API-Fehlertexte je Datei im Klartext (v. a. Guthaben-Fehler).
+    const errHtml = (r.fileErrors && r.fileErrors.length)
+      ? '<div class="afr-errs">' + r.fileErrors.map((e) =>
+          '<div class="afr-err' + (e.blocked ? " is-blocked" : "") + '"><b>' + esc(e.name || ("#" + e.fnum)) + ":</b> " + esc(e.text) + "</div>").join("") + "</div>"
+      : "";
+    // Bauteil 3c: die Auftrags-Familie sichtbar in der Lauf-Karte.
+    const famHtml = (isRedesign && r.family)
+      ? '<details class="afr-fam"><summary>Familie dieses Auftrags</summary><div>' + esc(r.family) + "</div></details>"
+      : (isRedesign ? '<div class="afr-fam-none">Ohne Familie (familienloser Modus)</div>' : "");
     const progress = total
       ? '<div class="afr-prog"><span style="width:' + pct + '%"></span></div>' +
         '<div class="afr-progtext">' + done + " von " + total + " fertig" + (failed ? ", " + failed + " fehlgeschlagen" : "") + (running ? " · läuft …" : "") + "</div>"
@@ -294,9 +328,9 @@ function render(runs) {
           (r.sourceName ? " · " + esc(r.sourceName) : "") +
           ' <span class="afr-badge afr-st-' + esc(r.status || "") + '">' + esc(stLabel) + "</span></div>" +
         '<div class="afr-btns">' + btns + "</div>" +
-      "</div>" + progress +
+      "</div>" + progress + errHtml + famHtml +
       promptPanelHtml(r.runId, st) +
-      '<div class="' + (isRedesign ? "afr-rd-grid" : "afr-grid") + '">' + imgs + "</div>" +
+      '<div class="' + (isRedesign ? "afr-rd-grid" : "afr-grid") + '">' + imgs + "</div>" + binHtml +
       (st.adopting ? adoptBarHtml(st) : "") +
     "</div>";
   }).join("");

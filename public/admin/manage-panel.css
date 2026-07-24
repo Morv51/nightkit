@@ -117,6 +117,20 @@
 #panel-manage .mng-modal .row { display: flex; gap: 8px; margin-top: 18px; }
 #panel-manage .mng-modal .row .rbtn { flex: 1; }
 #panel-manage .mng-modal .prog { font-size: var(--font-size-xs); color: var(--color-text-muted); margin-top: 10px; min-height: 16px; text-align: center; }
+/* Redesign-Dialog (Bauteil 3): breiter, Familien-Textfeld + Wurf-/Lade-/Speichern-Zeile. */
+#panel-manage .mng-modal .mng-rd-card { width: min(560px, 94vw); }
+#panel-manage .mng-modal textarea {
+  width: 100%; background: var(--color-surface-2); color: var(--color-text);
+  border: 1px solid var(--color-border-strong); border-radius: var(--radius-sm);
+  padding: 9px 12px; font: inherit; line-height: 1.5; resize: vertical; min-height: 92px;
+}
+#panel-manage .mng-modal .mng-rd-fam { margin-top: 10px; flex-wrap: wrap; }
+#panel-manage .mng-modal .mng-rd-fam select { flex: 1; min-width: 160px; width: auto; }
+#panel-manage .mng-modal .mng-rd-fam .rbtn { flex: 0 0 auto; }
+/* Prompt-Karten-Meta (core-Vorschau): Karten-Kombination, Familie, Platzhalter. */
+.mng-selcard-meta { font-size: var(--font-size-xs); color: var(--color-text-muted); line-height: 1.5; margin: 2px 0 8px; }
+.mng-selcard-meta .ok { color: var(--color-good, #3aa76d); }
+.mng-selcard-meta .warn { color: var(--color-warn, #c9962f); }
 
 /* Mini-Toast (unter dem Panel) */
 #panel-manage .mng-toast {

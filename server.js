@@ -617,6 +617,9 @@ server.listen(PORT, () => {
     // Kategorie-Cover-Overlay (Aushaengeschild pro Kategorie) vorwaermen.
     try { categoryCover.prime().catch(() => {}); }
     catch (e) { console.log("[ADMIN-COVER] Start-Prime fehlgeschlagen: " + (e && e.message ? e.message : e)); }
+    // Redesign-v2-Familien-Presets vorwaermen.
+    try { require("./lib/admin/families").prime().catch(() => {}); }
+    catch (e) { console.log("[ADMIN-FAMILIES] Start-Prime fehlgeschlagen: " + (e && e.message ? e.message : e)); }
     // Format-/Masse-Cache (reine Anzeige der Seitenverhaeltnisse) vorwaermen.
     try { require("./lib/admin/dimensions").prime().catch(() => {}); }
     catch (e) { console.log("[ADMIN-DIMS] Start-Prime fehlgeschlagen: " + (e && e.message ? e.message : e)); }

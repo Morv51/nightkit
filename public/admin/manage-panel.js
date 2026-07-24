@@ -143,6 +143,24 @@ function renderShell(p) {
     '  <div class="prog" id="mngRenameProg"></div>',
     '  <div class="row"><button class="rbtn rbtn-ghost" id="mngRenameCancel" type="button">Abbrechen</button><button class="rbtn rbtn-primary" id="mngRenameSave" type="button">Umbenennen</button></div>',
     '</div></div>',
+    // Redesign-Start-Dialog mit Familien-Sektion (Bauteil 3). Die Familie ist ein AUFTRAGS-
+    // Attribut: alle markierten Vorlagen teilen sie. Leer = familienloser Modus.
+    '<div class="mng-modal" id="mngRedesign"><div class="card mng-rd-card">',
+    '  <h4>Redesign starten <span id="mngRdN"></span></h4>',
+    '  <p class="sub">Alle markierten Vorlagen teilen sich <b>eine</b> Familie (Akzentfarbe + Grundton). Feld leer lassen = familienloser Modus.</p>',
+    '  <label>Familien-Text</label>',
+    '  <textarea id="mngFamText" rows="5" placeholder="Leer = ohne Familie. Oder aus der Auswahl würfeln / eine gespeicherte laden."></textarea>',
+    '  <div class="row mng-rd-fam">',
+    '    <button class="rbtn rbtn-ghost" id="mngFamRoll" type="button">Familie aus Auswahl würfeln</button>',
+    '    <select id="mngFamLoad"><option value="">Gespeicherte Familie laden …</option></select>',
+    '    <button class="rbtn rbtn-ghost" id="mngFamSave" type="button">Speichern unter …</button>',
+    '  </div>',
+    '  <p class="note" id="mngRdCost"></p>',
+    '  <div class="prog" id="mngRdProg"></div>',
+    '  <div class="row"><button class="rbtn rbtn-ghost" id="mngRdCancel" type="button">Abbrechen</button>',
+    '    <button class="rbtn rbtn-ghost" id="mngRdPreview" type="button">Nur Prompts</button>',
+    '    <button class="rbtn rbtn-primary" id="mngRdStart" type="button">Redesign starten</button></div>',
+    '</div></div>',
     '<div class="mng-toast" id="mngToast"></div>',
   ].join("");
   wireEvents(p);
@@ -460,24 +478,32 @@ function renderPromptCards(items) {
     : "";
   box.innerHTML = kopf + lastPrompts.map((it, i) => {
     if (it.error) return '<div class="mng-selcard"><div class="mng-selcard-h">' + esc(it.name) + '</div><div class="mng-empty">' + esc(it.error) + "</div></div>";
+    // core-Vorschau: Karten-Kombination + Familie + Platzhalter sichtbar machen.
+    const meta = it.layoutKey
+      ? '<div class="mng-selcard-meta">Layout: <b>' + esc(it.layoutKey) + '</b> · Medium: <b>' + esc(it.mediumKey) + "</b> · Familie: " +
+        (it.familyUsed ? '<b class="ok">gesetzt</b>' : '<b class="warn">Platzhalter</b>') +
+        (it.placeholders ? '<br>Platzhalter: ' + esc(it.placeholders) : "") + "</div>"
+      : "";
     return '<div class="mng-selcard" data-i="' + i + '">' +
       '<div class="mng-selcard-h">' + esc(it.name) +
         ' <span class="mng-selcard-n">' + (it.prompt || "").length + " Zeichen</span>" +
         '<button class="rbtn rbtn-ghost mng-selcard-copy" type="button" data-i="' + i + '">Kopieren</button></div>' +
+      meta +
       (it.raw ? '<details class="mng-selraw"><summary>Rohe Sonnet-Antwort</summary><pre>' + esc(it.raw) + "</pre></details>" : "") +
       "<pre>" + esc(it.prompt) + "</pre></div>";
   }).join("");
 }
 
-// "Nur Prompts": ein Sonnet-Aufruf je Vorlage, KEIN Bild. Zeigt den fertigen Bildprompt und
-// die rohe Sonnet-Antwort (letztere, damit sichtbar wird, ob Sonnet ins Beschreiben rutscht).
-async function doRedesignPreview() {
+// "Nur Prompts": der komplett gebaute Bildprompt je Kandidat, VOR bezahlten Läufen. Im core-Modus
+// reine Assemblierung (kostenlos): eingesetzte Familie, Layout-/Medium-Karte, Platzhalter-Liste.
+// familyText kommt aus dem Redesign-Dialog; ohne ihn zeigt der Server einen markierten Platzhalter.
+async function doRedesignPreview(familyText) {
   const files = selectedFiles();
   if (!files.length) return;
-  const box = selResult(); if (box) box.innerHTML = '<div class="mng-empty">Baue Prompts … (ein Sonnet-Aufruf je Vorlage)</div>';
+  const box = selResult(); if (box) box.innerHTML = '<div class="mng-empty">Baue Prompts …</div>';
   const btn = q("#mngSelPrompts"); if (btn) btn.disabled = true;
   let r;
-  try { r = await adminPost("/admin/redesign/preview", { files }); }
+  try { r = await adminPost("/admin/redesign/preview", { files, familyText: familyText || "" }); }
   catch (e) { if (box) box.innerHTML = '<div class="mng-empty">Vorschau fehlgeschlagen.</div>'; if (btn) btn.disabled = false; return; }
   if (btn) btn.disabled = false;
   if (r.http === 401) { toast("Sitzung abgelaufen, bitte neu entsperren", "err"); return; }
@@ -493,8 +519,11 @@ async function doRedesignPreview() {
 // damit der Zaehler sie live zeigen kann. Schlaegt der Abruf fehl, bleibt preisCache null und
 // der Zaehler zeigt KEINE Kosten — eine geratene Zahl waere schlimmer als keine. Der
 // Bestaetigungs-Dialog rechnet ohnehin mit den Standardwerten weiter.
-const PREIS_FALLBACK = { claude_redesignspecs: 0.02, openai_gptimage: 0.08 };
-let preisCache = null;
+// Redesign v2 (core): je Vorlage ein Bild + ein Gate-Aufruf (KEINE Sonnet-Regie mehr). Das
+// Familie-Würfeln ist ein einmaliger Zusatz-Aufruf.
+const PREIS_FALLBACK = { claude_redesigngate: 0.02, claude_familyspecs: 0.02, openai_gptimage: 0.08 };
+let preisCache = null;      // Kosten je Vorlage (Bild + Gate)
+let famPreisCache = null;   // Kosten Familie würfeln
 
 async function ladePreise() {
   try {
@@ -502,30 +531,81 @@ async function ladePreise() {
     const d = await res.json();
     const rows = (d && d.rows) || [];
     const p = (k) => { const r = rows.find((x) => x.key === k); return (r && typeof r.price === "number") ? r.price : PREIS_FALLBACK[k]; };
-    preisCache = p("claude_redesignspecs") + p("openai_gptimage");
-  } catch (_) { preisCache = null; }
+    preisCache = p("openai_gptimage") + p("claude_redesigngate");
+    famPreisCache = p("claude_familyspecs");
+  } catch (_) { preisCache = null; famPreisCache = null; }
   syncSelBar();
 }
 
 function preisJeVorlage() {
   return preisCache !== null ? preisCache
-    : PREIS_FALLBACK.claude_redesignspecs + PREIS_FALLBACK.openai_gptimage;
+    : PREIS_FALLBACK.openai_gptimage + PREIS_FALLBACK.claude_redesigngate;
+}
+function preisFamilie() {
+  return famPreisCache !== null ? famPreisCache : PREIS_FALLBACK.claude_familyspecs;
 }
 
-// "Redesign starten": ein Lauf ueber ALLE ausgewaehlten Vorlagen, je Vorlage genau EIN Kandidat.
-// Bestaetigung mit Anzahl und geschaetzten Kosten (Muster: doReformatBatch).
-async function doRedesignStart() {
+// ── Redesign-Start-Dialog (Bauteil 3): Familien-Sektion + Kostenausweis, dann Start. Die
+//    Familie ist ein Auftrags-Attribut; alle markierten Vorlagen teilen sie. ──
+let familienCache = []; // gespeicherte Presets [{name, family_text, accent, tone}]
+
+async function ladeFamilien() {
+  try {
+    const res = await fetch("/admin/redesign/families", { headers: { "X-Admin-Token": getToken() } });
+    const d = await res.json();
+    familienCache = (d && d.families) || [];
+  } catch (_) { familienCache = []; }
+  const sel = q("#mngFamLoad");
+  if (sel) sel.innerHTML = '<option value="">Gespeicherte Familie laden …</option>' +
+    familienCache.map((f, i) => '<option value="' + i + '">' + esc(f.name) + "</option>").join("");
+}
+
+async function openRedesignDialog() {
   const files = selectedFiles();
   if (!files.length) return;
-  const kosten = (files.length * preisJeVorlage()).toFixed(2);
-  if (!confirm(
-    "Jetzt Redesign für " + files.length + (files.length === 1 ? " Vorlage" : " Vorlagen") + " starten?\n\n" +
-    "Geschätzte Kosten rund $" + kosten + " (je Vorlage ein Sonnet-Aufruf für die Regie und ein Bild).\n" +
-    "Je Vorlage entsteht genau ein Kandidat.\n" +
-    "Im Bestand ändert sich dabei NICHTS — getauscht wird erst später von Hand im Reiter Läufe.\n\n" +
-    "Der Lauf läuft im Hintergrund weiter, auch wenn du den Tab schließt."
-  )) return;
-  const btn = q("#mngSelRedesign"); if (btn) btn.disabled = true;
+  q("#mngRdN").textContent = "(" + files.length + ")";
+  q("#mngRdStart").textContent = "Redesign starten (" + files.length + ")";
+  const per = preisJeVorlage();
+  const ges = (files.length * per).toFixed(2), rr = (2 * per).toFixed(2), fam = preisFamilie().toFixed(2);
+  q("#mngRdCost").textContent =
+    files.length + (files.length === 1 ? " Vorlage" : " Vorlagen") + ", je Vorlage ein Bild + ein Gate-Aufruf (~$" + per.toFixed(2) +
+    "), gesamt rund $" + ges + ". Bei zu wenigen Treffern würfelt der Lauf bis zu 2 nach (bis +$" + rr +
+    "). „Familie würfeln“ kostet einmalig ~$" + fam + ". Im Bestand ändert sich nichts — getauscht wird später im Reiter Läufe.";
+  q("#mngRdProg").textContent = "";
+  await ladeFamilien();
+  q("#mngRedesign").classList.add("show");
+}
+
+async function familieWuerfeln() {
+  const files = selectedFiles(); if (!files.length) return;
+  const btn = q("#mngFamRoll"); if (btn) btn.disabled = true;
+  q("#mngRdProg").textContent = "Würfle Familie aus den ersten Bildern der Auswahl …";
+  try {
+    const r = await adminPost("/admin/redesign/family-roll", { files });
+    if (r.http === 200 && r.data && r.data.family_text) {
+      q("#mngFamText").value = r.data.family_text;
+      q("#mngRdProg").textContent = "Familie: " + (r.data.accent || "?") + " · " + (r.data.tone || "?");
+    } else q("#mngRdProg").textContent = "Würfeln fehlgeschlagen: " + ((r.data && r.data.error) || ("HTTP " + r.http));
+  } catch (_) { q("#mngRdProg").textContent = "Würfeln fehlgeschlagen."; }
+  if (btn) btn.disabled = false;
+}
+
+async function familieSpeichern() {
+  const txt = q("#mngFamText").value.trim();
+  if (!txt) { toast("Kein Familien-Text zum Speichern", "err"); return; }
+  const name = (window.prompt("Familie speichern unter welchem Namen?") || "").trim();
+  if (!name) return;
+  const r = await adminPost("/admin/redesign/family-save", { name, family_text: txt });
+  if (r.http === 200) { toast("Familie „" + name + "“ gespeichert", "good"); await ladeFamilien(); }
+  else toast("Speichern fehlgeschlagen: " + ((r.data && r.data.error) || ("HTTP " + r.http)), "err");
+}
+
+async function doRedesignStartConfirmed() {
+  const files = selectedFiles();
+  if (!files.length) return;
+  const familyText = q("#mngFamText").value.trim();
+  const btn = q("#mngRdStart"); if (btn) btn.disabled = true;
+  q("#mngRdProg").textContent = "Starte …";
   let r;
   try {
     r = await adminPost("/admin/autoflow/start", {
@@ -533,11 +613,12 @@ async function doRedesignStart() {
       mode: files.length + (files.length === 1 ? " Redesign" : " Redesigns"),
       loose: false, textOnly: false, regelwerk: false,
       variants: 1, // fest: genau EIN Kandidat je Vorlage
-      refType: "single", files,
+      refType: "single", files, familyText,
     });
-  } catch (e) { if (btn) btn.disabled = false; toast("Start fehlgeschlagen", "err"); return; }
+  } catch (e) { if (btn) btn.disabled = false; q("#mngRdProg").textContent = "Start fehlgeschlagen."; return; }
   if (btn) btn.disabled = false;
-  if (r.http !== 200 || !r.data || !r.data.runId) { toast("Start fehlgeschlagen: " + ((r.data && r.data.error) || ("HTTP " + r.http)), "err"); return; }
+  if (r.http !== 200 || !r.data || !r.data.runId) { q("#mngRdProg").textContent = "Start fehlgeschlagen: " + ((r.data && r.data.error) || ("HTTP " + r.http)); return; }
+  q("#mngRedesign").classList.remove("show");
   toast("Redesign gestartet. Ergebnis im Reiter Läufe.", "good");
   setSelecting(false);
   const tab = document.querySelector('.studio-tab[data-tab="afruns"]');
@@ -884,8 +965,8 @@ function wireEvents(p) {
     if (e.target.closest("#mngSelToggle")) { setSelecting(!state.selecting); return; }
     if (e.target.closest("#mngSelAll")) { for (const f of visibleFiles()) state.selected.add(f); renderGrid(); syncSelBar(); return; }
     if (e.target.closest("#mngSelNone")) { state.selected.clear(); renderGrid(); syncSelBar(); return; }
-    if (e.target.closest("#mngSelPrompts")) { doRedesignPreview(); return; }
-    if (e.target.closest("#mngSelRedesign")) { doRedesignStart(); return; }
+    if (e.target.closest("#mngSelPrompts")) { doRedesignPreview(""); return; }
+    if (e.target.closest("#mngSelRedesign")) { openRedesignDialog(); return; }
     if (e.target.closest("#mngSelCopyAll")) { copyAllPrompts(); return; }
     const cp = e.target.closest(".mng-selcard-copy");
     if (cp) { copyOnePrompt(Number(cp.dataset.i)); return; }
@@ -943,6 +1024,17 @@ function wireEvents(p) {
   q("#mngMove").addEventListener("click", (e) => { if (e.target === q("#mngMove")) q("#mngMove").classList.remove("show"); });
   q("#mngRenameCancel").addEventListener("click", () => q("#mngRenameM").classList.remove("show"));
   q("#mngRenameSave").addEventListener("click", saveRename);
+  // Redesign-Dialog (Bauteil 3)
+  q("#mngRdCancel").addEventListener("click", () => q("#mngRedesign").classList.remove("show"));
+  q("#mngRedesign").addEventListener("click", (e) => { if (e.target === q("#mngRedesign")) q("#mngRedesign").classList.remove("show"); });
+  q("#mngRdPreview").addEventListener("click", () => { const fam = q("#mngFamText").value; q("#mngRedesign").classList.remove("show"); doRedesignPreview(fam); });
+  q("#mngRdStart").addEventListener("click", doRedesignStartConfirmed);
+  q("#mngFamRoll").addEventListener("click", familieWuerfeln);
+  q("#mngFamSave").addEventListener("click", familieSpeichern);
+  q("#mngFamLoad").addEventListener("change", (e) => {
+    const i = e.target.value; if (i === "") return;
+    const f = familienCache[Number(i)]; if (f) q("#mngFamText").value = f.family_text || "";
+  });
   q("#mngRenameM").addEventListener("click", (e) => { if (e.target === q("#mngRenameM")) q("#mngRenameM").classList.remove("show"); });
   q("#mngLbX").addEventListener("click", closeLightbox);
   q("#mngLb").addEventListener("click", (e) => { if (e.target === q("#mngLb")) closeLightbox(); });
