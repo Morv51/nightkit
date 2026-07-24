@@ -298,10 +298,11 @@ function render(runs) {
     } else {
       imgs = (r.images || []).map((im) => tileHtml(im, st)).join("");
     }
-    // Bauteil 5: API-Fehlertexte je Datei im Klartext (v. a. Guthaben-Fehler).
+    // Bauteil 5 + A.3: Fehlertexte je Datei im Klartext, Typ farblich unterschieden
+    // (safety = Motiv-Reject, limit = Guthaben/Limit, error = sonstiges).
     const errHtml = (r.fileErrors && r.fileErrors.length)
       ? '<div class="afr-errs">' + r.fileErrors.map((e) =>
-          '<div class="afr-err' + (e.blocked ? " is-blocked" : "") + '"><b>' + esc(e.name || ("#" + e.fnum)) + ":</b> " + esc(e.text) + "</div>").join("") + "</div>"
+          '<div class="afr-err is-' + esc(e.kind || "error") + '"><b>' + esc(e.name || ("#" + e.fnum)) + ":</b> " + esc(e.text) + "</div>").join("") + "</div>"
       : "";
     // Bauteil 3c: die Auftrags-Familie sichtbar in der Lauf-Karte.
     const famHtml = (isRedesign && r.family)

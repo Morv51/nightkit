@@ -99,8 +99,9 @@ function typographyPara(f, mediumCardText) {
   const med = v(mediumCardText);
   const subline = f.subline
     ? " The expressive voice appears on a few chosen words only: SUBLINE is set in it, directly at the " +
-      "headline, clearly readable, one step smaller than the headline but unmistakably larger than all fine " +
-      "print, and it may touch one or two more chosen spots."
+      "headline, clearly readable, clearly smaller than HEADLINE, at most half its height and never " +
+      "approaching its width, yet unmistakably larger than all fine print, and it may touch one or two " +
+      "more chosen spots."
     : " The expressive voice appears on a few chosen words only, at one or two chosen spots.";
   return "The typography lives from one contrast, the way designers pair type: one constructed voice carrying " +
     "HEADLINE and the clean information, against one expressive voice, a gestural hand for a few chosen words." +
@@ -203,12 +204,15 @@ function buildCorePrompt({ fields, familyText, layoutCardText, mediumCardText, o
 // accent angehaengt, Sonnet formuliert ihn nie selbst.
 const ACCENT_CHARACTER = ", used as graphic printed shapes and marks, never washes, stains or splatter";
 
-function buildFamilyText(accent, tone) {
-  const a = v(accent), t = v(tone);
+function buildFamilyText(accent, tone, voice) {
+  const a = v(accent), t = v(tone), vc = v(voice);
   if (!a || !t) return "";
+  // Optionaler dritter Baustein (Bauteil E): eine feste Schriftstimme der Familie. Nur eingebaut,
+  // wenn voice gesetzt ist (Checkbox im Dialog); sonst bleibt der Absatz wie bisher.
+  const voiceSatz = vc ? " The constructed voice of this family is " + vc + "." : "";
   return "This poster belongs to a category of sibling posters. What binds the family together: the accent " +
-    "colour is " + a + ACCENT_CHARACTER + ", and the overall tone stays " + t + ". Within this, every design " +
-    "decision is still yours, derived from this specific photograph.";
+    "colour is " + a + ACCENT_CHARACTER + ", and the overall tone stays " + t + "." + voiceSatz +
+    " Within this, every design decision is still yours, derived from this specific photograph.";
 }
 
 // Der statische Kern-Text mit Sentinels in den variablen Slots -> Grundlage des Kern-Hashes.

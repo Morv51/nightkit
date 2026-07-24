@@ -795,7 +795,8 @@ html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: aut
 .afr-rd-bin .afr-rd-grid { margin-top: 10px; }
 .afr-errs { margin: 8px 0 0; display: flex; flex-direction: column; gap: 6px; }
 .afr-err { font-size: 11px; line-height: 1.45; padding: 7px 9px; border-radius: 8px; background: rgba(229,120,111,.12); color: #e5b7b2; }
-.afr-err.is-blocked { background: rgba(255,196,0,.14); color: #f0d089; }
+.afr-err.is-limit { background: rgba(255,196,0,.14); color: #f0d089; }
+.afr-err.is-safety { background: rgba(150,130,230,.16); color: #c9c0f0; }
 .afr-fam { margin: 8px 0 0; font-size: 11px; }
 .afr-fam > summary { cursor: pointer; color: var(--color-text-muted, #bbb); font-weight: 600; }
 .afr-fam > div { margin-top: 6px; line-height: 1.5; color: var(--color-text-muted, #bbb); }

@@ -155,6 +155,10 @@ function renderShell(p) {
     '    <select id="mngFamLoad"><option value="">Gespeicherte Familie laden …</option></select>',
     '    <button class="rbtn rbtn-ghost" id="mngFamSave" type="button">Speichern unter …</button>',
     '  </div>',
+    // Bauteil E: optionale Schriftstimme. Nur wenn aktiv, wird beim Würfeln/Speichern ein
+    // dritter Satz in den Familien-Absatz gebaut (Default „a heavy condensed grotesque").
+    '  <label class="mng-rd-voice"><input type="checkbox" id="mngFamVoiceOn"> Schriftstimme festlegen</label>',
+    '  <input id="mngFamVoice" type="text" placeholder="a heavy condensed grotesque" disabled>',
     '  <p class="note" id="mngRdCost"></p>',
     '  <div class="prog" id="mngRdProg"></div>',
     '  <div class="row"><button class="rbtn rbtn-ghost" id="mngRdCancel" type="button">Abbrechen</button>',
@@ -547,7 +551,14 @@ function preisFamilie() {
 
 // ── Redesign-Start-Dialog (Bauteil 3): Familien-Sektion + Kostenausweis, dann Start. Die
 //    Familie ist ein Auftrags-Attribut; alle markierten Vorlagen teilen sie. ──
-let familienCache = []; // gespeicherte Presets [{name, family_text, accent, tone}]
+let familienCache = []; // gespeicherte Presets [{name, family_text, accent, tone, voice}]
+
+// Bauteil E: die Schriftstimme. Nur wenn die Checkbox aktiv ist; leeres Feld -> fester Default.
+function familyVoice() {
+  const on = q("#mngFamVoiceOn"); const inp = q("#mngFamVoice");
+  if (!on || !on.checked) return "";
+  return (inp && inp.value.trim()) || "a heavy condensed grotesque";
+}
 
 async function ladeFamilien() {
   try {
@@ -581,10 +592,10 @@ async function familieWuerfeln() {
   const btn = q("#mngFamRoll"); if (btn) btn.disabled = true;
   q("#mngRdProg").textContent = "Würfle Familie aus den ersten Bildern der Auswahl …";
   try {
-    const r = await adminPost("/admin/redesign/family-roll", { files });
+    const r = await adminPost("/admin/redesign/family-roll", { files, voice: familyVoice() });
     if (r.http === 200 && r.data && r.data.family_text) {
       q("#mngFamText").value = r.data.family_text;
-      q("#mngRdProg").textContent = "Familie: " + (r.data.accent || "?") + " · " + (r.data.tone || "?");
+      q("#mngRdProg").textContent = "Familie: " + (r.data.accent || "?") + " · " + (r.data.tone || "?") + (r.data.voice ? " · Stimme: " + r.data.voice : "");
     } else q("#mngRdProg").textContent = "Würfeln fehlgeschlagen: " + ((r.data && r.data.error) || ("HTTP " + r.http));
   } catch (_) { q("#mngRdProg").textContent = "Würfeln fehlgeschlagen."; }
   if (btn) btn.disabled = false;
@@ -595,7 +606,7 @@ async function familieSpeichern() {
   if (!txt) { toast("Kein Familien-Text zum Speichern", "err"); return; }
   const name = (window.prompt("Familie speichern unter welchem Namen?") || "").trim();
   if (!name) return;
-  const r = await adminPost("/admin/redesign/family-save", { name, family_text: txt });
+  const r = await adminPost("/admin/redesign/family-save", { name, family_text: txt, voice: familyVoice() });
   if (r.http === 200) { toast("Familie „" + name + "“ gespeichert", "good"); await ladeFamilien(); }
   else toast("Speichern fehlgeschlagen: " + ((r.data && r.data.error) || ("HTTP " + r.http)), "err");
 }
@@ -1033,7 +1044,14 @@ function wireEvents(p) {
   q("#mngFamSave").addEventListener("click", familieSpeichern);
   q("#mngFamLoad").addEventListener("change", (e) => {
     const i = e.target.value; if (i === "") return;
-    const f = familienCache[Number(i)]; if (f) q("#mngFamText").value = f.family_text || "";
+    const f = familienCache[Number(i)]; if (!f) return;
+    q("#mngFamText").value = f.family_text || "";
+    // Voice aus dem Preset zuruecklesen (Bauteil E), inkl. Checkbox-Zustand.
+    const on = q("#mngFamVoiceOn"), inp = q("#mngFamVoice");
+    if (on && inp) { on.checked = !!f.voice; inp.disabled = !f.voice; inp.value = f.voice || ""; }
+  });
+  q("#mngFamVoiceOn").addEventListener("change", (e) => {
+    const inp = q("#mngFamVoice"); if (inp) { inp.disabled = !e.target.checked; if (e.target.checked) inp.focus(); }
   });
   q("#mngRenameM").addEventListener("click", (e) => { if (e.target === q("#mngRenameM")) q("#mngRenameM").classList.remove("show"); });
   q("#mngLbX").addEventListener("click", closeLightbox);

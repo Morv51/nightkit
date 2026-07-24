@@ -127,6 +127,9 @@
 #panel-manage .mng-modal .mng-rd-fam { margin-top: 10px; flex-wrap: wrap; }
 #panel-manage .mng-modal .mng-rd-fam select { flex: 1; min-width: 160px; width: auto; }
 #panel-manage .mng-modal .mng-rd-fam .rbtn { flex: 0 0 auto; }
+#panel-manage .mng-modal .mng-rd-voice { display: flex; align-items: center; gap: 7px; margin: 12px 0 5px; cursor: pointer; }
+#panel-manage .mng-modal .mng-rd-voice input { width: auto; }
+#panel-manage .mng-modal #mngFamVoice:disabled { opacity: .5; }
 /* Prompt-Karten-Meta (core-Vorschau): Karten-Kombination, Familie, Platzhalter. */
 .mng-selcard-meta { font-size: var(--font-size-xs); color: var(--color-text-muted); line-height: 1.5; margin: 2px 0 8px; }
 .mng-selcard-meta .ok { color: var(--color-good, #3aa76d); }
