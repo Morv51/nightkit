@@ -165,6 +165,24 @@ function renderShell(p) {
     '    <button class="rbtn rbtn-ghost" id="mngRdPreview" type="button">Nur Prompts</button>',
     '    <button class="rbtn rbtn-primary" id="mngRdStart" type="button">Redesign starten</button></div>',
     '</div></div>',
+    // Beispieltext-Formular (Beta, Bauteil 3 + 4): ein Feld je Schluessel, leer = kommt im
+    // Bild nicht vor. Darunter Testeingaben + Ersetzungsplan (kostenlos, kein Modelllauf).
+    '<div class="mng-modal" id="mngSample"><div class="card mng-sm-card">',
+    '  <h4>Beispieltext-Tabelle <span class="mng-sm-beta">Beta</span></h4>',
+    '  <p class="sub" id="mngSmSub"></p>',
+    '  <p class="note">Trage je Feld den Text ein, der im Template-Bild <b>sichtbar</b> ist. Leer lassen heißt: dieses Feld kommt im Bild nicht vor. Ist die ganze Tabelle leer, läuft das Template wieder den normalen Platzhalter-Weg.</p>',
+    '  <div class="mng-sm-grid" id="mngSmGrid"></div>',
+    '  <details class="mng-sm-plan"><summary>Ersetzungsplan prüfen (kostenlos)</summary>',
+    '    <p class="note">Testeingaben wie im Kundenformular — der Plan zeigt, was ersetzt und was entfernt würde.</p>',
+    '    <div class="mng-sm-grid" id="mngSmTest"></div>',
+    '    <div class="row"><button class="rbtn rbtn-ghost" id="mngSmPlan" type="button">Plan zeigen</button></div>',
+    '    <div class="mng-sm-out" id="mngSmOut"></div>',
+    '  </details>',
+    '  <div class="prog" id="mngSmProg"></div>',
+    '  <div class="row"><button class="rbtn rbtn-ghost" id="mngSmCancel" type="button">Abbrechen</button>',
+    '    <button class="rbtn rbtn-danger" id="mngSmDelete" type="button">Tabelle löschen</button>',
+    '    <button class="rbtn rbtn-primary" id="mngSmSave" type="button">Speichern</button></div>',
+    '</div></div>',
     '<div class="mng-toast" id="mngToast"></div>',
   ].join("");
   wireEvents(p);
@@ -188,6 +206,7 @@ function tileHTML(t, kind, index) {
     ? '<button class="rbtn rbtn-ghost" data-act="restore" data-file="' + esc(t.file) + '">Wiederherstellen</button>'
     : '<button class="rbtn rbtn-ghost" data-act="move" data-file="' + esc(t.file) + '">Verschieben</button>' +
       '<button class="rbtn rbtn-ghost" data-act="download" data-file="' + esc(t.file) + '" title="Original in voller Auflösung herunterladen">⬇ Original</button>' +
+      '<button class="rbtn rbtn-ghost" data-act="sample" data-file="' + esc(t.file) + '" title="Beispieltext-Tabelle pflegen (Beta)">' + (t.sampleMap ? "✎ Beispieltext" : "Beispieltext …") + "</button>" +
       '<button class="rbtn rbtn-danger" data-act="hide" data-file="' + esc(t.file) + '">Löschen</button>' +
       coverBtn;
   // Order-Leiste nur im Sortier-Modus (Einzelkategorie): Ziehgriff, Positionsfeld, Pfeile.
@@ -202,6 +221,8 @@ function tileHTML(t, kind, index) {
   // Grosse Ansicht via R2-faehige Route (/api/thumb w=720 -> Quelle aus R2 mit Repo-Rueckfall).
   const big = "/api/thumb?w=720&file=" + encodeURIComponent(t.file);
   const coverBadge = isCover ? '<span class="mng-coverbadge" title="Kategoriebild">★</span>' : "";
+  // Beta-Markierung: dieses Template wird ueber seine Beispieltext-Tabelle befuellt.
+  const sampleBadge = t.sampleMap ? '<span class="mng-samplebadge" title="Beispieltext-Template (Beta)">Beispieltext</span>' : "";
   // Format-Kennzeichnung (reine Anzeige): grün = 9:16-nah, orange = 2:3-nah, grau = sonstige.
   const fmtCls = t.dims ? ({ "916": "c916", "23": "c23" }[t.dims.cat] || "cother") : "";
   const fmtLbl = t.dims ? ({ "916": "9:16", "23": "2:3" }[t.dims.cat] || "andere") : "";
@@ -219,7 +240,7 @@ function tileHTML(t, kind, index) {
   return '<div class="mng-tile' + (isCover ? " is-cover" : "") + (selectable ? " mng-selectable" : "") +
       (isSel ? " is-sel" : "") + '" data-file="' + esc(t.file) + '">' +
     orderBar +
-    '<div class="tw" data-big="' + esc(big) + '" data-name="' + esc(t.name) + '">' + tick + coverBadge + dimsBadge + '<img loading="lazy" draggable="false" src="' + esc(t.thumb) + '" alt=""></div>' +
+    '<div class="tw" data-big="' + esc(big) + '" data-name="' + esc(t.name) + '">' + tick + coverBadge + sampleBadge + dimsBadge + '<img loading="lazy" draggable="false" src="' + esc(t.thumb) + '" alt=""></div>' +
     '<div class="m"><div class="nm" title="Klicken zum Umbenennen" data-editname data-file="' + esc(t.file) + '" data-cur="' + esc(t.name) + '">' + esc(t.name) + '</div>' + cat + dimsText + "</div>" +
     '<div class="acts">' + acts + "</div></div>";
 }
@@ -547,6 +568,101 @@ function preisJeVorlage() {
 }
 function preisFamilie() {
   return famPreisCache !== null ? famPreisCache : PREIS_FALLBACK.claude_familyspecs;
+}
+
+// ── BETA "Beispieltext-Templates": Tabelle pflegen + Ersetzungsplan (Bauteile 3 und 4) ──
+// Die Schluesselliste spiegelt lib/admin/sampleMap.SAMPLE_KEYS. "vibe" fehlt bewusst: das Feld
+// geht gar nicht an /api/generate, ein Schluessel ohne moegliche Eingabe waere eine Falle.
+const SAMPLE_FELDER = [
+  ["headline", "Headline", "GOOD TIMES"],
+  ["subline", "Subline", "weekend starts here"],
+  ["weekday", "Wochentag", "SA"],
+  ["date", "Datum", "19.06.26"],
+  ["time", "Uhrzeit", "23:00h"],
+  ["dj1", "DJ 1", "DJ ALEX MORAN"],
+  ["dj2", "DJ 2", "NINA KOVAC"],
+  ["dj3", "DJ 3", "DJ DAVID REISS"],
+  ["club", "Clubname", "CLUB NOVA"],
+  ["location", "Location", "BERLIN"],
+  ["website", "Website", "www.clubnova.de"],
+];
+// Testeingaben -> die Feldnamen, die das Kundenformular an /api/generate schickt.
+const SAMPLE_TEST = [
+  ["name", "Headline", "SUMMER RAVE"],
+  ["prefix", "Subline", "open air"],
+  ["day", "Wochentag", "FR"],
+  ["date", "Datum", "15.08.2026"],
+  ["time", "Uhrzeit", "22:00"],
+  ["dj", "DJs (Komma)", "DJ Mara, Ken Ito"],
+  ["club", "Clubname", "Club Prisma"],
+  ["location", "Location", "Hamburg"],
+  ["contact", "Website", "www.clubprisma.de"],
+];
+let sampleFile = null;
+
+function feldGrid(defs, prefix, werte) {
+  return defs.map(([k, label, ph]) =>
+    '<label class="mng-sm-f"><span>' + esc(label) + "</span>" +
+    '<input type="text" id="' + prefix + k + '" placeholder="' + esc(ph) + '" value="' + esc((werte && werte[k]) || "") + '"></label>'
+  ).join("");
+}
+const sammle = (defs, prefix) => {
+  const o = {};
+  for (const [k] of defs) { const el = q("#" + prefix + k); const v = el ? el.value.trim() : ""; if (v) o[k] = v; }
+  return o;
+};
+
+function openSampleForm(file) {
+  const t = state.data.templates.find((x) => x.file === file);
+  if (!t) return;
+  sampleFile = file;
+  q("#mngSmSub").textContent = t.name + "  (" + t.category + ")";
+  q("#mngSmGrid").innerHTML = feldGrid(SAMPLE_FELDER, "smK_", t.sampleMap || {});
+  // Testeingaben mit Beispielwerten vorbelegen, damit "Plan zeigen" sofort etwas zeigt.
+  q("#mngSmTest").innerHTML = feldGrid(SAMPLE_TEST, "smT_", Object.fromEntries(SAMPLE_TEST.map(([k, , ph]) => [k, ph])));
+  q("#mngSmOut").innerHTML = "";
+  q("#mngSmProg").textContent = "";
+  q("#mngSmDelete").hidden = !t.sampleMap;
+  q("#mngSample").classList.add("show");
+}
+
+async function saveSampleMap() {
+  if (!sampleFile) return;
+  const map = sammle(SAMPLE_FELDER, "smK_");
+  q("#mngSmProg").textContent = "Speichere …";
+  const r = await adminPost("/admin/manage/sample-map", { file: sampleFile, map });
+  if (r.http !== 200) { q("#mngSmProg").textContent = "Speichern fehlgeschlagen: " + ((r.data && r.data.error) || ("HTTP " + r.http)); return; }
+  q("#mngSample").classList.remove("show");
+  toast(Object.keys(map).length ? "Beispieltext-Tabelle gespeichert" : "Tabelle geleert — Template läuft wieder den Platzhalter-Weg", "good");
+  await reload();
+}
+
+async function deleteSampleMap() {
+  if (!sampleFile) return;
+  if (!confirm("Beispieltext-Tabelle für dieses Template löschen?\n\nDas Template läuft danach wieder den normalen Platzhalter-Weg. Das Bild bleibt unangetastet.")) return;
+  const r = await adminPost("/admin/manage/sample-map", { file: sampleFile, map: {} });
+  if (r.http !== 200) { q("#mngSmProg").textContent = "Löschen fehlgeschlagen: " + ((r.data && r.data.error) || ("HTTP " + r.http)); return; }
+  q("#mngSample").classList.remove("show");
+  toast("Tabelle gelöscht", "good");
+  await reload();
+}
+
+// Bauteil 4: Ersetzungsplan aus der AKTUELL im Formular stehenden Tabelle (auch ungespeichert).
+async function showSamplePlan() {
+  if (!sampleFile) return;
+  const map = sammle(SAMPLE_FELDER, "smK_");
+  if (!Object.keys(map).length) { q("#mngSmOut").innerHTML = '<div class="mng-empty">Die Tabelle ist leer — nichts zu ersetzen.</div>'; return; }
+  const ev = sammle(SAMPLE_TEST, "smT_");
+  q("#mngSmProg").textContent = "Baue Plan …";
+  const r = await adminPost("/admin/manage/sample-plan", { file: sampleFile, map, ev });
+  q("#mngSmProg").textContent = "";
+  if (r.http !== 200 || !r.data) { q("#mngSmOut").innerHTML = '<div class="mng-empty">' + esc((r.data && r.data.error) || ("HTTP " + r.http)) + "</div>"; return; }
+  const ers = (r.data.ersetzt || []).map((x) =>
+    '<div class="mng-sm-row"><b>' + esc(x.feld) + "</b> <span class=\"von\">" + esc(x.von) + '</span> <span class="pfeil">→</span> <span class="zu">' + esc(x.zu) + "</span></div>").join("");
+  const ent = (r.data.entfernt || []).map((x) =>
+    '<div class="mng-sm-row is-out"><b>' + esc(x.feld) + '</b> <span class="von">' + esc(x.von) + '</span> <span class="pfeil">→</span> <span class="raus">wird entfernt</span></div>').join("");
+  q("#mngSmOut").innerHTML =
+    '<div class="mng-sm-head">' + (r.data.ersetzt || []).length + " ersetzt, " + (r.data.entfernt || []).length + " entfernt</div>" + ers + ent;
 }
 
 // ── Redesign-Start-Dialog (Bauteil 3): Familien-Sektion + Kostenausweis, dann Start. Die
@@ -1016,6 +1132,7 @@ function wireEvents(p) {
       else if (act.dataset.act === "download") doDownload(file);
       else if (act.dataset.act === "cover") doSetCover(file, act.dataset.cat);
       else if (act.dataset.act === "cover-reset") doResetCover(act.dataset.cat);
+      else if (act.dataset.act === "sample") openSampleForm(file);
       return;
     }
   });
@@ -1053,6 +1170,12 @@ function wireEvents(p) {
   q("#mngFamVoiceOn").addEventListener("change", (e) => {
     const inp = q("#mngFamVoice"); if (inp) { inp.disabled = !e.target.checked; if (e.target.checked) inp.focus(); }
   });
+  // Beispieltext-Formular (Beta)
+  q("#mngSmCancel").addEventListener("click", () => q("#mngSample").classList.remove("show"));
+  q("#mngSample").addEventListener("click", (e) => { if (e.target === q("#mngSample")) q("#mngSample").classList.remove("show"); });
+  q("#mngSmSave").addEventListener("click", saveSampleMap);
+  q("#mngSmDelete").addEventListener("click", deleteSampleMap);
+  q("#mngSmPlan").addEventListener("click", showSamplePlan);
   q("#mngRenameM").addEventListener("click", (e) => { if (e.target === q("#mngRenameM")) q("#mngRenameM").classList.remove("show"); });
   q("#mngLbX").addEventListener("click", closeLightbox);
   q("#mngLb").addEventListener("click", (e) => { if (e.target === q("#mngLb")) closeLightbox(); });
