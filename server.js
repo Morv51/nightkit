@@ -13,7 +13,6 @@ const templates             = require("./lib/templates");
 const thumbs                = require("./lib/thumbs");
 const templateSource        = require("./lib/templateSource"); // zentrale Lese-Schicht (repo/r2)
 const categoryCover         = require("./lib/admin/categoryCover"); // Kategorie-Cover-Overlay (nur ADMIN_TOOLS)
-const sampleMap             = require("./lib/admin/sampleMap"); // Beispieltext-Tabellen (Beta-Befuellpfad)
 const { createServer: createStatic } = require("./lib/static");
 const { proxy }             = require("./lib/proxy");
 const { webmToMp4 }         = require("./lib/convert");
@@ -555,13 +554,8 @@ function normalizeCasing(ev, file) {
 }
 
 async function runIdeogramJob(jobId, ev, file) {
-  // Beta-Pfad: hat das Template eine Beispieltext-Tabelle, wird aus ihr ersetzt. Dort greift
-  // normalizeCasing NICHT — die Schreibweise richtet sich je Feld nach dem Beispielwert
-  // (lib/prompt.matchCase), sonst zerstoerte eine erzwungene Versalsetzung die typografische
-  // Entscheidung des Designs (kleine Website, kleine Subline). Ohne Tabelle: alles wie bisher.
-  const sm = sampleMap.mapFor(file);
-  const prompt = buildPrompt(sm ? ev : normalizeCasing(ev, file), sm);
-  console.log(`Job ${jobId} template=${file}${sm ? " [Beispieltext]" : ""} prompt:\n${prompt}`);
+  const prompt = buildPrompt(normalizeCasing(ev, file));
+  console.log(`Job ${jobId} template=${file} prompt:\n${prompt}`);
 
   let imgBuffer;
   try {
@@ -609,11 +603,6 @@ server.listen(PORT, () => {
     templateSource.logStartupSource();
     templateSource.primeKeywords().catch(() => {});
   } catch (e) { console.log("[R2-READ] Startlog fehlgeschlagen: " + (e && e.message ? e.message : e)); }
-  // Beispieltext-Tabellen (Beta-Pfad) vorwaermen. BEWUSST ausserhalb des ADMIN_TOOLS-Blocks:
-  // sie steuern den OEFFENTLICHEN Befuell-Pfad, nicht nur die Admin-Anzeige. Nicht-blockierend;
-  // fehlt R2 oder die Datei, bleibt die Tabelle leer -> jedes Template laeuft wie bisher.
-  try { require("./lib/admin/sampleMap").prime().catch(() => {}); }
-  catch (e) { console.log("[ADMIN-SAMPLEMAP] Start-Prime fehlgeschlagen: " + (e && e.message ? e.message : e)); }
   // Admin-Overlays (Ausblenden/Kategorie) vorwaermen, nur wenn ADMIN_TOOLS=1.
   // Nicht-blockierend; bis geladen gelten leere Overlays (alles sichtbar).
   if (process.env.ADMIN_TOOLS === "1") {
