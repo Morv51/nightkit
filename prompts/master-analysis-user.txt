@@ -1,0 +1,4 @@
+Analyse the attached flyer reference according to your instructions and return only the master analysis.
+
+USER PROVIDED CONTEXT:
+{{USER_CONTEXT}}

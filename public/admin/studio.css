@@ -801,3 +801,69 @@ html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: aut
 .afr-fam > summary { cursor: pointer; color: var(--color-text-muted, #bbb); font-weight: 600; }
 .afr-fam > div { margin-top: 6px; line-height: 1.5; color: var(--color-text-muted, #bbb); }
 .afr-fam-none { margin: 8px 0 0; font-size: 11px; color: var(--color-text-dim, #888); }
+
+/* ── Prompt-Generator (Beta, additiv). Alles unter #panel-promptgen gescoped. ── */
+#panel-promptgen .pg-wrap { max-width: 900px; margin: 0 auto; }
+#panel-promptgen .pg-h { font-size: 20px; margin: 0 0 4px; display: flex; align-items: center; gap: 10px; }
+#panel-promptgen .pg-beta {
+  font-size: 10px; font-weight: 800; letter-spacing: .04em; padding: 3px 8px; border-radius: 100px;
+  background: rgba(90,160,255,.2); color: #9ec8ff;
+}
+#panel-promptgen .pg-sub { color: var(--color-text-muted, #aaa); font-size: 13px; line-height: 1.5; margin: 0 0 20px; }
+#panel-promptgen .pg-form {
+  background: var(--color-surface, #16161a); border: 1px solid var(--color-border, rgba(255,255,255,.12));
+  border-radius: 12px; padding: 18px 20px;
+}
+#panel-promptgen .pg-label { display: block; font-size: 12px; color: var(--color-text-muted, #aaa); margin: 14px 0 6px; }
+#panel-promptgen .pg-label:first-child { margin-top: 0; }
+#panel-promptgen .pg-opt { color: var(--color-text-dim, #777); font-weight: 400; }
+#panel-promptgen input[type="file"] { font: inherit; font-size: 13px; color: var(--color-text, #eee); }
+#panel-promptgen textarea {
+  width: 100%; background: var(--color-surface-2, #1e1e24); color: var(--color-text, #eee);
+  border: 1px solid var(--color-border-strong, rgba(255,255,255,.2)); border-radius: 8px;
+  padding: 10px 12px; font: inherit; font-size: 13px; line-height: 1.5; resize: vertical;
+}
+#panel-promptgen .pg-thumb { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+#panel-promptgen .pg-thumb img {
+  width: 64px; height: 114px; object-fit: cover; border-radius: 6px;
+  border: 1px solid var(--color-border, rgba(255,255,255,.12)); background: #000;
+}
+#panel-promptgen .pg-thumb span { font-size: 12px; color: var(--color-text-muted, #aaa); }
+#panel-promptgen .pg-row { display: flex; align-items: center; gap: 14px; margin-top: 18px; flex-wrap: wrap; }
+#panel-promptgen .pg-cost { font-size: 11.5px; color: var(--color-text-dim, #777); }
+#panel-promptgen .pg-state {
+  margin-top: 14px; font-size: 12.5px; line-height: 1.5; padding: 10px 12px; border-radius: 8px;
+  background: var(--color-surface-2, #1e1e24); color: var(--color-text-muted, #bbb);
+}
+#panel-promptgen .pg-state.is-run { background: rgba(90,160,255,.14); color: #9ec8ff; }
+#panel-promptgen .pg-state.is-ok { background: rgba(155,227,122,.14); color: #b6e79b; }
+#panel-promptgen .pg-state.is-warn { background: rgba(255,196,0,.14); color: #f0d089; }
+#panel-promptgen .pg-state.is-err { background: rgba(229,120,111,.14); color: #e5b7b2; }
+#panel-promptgen .pg-card {
+  margin-top: 20px; background: var(--color-surface, #16161a);
+  border: 1px solid var(--color-border, rgba(255,255,255,.12)); border-radius: 12px; overflow: hidden;
+}
+/* Der Produktionsprompt ist das eigentliche Ergebnis — hervorgehoben. */
+#panel-promptgen .pg-card.is-result { border-color: var(--color-accent, #ccff00); box-shadow: 0 0 0 1px var(--color-accent, #ccff00) inset; }
+#panel-promptgen .pg-card-h {
+  display: flex; align-items: center; gap: 10px; padding: 12px 16px; font-size: 13px; font-weight: 700;
+  border-bottom: 1px solid var(--color-border, rgba(255,255,255,.12));
+}
+#panel-promptgen .pg-card-h .rbtn { margin-left: auto; }
+#panel-promptgen .pg-badge {
+  font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 100px;
+  background: rgba(255,255,255,.09); color: var(--color-text-muted, #bbb);
+}
+#panel-promptgen .pg-badge.is-ok { background: #9be37a; color: #0a2a0a; }
+#panel-promptgen .pg-badge.is-warn { background: #f0c674; color: #2a1e00; }
+#panel-promptgen .pg-card pre {
+  margin: 0; padding: 16px; font-size: 12px; line-height: 1.6; white-space: pre-wrap; word-break: break-word;
+  max-height: 460px; overflow-y: auto; color: var(--color-text, #ddd);
+}
+#panel-promptgen .pg-card.is-result pre { max-height: none; }
+#panel-promptgen .pg-missing {
+  padding: 12px 16px; font-size: 12px; line-height: 1.5; background: rgba(255,196,0,.1); color: #f0d089;
+  border-bottom: 1px solid var(--color-border, rgba(255,255,255,.12));
+}
+#panel-promptgen .pg-missing-act { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+#panel-promptgen .pg-note { font-size: 11.5px; color: var(--color-text-dim, #888); }
