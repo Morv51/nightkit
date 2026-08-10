@@ -29,6 +29,42 @@ Never replace a strong native solution with a generic one.
 Never collapse everything into a generic footer.
 Never generalise a culturally specific flyer into a generic "music flyer".
 
+SINGLE DECISION RULE
+
+This rule is absolute and applies to every section of the analysis.
+
+Never offer alternatives. Every placement, every orientation, every
+typographic treatment and every scale must be stated as one single
+decision.
+
+Phrases such as "beneath or beside", "adjacent or below", "either A or
+B", "for example", "could be", "may sit", "or as its own extension" are
+forbidden in the output. If two options seem plausible, choose the one
+that best serves this specific reference and state only that one.
+
+The later production stage must never have to decide anything. Any
+choice left open in this analysis will be resolved randomly and will
+break the design.
+
+CATEGORY 3 PLACEMENT RULE
+
+When a function is missing from the reference and a new module must be
+created, that module must occupy an area the reference deliberately
+leaves open.
+
+A Category 3 module must not attach itself to a Category 1 module, must
+not share its background shape, must not sit directly above or below it,
+and must not extend its frame, bar or rule system.
+
+Before placing a new module, identify every open area in the reference
+and name them. Then choose the open area that keeps the greatest
+distance from the largest existing module, and place the new module
+there.
+
+A newly created module that leans on a solved module inherits its
+gravity and collapses the composition into a single dense zone. This is
+the most damaging failure in the entire workflow.
+
 USER PROVIDED CONTEXT
 
 The user may provide additional context together with the reference image.
@@ -203,6 +239,9 @@ Extend the existing solution carefully without changing its native design logic.
 CATEGORY 3
 The function is missing.
 Create exactly one new solution that feels native to this specific flyer system.
+Apply the CATEGORY 3 PLACEMENT RULE: the new module goes into an open area
+of the reference, never attached to a solved module.
+Name the open area you chose and say which open areas you rejected.
 
 You must classify at least the following functions:
 HEADLINE
@@ -246,6 +285,14 @@ If the reference shows a left aligned stacked three name list, preserve that.
 If the reference shows a horizontal three name row, preserve that.
 If the reference has no DJ module, then and only then create a new stable editable solution.
 
+When you create a new DJ module, the CATEGORY 3 PLACEMENT RULE applies without
+exception. The DJ block goes into an open area of the composition. It must not
+be placed under, above or beside the headline block, must not sit on the same
+background shape as the headline, and must not use the headline's bars, rules
+or frame devices. State the exact zone by name, for example "mid-left, on the
+open red field, below the script line". Do not describe the zone with an
+alternative.
+
 Also evaluate edit stability.
 If a later user removes one DJ, the layout must still feel intentional.
 Mention the most stable editable logic for this specific flyer.
@@ -268,7 +315,12 @@ Do not replace a vertical date with a horizontal one or vice versa.
 
 Also note:
 The later generated flyer must render the literal strings "19.06.26" and "UHRZEIT".
-If the later template expects "23:00h", define whether that should appear together with the date or as its own extension.
+
+If a date module exists and time does not, time extends the date module. State
+one exact position for it, on the same baseline or in one named relation to the
+date, at a smaller scale and a lighter tonal value than the date. Time must
+never receive its own box, its own line or its own zone. Do not offer two
+options for where the time sits.
 
 8. FOOTER AND LOWER ZONE LOGIC
 
@@ -327,6 +379,15 @@ subline breaking into unstable structure
 date changing orientation
 new icons appearing from nowhere
 clubname receiving a different design language than the reference supports
+a newly created module attaching itself to the headline instead of using an open area
+all information collapsing into one dense zone instead of staying distributed
+time receiving its own box instead of extending the date module
+
+You must always include these three failure modes in your list, naming the
+specific zone or module that would be affected in this reference:
+one entry stating exactly where the DJ block must not be placed
+one entry stating that the information must not collapse into a single zone
+one entry stating that the smallest text must stay at most one fifth of the headline
 
 11. PRODUCTION CONVERSION RULES
 
@@ -338,6 +399,11 @@ OUTPUT FORMAT
 Return the result in exactly this structure:
 
 A. MASTER SUMMARY
+
+The master summary must end with two explicit statements:
+one sentence naming every text zone of the reconstruction by position, so the
+zones can be counted, and one sentence naming the expansion logic, meaning which
+open areas of the reference will carry the modules the reference does not have.
 B. VISUAL DNA
 C. GENRE AND CULTURAL DNA
 D. PERFORMER AND OBJECT DNA
