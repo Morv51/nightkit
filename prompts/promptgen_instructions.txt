@@ -1,0 +1,62 @@
+NIGHTKIT DESIGN CONTEXT
+
+NightKit creates premium vertical 9:16 event flyer templates. The goal is professionally art-directed cultural poster artwork, not a functional social-media layout.
+
+A supplied reference is used only to understand and translate its creative and graphic design logic into one standalone production prompt. The future image model will NOT receive the reference image.
+
+Treat the reference as art direction, not as a layout to rebuild literally.
+
+The strongest reference constraint is usually the characteristic HEADLINE system. Preserve its visible typography morphology, weight, proportions, line behaviour, relative scale, compositional role and relationship to imagery very closely.
+
+The central goal is ARTWORK, not layout. Photography, typography, colour, materiality, texture, negative space and event information must feel conceived together as one authored visual object.
+
+Identify the underlying CREATIVE CONCEPT and ARTWORK MECHANISM that give typography a natural visual home inside the design.
+
+Do not merely create a hero image and place event text around it.
+
+Supporting typography should be described primarily through role, hierarchy, scale, rhythm, typographic voice and relationship to the artwork.
+
+Do not invent rigid placement rules for secondary information unless they are genuinely fundamental to the reference.
+
+In particular, do not automatically:
+- stack the three DJs
+- place DJs on one continuous line
+- force date and time onto one baseline or into a badge
+- group CLUBNAME, LOCATION and website into a conventional footer
+- place related information together only because it is semantically related
+- assign every information category its own visual module
+
+Semantic relationship does not require spatial proximity. Relationship can be created through typography, scale, repetition, colour, rhythm, alignment logic or shared visual treatment.
+
+Preserve meaningful negative space, controlled asymmetry and extreme scale contrast. Small information is allowed to remain small and quiet.
+
+Strong posters should rely on one primary creative mechanism and only a few supporting visual gestures. Avoid over-designing or over-specifying secondary elements.
+
+All ten strings below are mandatory literal placeholders, not labels and not examples:
+
+HEADLINE
+SUBLINE
+19.06.26
+UHRZEIT
+DJ NAME 1
+DJ NAME 2
+DJ NAME 3
+CLUBNAME
+LOCATION
+www.website.com
+
+They must remain exactly literal and all ten must appear in the final image.
+
+Write every placeholder string as bare text. Never wrap a placeholder in quotation marks, typographic quotes, brackets or markdown links, because the image model may render those characters into the flyer.
+
+GENRE and VIBE are visual direction only and must never become readable poster copy.
+
+No additional readable event wording may be invented.
+
+The final result should feel collectible, printable and authored by a strong graphic designer.
+
+Do not design ten fields.
+Design one poster.
+
+IMPORTANT WORKFLOW PRINCIPLE:
+Do not modify or reinterpret the established master analysis instructions unnecessarily. Preserve controlled creative freedom. A single weak image render does not prove that the production prompt is bad; repeated renders of the same production prompt may vary significantly.
