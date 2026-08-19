@@ -838,6 +838,18 @@ html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: aut
 }
 #panel-aprompt .ap-clear:hover { border-color: var(--color-accent, #ccff00); color: var(--color-text, #fff); }
 
+/* Vorschlags-Knopf: sitzt UNTER Ablageflaeche und Vorschau, weil die beiden
+   einander abloesen — er soll in beiden Zustaenden erreichbar bleiben. */
+#panel-aprompt .ap-suggest {
+  justify-self: stretch; padding: 9px 14px; font: inherit; font-size: 12.5px; font-weight: 600;
+  cursor: pointer; border-radius: var(--radius-md, 12px);
+  border: 1px solid var(--color-border, #333);
+  background: var(--card-inset, #111); color: var(--color-text-muted, #bbb);
+  transition: border-color .15s, color .15s;
+}
+#panel-aprompt .ap-suggest:hover:not(:disabled) { border-color: var(--color-accent, #ccff00); color: var(--color-text, #fff); }
+#panel-aprompt .ap-suggest:disabled { cursor: default; opacity: .4; }
+
 #panel-aprompt .ap-input {
   width: 100%; height: 42px; padding: 0 12px; font: inherit; font-size: 14px;
   color: var(--color-text, #fff); background: var(--card-inset, #111);

@@ -18,7 +18,7 @@ import { wireDropzone, fileToDataUrl } from "./studioUi.js";
 
 const POLL_MS = 2000;
 
-const state = { image: null, imageName: "", jobId: null, timer: null, ticker: null, startedAt: 0, running: false };
+const state = { image: null, imageName: "", jobId: null, timer: null, ticker: null, startedAt: 0, running: false, suggesting: false };
 
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const panel = () => document.getElementById("panel-aprompt");
@@ -35,6 +35,15 @@ async function probe() {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) { const e = new Error(data.error || "HTTP " + res.status); e.status = res.status; throw e; }
   return data;
+}
+
+// "aus" statt leer, damit sichtbar ist, dass ein Feld bewusst weggelassen wird.
+const stufe = (v) => esc(v || "aus");
+function metaZeile(info) {
+  return esc(info.model) + " &middot; Stufe " + stufe(info.effort)
+    + " &middot; Ausf\u00fchrlichkeit " + stufe(info.verbosity)
+    + " &middot; max. " + esc(String(info.maxOutput)) + " Ausgabe-Tokens"
+    + (info.classifyModel ? " &middot; Vorschlag: " + esc(info.classifyModel) : "");
 }
 
 function shell(info) {
@@ -61,6 +70,7 @@ function shell(info) {
             <figcaption class="ap-fname" id="ap-fname"></figcaption>
             <button type="button" class="ap-clear" id="ap-clear">Anderes Bild wählen</button>
           </figure>
+          <button type="button" class="ap-suggest" id="ap-suggest" disabled>Genre und Vibe vorschlagen</button>
         </div>
 
         <div class="ap-col">
@@ -71,7 +81,7 @@ function shell(info) {
           <input type="text" id="ap-vibe" class="ap-input" placeholder="z. B. dunkel, roh, urban" autocomplete="off">
 
           <button type="button" class="ap-go" id="ap-go">Prompt erzeugen</button>
-          <p class="ap-meta" id="ap-meta">${info ? esc(info.model) + " &middot; Stufe " + esc(info.effort) + " &middot; max. " + esc(String(info.maxOutput)) + " Ausgabe-Tokens" : ""}</p>
+          <p class="ap-meta" id="ap-meta">${info ? metaZeile(info) : ""}</p>
         </div>
       </div>
 
@@ -110,6 +120,7 @@ function setRunning(on) {
   if (go) { go.disabled = on; go.textContent = on ? "Läuft…" : "Prompt erzeugen"; }
   ["ap-genre", "ap-vibe"].forEach((id) => { const e = $(id); if (e) e.disabled = on; });
   const drop = $("ap-drop"); if (drop) drop.classList.toggle("ap-locked", on);
+  const sug = $("ap-suggest"); if (sug) sug.disabled = on || !state.image || state.suggesting;
 }
 
 function stopTimers() {
@@ -129,6 +140,7 @@ async function pickFile(f) {
     if (fname) fname.textContent = state.imageName;
     if (prev) prev.hidden = false;
     if (drop) drop.hidden = true;
+    const sug = $("ap-suggest"); if (sug) sug.disabled = false;   // erst mit Bild nutzbar
   } catch (e) {
     showError("Bild konnte nicht gelesen werden: " + (e && e.message ? e.message : e));
   }
@@ -140,6 +152,7 @@ function clearImage() {
   if (prev) prev.hidden = true;
   if (drop) drop.hidden = false;
   if (file) file.value = "";
+  const sug = $("ap-suggest"); if (sug) sug.disabled = true;
 }
 
 async function poll() {
@@ -178,6 +191,29 @@ async function poll() {
   const copy = $("ap-copy"); if (copy) copy.textContent = "Kopieren";
 }
 
+// Kleiner Zweit-Call. Fuellt nur die beiden Felder vor, die editierbar bleiben,
+// und startet die Hauptanalyse ausdruecklich NICHT. Stimmt das Format der
+// Modellantwort nicht, meldet der Server das — dann bleiben die Felder, wie sie
+// sind, und der Fehler steht sichtbar in der Maske.
+async function suggestGenreVibe() {
+  if (!state.image || state.suggesting || state.running) return;
+  clearError();
+  const btn = $("ap-suggest");
+  state.suggesting = true;
+  if (btn) { btn.disabled = true; btn.textContent = "Schlage vor\u2026"; }
+  try {
+    const r = await post("/admin/aprompt/suggest", { image: state.image });
+    const g = $("ap-genre"), v = $("ap-vibe");
+    if (g && r.genre) g.value = r.genre;
+    if (v && r.vibe) v.value = r.vibe;
+  } catch (e) {
+    showError("Vorschlag fehlgeschlagen: " + (e && e.message ? e.message : e));
+  } finally {
+    state.suggesting = false;
+    if (btn) { btn.disabled = !state.image || state.running; btn.textContent = "Genre und Vibe vorschlagen"; }
+  }
+}
+
 async function start() {
   if (state.running) return;
   clearError();
@@ -190,10 +226,10 @@ async function start() {
   const out = $("ap-out"); if (out) out.hidden = true;
   setRunning(true);
   state.startedAt = Date.now();
-  setStatus("Analyse läuft — höchste Reasoning-Stufe, das dauert erfahrungsgemäß mehrere Minuten.");
+  setStatus("Analyse läuft — das dauert erfahrungsgemäß mehrere Minuten.");
   state.ticker = setInterval(() => {
     const s = Math.round((Date.now() - state.startedAt) / 1000);
-    setStatus("Analyse läuft seit " + s + " s — höchste Reasoning-Stufe, das dauert erfahrungsgemäß mehrere Minuten.");
+    setStatus("Analyse läuft seit " + s + " s — das dauert erfahrungsgemäß mehrere Minuten.");
   }, 1000);
 
   try {
@@ -239,6 +275,7 @@ function wire() {
   if (file) file.addEventListener("change", () => pickFile(file.files && file.files[0]));
   const clear = $("ap-clear"); if (clear) clear.addEventListener("click", clearImage);
   const go = $("ap-go"); if (go) go.addEventListener("click", start);
+  const sug = $("ap-suggest"); if (sug) sug.addEventListener("click", suggestGenreVibe);
   const copy = $("ap-copy"); if (copy) copy.addEventListener("click", copyOut);
 }
 
