@@ -1,9 +1,0 @@
-When the production prompt describes where a piece of information sits,
-name one zone of the composition and offer two or three alternative ways
-of resolving it inside that zone. Let the image model choose between them.
-Do not assign individual placeholders to separate parts of the poster.
-
-DJ NAME 1, DJ NAME 2 and DJ NAME 3 are one group and share one zone.
-
-Write every placeholder string as bare text, never in quotation marks,
-brackets or markdown links.
