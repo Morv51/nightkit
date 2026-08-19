@@ -801,3 +801,88 @@ html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: aut
 .afr-fam > summary { cursor: pointer; color: var(--color-text-muted, #bbb); font-weight: 600; }
 .afr-fam > div { margin-top: 6px; line-height: 1.5; color: var(--color-text-muted, #bbb); }
 .afr-fam-none { margin: 8px 0 0; font-size: 11px; color: var(--color-text-dim, #888); }
+
+/* ── Analyse-Prompt-Generator (#panel-aprompt) ───────────────────────────────
+   Eigenes, abgeschlossenes Panel: alle Regeln unter #panel-aprompt, damit sie
+   keine bestehende Ansicht beruehren. Die Ablegeflaeche nutzt die vorhandene
+   .st-drop-Optik weiter. */
+#panel-aprompt .ap-wrap { display: grid; gap: 18px; }
+#panel-aprompt .ap-h2 { margin: 0 0 4px; font-size: 18px; }
+#panel-aprompt .ap-sub { margin: 0; font-size: 13px; line-height: 1.55; color: var(--muted, rgba(245,245,240,.55)); max-width: 68ch; }
+#panel-aprompt .ap-warn {
+  margin: 10px 0 0; padding: 9px 12px; font-size: 12.5px; line-height: 1.5;
+  border-radius: var(--radius-md, 12px); background: rgba(255,196,0,.14); color: #f0d089;
+}
+
+#panel-aprompt .ap-grid { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 20px; align-items: start; }
+#panel-aprompt .ap-col { display: grid; gap: 8px; align-content: start; }
+#panel-aprompt .ap-label { font-size: 12px; font-weight: 600; letter-spacing: .02em; color: var(--color-text-muted, #bbb); }
+
+#panel-aprompt .ap-drop { min-height: 150px; line-height: 1.6; }
+#panel-aprompt .ap-drop small { color: var(--muted, rgba(245,245,240,.45)); }
+#panel-aprompt .ap-drop.ap-locked { pointer-events: none; opacity: .5; }
+
+#panel-aprompt .ap-preview { display: grid; gap: 8px; margin: 0; justify-items: start; }
+/* Gedeckelt: ein 9:16-Flyer in voller Spaltenbreite schoebe Status und Ausgabe
+   sonst unter den sichtbaren Bereich. */
+#panel-aprompt .ap-preview img {
+  display: block; width: auto; max-width: 100%; max-height: 300px; object-fit: contain;
+  border-radius: var(--radius-md, 12px);
+  border: 1px solid var(--color-border, #333); background: var(--card-inset, #111);
+}
+#panel-aprompt .ap-fname { font-size: 11.5px; color: var(--muted, rgba(245,245,240,.5)); word-break: break-all; }
+#panel-aprompt .ap-clear {
+  justify-self: start; padding: 6px 12px; font-size: 12px; cursor: pointer;
+  border-radius: 999px; border: 1px solid var(--color-border, #333);
+  background: transparent; color: var(--color-text-muted, #bbb);
+}
+#panel-aprompt .ap-clear:hover { border-color: var(--color-accent, #ccff00); color: var(--color-text, #fff); }
+
+#panel-aprompt .ap-input {
+  width: 100%; height: 42px; padding: 0 12px; font: inherit; font-size: 14px;
+  color: var(--color-text, #fff); background: var(--card-inset, #111);
+  border: 1px solid var(--color-border, #333); border-radius: var(--radius-md, 12px);
+}
+#panel-aprompt .ap-input:focus { outline: none; border-color: var(--color-accent, #ccff00); box-shadow: 0 0 0 3px rgba(204,255,0,.10); }
+#panel-aprompt .ap-input:disabled { opacity: .55; }
+
+#panel-aprompt .ap-go {
+  margin-top: 6px; height: 46px; padding: 0 20px; font: inherit; font-size: 15px; font-weight: 700;
+  cursor: pointer; border: 0; border-radius: var(--radius-md, 12px);
+  background: var(--color-accent, #ccff00); color: #0b0b0b;
+}
+#panel-aprompt .ap-go:hover:not(:disabled) { filter: brightness(1.08); }
+#panel-aprompt .ap-go:disabled { cursor: default; opacity: .5; }
+#panel-aprompt .ap-meta { margin: 2px 0 0; font-size: 11.5px; color: var(--muted, rgba(245,245,240,.45)); }
+
+#panel-aprompt .ap-status {
+  padding: 11px 14px; font-size: 13px; border-radius: var(--radius-md, 12px);
+  background: var(--card-inset, #111); border: 1px solid var(--color-border, #333);
+  color: var(--color-text-muted, #bbb);
+}
+/* Fehler aus dem Modell-Call gehoeren sichtbar in die Maske, nicht nur in die Konsole. */
+#panel-aprompt .ap-error, #panel-aprompt .ap-error-static {
+  padding: 11px 14px; font-size: 13px; line-height: 1.55; border-radius: var(--radius-md, 12px);
+  background: rgba(255,90,90,.13); border: 1px solid rgba(255,90,90,.35); color: #ffb0b0;
+  white-space: pre-wrap; word-break: break-word;
+}
+
+#panel-aprompt .ap-out { display: grid; gap: 8px; }
+#panel-aprompt .ap-out-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+#panel-aprompt .ap-copy {
+  padding: 7px 16px; font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  border-radius: 999px; border: 1px solid var(--color-accent, #ccff00);
+  background: transparent; color: var(--color-accent, #ccff00);
+}
+#panel-aprompt .ap-copy:hover { background: var(--color-accent, #ccff00); color: #0b0b0b; }
+#panel-aprompt .ap-text {
+  width: 100%; padding: 14px; resize: vertical;
+  font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--color-text, #fff); background: var(--card-inset, #111);
+  border: 1px solid var(--color-border, #333); border-radius: var(--radius-md, 12px);
+}
+#panel-aprompt .ap-text:focus { outline: none; border-color: var(--color-accent, #ccff00); }
+
+@media (max-width: 720px) {
+  #panel-aprompt .ap-grid { grid-template-columns: minmax(0, 1fr); }
+}

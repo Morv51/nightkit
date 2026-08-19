@@ -38,6 +38,7 @@
         <button class="studio-tab" type="button" data-tab="manage" hidden>Templates</button>
         <button class="studio-tab" type="button" data-tab="afruns" hidden>Läufe</button>
         <button class="studio-tab" type="button" data-tab="usage" hidden>Nutzung</button>
+        <button class="studio-tab" type="button" data-tab="aprompt" hidden>Analyse-Prompt</button>
         <button class="studio-tab" type="button" data-tab="archiv">Archiv</button>
       </div>
       <button class="rbtn rbtn-ghost studio-lock" id="lockBtn" type="button" title="Abmelden">⊘ Abmelden</button>
@@ -519,6 +520,10 @@
       <!-- Nutzungs-Dashboard (additiv). Inhalt rendert usage-panel.js. Tab + Panel
            bleiben verborgen, wenn ADMIN_TOOLS aus ist. Nur Anzeige, keine Kernfunktion. -->
       <section class="studio-panel" id="panel-usage" data-tab="usage" hidden></section>
+
+      <!-- Analyse-Prompt-Generator: Referenzflyer + Genre + Vibe -> fertiger
+           Bildgenerierungs-Prompt zum Kopieren. Inhalt baut analysisprompt-panel.js. -->
+      <section class="studio-panel" id="panel-aprompt" data-tab="aprompt" hidden></section>
 
       <!-- Letzte Läufe (additiv): dauerhaft gespeicherte Auto-Flow-Ergebnisse aus R2.
            Inhalt rendert autoflowRuns.js. Tab + Panel bleiben verborgen, wenn ADMIN_TOOLS aus ist. -->

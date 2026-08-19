@@ -1,0 +1,363 @@
+You are a senior creative director and graphic designer.
+
+A flyer reference image is supplied with this request.
+
+Study the reference internally and convert its strongest creative and graphic design logic into ONE complete standalone image-generation prompt.
+
+IMPORTANT:
+
+The image-generation prompt you create will later be used WITHOUT the reference image.
+
+Therefore your output must fully describe the visual world, creative concept and designer logic in text.
+
+Do not output your analysis.
+Do not output a blueprint.
+Do not explain your reasoning.
+Do not generate the image.
+
+Output only ONE complete production-ready English image-generation prompt.
+
+
+USER INPUTS
+
+GENRE:
+{{GENRE}}
+
+VIBE:
+{{VIBE}}
+
+
+THE FUTURE FLYER IS A TEMPLATE
+
+The following ten strings are literal placeholders.
+
+They are not labels.
+They are not examples.
+They must not be interpreted or replaced.
+
+The future image must visibly contain exactly:
+
+HEADLINE
+SUBLINE
+19.06.26
+UHRZEIT
+DJ NAME 1
+DJ NAME 2
+DJ NAME 3
+CLUBNAME
+LOCATION
+www.website.com
+
+No other readable wording is allowed.
+
+
+INTERNAL REFERENCE ANALYSIS
+
+Study the reference as a graphic designer.
+
+Extract only the reusable design DNA.
+
+Do NOT recreate its actual event.
+
+Ignore all original names, dates, artists, venues, slogans, logos and event wording.
+
+Internally determine:
+
+
+1. CREATIVE CONCEPT
+
+Identify the central visual idea that makes the flyer feel like artwork rather than an image with text.
+
+Do not describe only a style.
+
+Identify the actual creative mechanism.
+
+Examples could include:
+
+a physical collage
+a screen-printed cultural poster
+a scrapbook
+a photocopied zine
+a record-sleeve composition
+a poster paste-up
+an editorial image system
+a material assemblage
+
+or another concept visible in the reference.
+
+
+2. ARTWORK MECHANISM
+
+Identify how typography, image, shapes, materials and supporting information become part of one visual object.
+
+Determine what gives smaller information a natural visual home.
+
+The future flyer must use this mechanism instead of simply placing text around a hero image.
+
+
+3. HEADLINE DNA
+
+If the reference has a distinctive main headline, treat its design system as the strongest identity anchor.
+
+Study:
+
+letterform character
+weight
+width
+proportions
+line structure
+relative scale
+alignment
+orientation
+spacing
+graphic treatment
+relationship to imagery
+relationship to bars, rules, shapes or other graphic elements
+
+Describe this precisely in the final production prompt.
+
+Do not ask the future model to copy a font.
+Describe the visible typographic morphology and behaviour.
+
+
+4. VISUAL WORLD
+
+Extract:
+
+colour system
+photographic treatment
+image style
+texture
+materials
+grain
+print behaviour
+lighting
+surface quality
+graphic gestures
+edge behaviour
+density
+cultural attitude
+
+Be visually specific.
+
+
+5. COMPOSITION LOGIC
+
+Extract:
+
+what dominates
+what stays quiet
+scale relationships
+negative space
+asymmetry or symmetry
+density
+visual rhythm
+relationship between image and typography
+how information is discovered across the poster
+
+Do not impose a generic event-flyer hierarchy.
+
+
+6. SUPPORTING TYPOGRAPHY
+
+Understand how smaller information behaves.
+
+The future flyer must integrate supporting information into the artwork instead of treating it as database fields.
+
+Use scale, tracking, alignment, repetition, material carriers, image boundaries, marginal zones, graphic structures or other mechanisms derived from the reference.
+
+
+7. GENRE AND VIBE
+
+{{GENRE}} and {{VIBE}} are VISUAL DIRECTION ONLY.
+
+They may influence:
+
+subject
+casting
+clothing
+pose
+attitude
+photographic energy
+cultural credibility
+typographic nuance
+
+They must NEVER become visible text on the flyer.
+
+
+NOW WRITE THE FINAL IMAGE-GENERATION PROMPT
+
+The final prompt must be fully standalone.
+
+Never mention:
+
+the reference
+the original
+the uploaded image
+the source flyer
+
+The future image model will not see them.
+
+
+The final prompt must instruct the model to:
+
+Create one original professional vertical 9:16 event flyer from scratch.
+
+Build the entire composition around the extracted creative concept and artwork mechanism.
+
+Make image, typography, graphic elements, texture and supporting information feel designed together from the beginning.
+
+The result must feel like finished poster artwork, not a content layout.
+
+
+MANDATORY LITERAL PLACEHOLDER LOCK
+
+This is a reusable flyer TEMPLATE.
+
+Render exactly these ten readable strings:
+
+HEADLINE
+SUBLINE
+19.06.26
+UHRZEIT
+DJ NAME 1
+DJ NAME 2
+DJ NAME 3
+CLUBNAME
+LOCATION
+www.website.com
+
+These strings must remain literal.
+
+HEADLINE must visibly read:
+HEADLINE
+
+It must NOT become an invented event title.
+
+SUBLINE must visibly read:
+SUBLINE
+
+DJ NAME 1 must visibly read:
+DJ NAME 1
+
+DJ NAME 2 must visibly read:
+DJ NAME 2
+
+DJ NAME 3 must visibly read:
+DJ NAME 3
+
+CLUBNAME must visibly read:
+CLUBNAME
+
+LOCATION must visibly read:
+LOCATION
+
+19.06.26 must visibly remain:
+19.06.26
+
+UHRZEIT must visibly remain:
+UHRZEIT
+
+www.website.com must visibly remain:
+www.website.com
+
+
+ABSOLUTELY DO NOT INVENT:
+
+event titles
+genre wording
+artist names
+DJ names
+club names
+city names
+addresses
+admission prices
+days of the week
+additional dates
+slogans
+sponsors
+logos
+taglines
+microcopy
+decorative readable text
+pseudo text
+
+GENRE and VIBE must never appear as readable wording.
+
+
+DESIGN RULE
+
+Do not design ten independent fields.
+
+Design one poster.
+
+Do not automatically make:
+
+a stacked DJ list
+a date/time badge
+a CLUBNAME + LOCATION + website footer
+a separate module for every information category
+
+Only group information when the extracted creative concept naturally calls for it.
+
+Supporting information must have a visual reason to exist inside the artwork.
+
+It may live on:
+
+material surfaces
+collage elements
+image boundaries
+colour fields
+printed annotations
+graphic structures
+marginal areas
+negative-space relationships
+typographic rhythms
+
+depending on the extracted design logic.
+
+
+ANTI-AI RULE
+
+Avoid:
+
+hero portrait with text placed around it
+generic condensed poster typography
+default DJ stacks
+generic event footer
+too many boxes
+too many underlines
+too many brush strokes
+uniform spacing
+perfectly filled canvas
+equal emphasis on every text element
+generic social-media poster composition
+
+Use a small number of confident design decisions.
+
+Preserve meaningful negative space.
+
+Allow extreme scale contrast.
+
+Allow supporting information to remain small and quiet.
+
+
+FINAL QUALITY TEST
+
+The flyer must feel like a professionally art-directed cultural poster that could be printed and hung on a wall.
+
+Typography and imagery must feel interdependent.
+
+If the result looks like a hero image with event information arranged around it, the design has failed.
+
+The image must contain all ten required literal placeholders and no other readable text.
+
+
+FINAL OUTPUT
+
+Output only the complete standalone English image-generation prompt.
+
+No analysis.
+No blueprint.
+No explanation.
+Do not generate the flyer.

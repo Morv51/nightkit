@@ -138,6 +138,7 @@ function showStudio() {
   import("./upload-panel.js").then((m) => m.initUpload && m.initUpload()).catch(() => {});
   import("./designAnalysis.js").then((m) => m.initDesignAnalysis && m.initDesignAnalysis()).catch(() => {});
   import("./usage-panel.js").then((m) => m.initUsage && m.initUsage()).catch(() => {});
+  import("./analysisprompt-panel.js").then((m) => m.initAnalysisPrompt && m.initAnalysisPrompt()).catch(() => {});
   resolveInitial();
 }
 
