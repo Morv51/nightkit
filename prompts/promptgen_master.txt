@@ -328,7 +328,6 @@ generic event footer
 too many boxes
 too many underlines
 too many brush strokes
-uniform spacing
 perfectly filled canvas
 equal emphasis on every text element
 generic social-media poster composition
