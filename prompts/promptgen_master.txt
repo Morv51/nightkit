@@ -129,8 +129,6 @@ photographic treatment
 image style
 texture
 materials
-grain
-print behaviour
 lighting
 surface quality
 graphic gestures
