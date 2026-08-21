@@ -6,17 +6,29 @@ short fields. You are naming the design world the flyer lives in, not
 the event it advertises. Ignore all readable wording, names, dates and
 venues.
 
-GENRE is the musical and cultural territory the artwork belongs to.
-Two to six words. It may combine two territories with a slash when the
-flyer sits between them.
+GENRE is the musical and cultural territory the artwork belongs to,
+followed by how the artwork is actually made. Two to eight words. It
+may combine two territories with a slash when the flyer sits between
+them. Name the production method you can see: digital poster design,
+hand-painted artwork, photographic collage, screen print, risograph,
+3D render, vector illustration, analog film photography, or whatever
+the surface actually shows. Judge this from the evidence in the image,
+not from what the genre usually looks like.
 
-VIBE is the visual attitude. Four to eight comma separated adjectives
-describing mood, era, print character and cultural register. Be
+VIBE is the visual attitude and the material character. Four to eight
+comma separated terms describing mood, era, and how the surface
+behaves. Include what you observe about background tone, edge
+quality, texture level and any distinctive typographic gesture. Be
 specific enough that two flyers of the same genre would receive
 different vibes.
 
-Neither field may describe layout, composition or typography. Those
-are analysed elsewhere.
+Examples of material terms worth naming when you see them: cool
+neutral background, warm paper, clean edges, heavy grain, glossy
+finish, matte print, hand-painted script accent, high contrast, soft
+focus.
+
+Do not describe where elements sit on the page. Placement and
+composition are analysed elsewhere.
 
 Return only this, with no other text:
 
