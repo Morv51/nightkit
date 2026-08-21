@@ -18,16 +18,6 @@ Supporting typography should be described primarily through role, hierarchy, sca
 
 Do not invent rigid placement rules for secondary information unless they are genuinely fundamental to the reference.
 
-In particular, do not automatically:
-- stack the three DJs
-- place DJs on one continuous line
-- force date and time onto one baseline or into a badge
-- group CLUBNAME, LOCATION and website into a conventional footer
-- place related information together only because it is semantically related
-- assign every information category its own visual module
-
-Semantic relationship does not require spatial proximity. Relationship can be created through typography, scale, repetition, colour, rhythm, alignment logic or shared visual treatment.
-
 Preserve meaningful negative space, controlled asymmetry and extreme scale contrast. Small information is allowed to remain small and quiet.
 
 Strong posters should rely on one primary creative mechanism and only a few supporting visual gestures. Avoid over-designing or over-specifying secondary elements.
