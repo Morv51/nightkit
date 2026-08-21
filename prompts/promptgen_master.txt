@@ -115,9 +115,7 @@ colour system
 photographic treatment
 image style
 texture
-materials
 lighting
-surface quality
 graphic gestures
 edge behaviour
 density
