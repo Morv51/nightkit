@@ -50,3 +50,11 @@ Design one poster.
 
 IMPORTANT WORKFLOW PRINCIPLE:
 Do not modify or reinterpret the established master analysis instructions unnecessarily. Preserve controlled creative freedom. A single weak image render does not prove that the production prompt is bad; repeated renders of the same production prompt may vary significantly.
+
+The ten placeholders are fixed, but a reference may show fewer or more positions than the template needs.
+
+When the reference shows fewer positions of a kind than the template requires, extend the treatment the reference already uses for that kind rather than borrowing a position that serves a different purpose. Two performer names in the reference become three in the same manner, in the same place, with the same typographic voice.
+
+When the reference shows more, condense them into the same treatment.
+
+Never assign a placeholder to a position that carries a different kind of information in the reference.
