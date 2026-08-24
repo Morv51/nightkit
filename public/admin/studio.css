@@ -898,3 +898,15 @@ html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: aut
 @media (max-width: 720px) {
   #panel-aprompt .ap-grid { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Auto-Flow-Start aus dem Analyse-Prompt heraus */
+#panel-aprompt .ap-run-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+#panel-aprompt .ap-run {
+  padding: 9px 18px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+  border-radius: var(--radius-md, 12px); border: 1px solid var(--color-accent, #ccff00);
+  background: transparent; color: var(--color-accent, #ccff00);
+}
+#panel-aprompt .ap-run:hover:not(:disabled) { background: var(--color-accent, #ccff00); color: #0b0b0b; }
+#panel-aprompt .ap-run:disabled { cursor: default; opacity: .5; }
+#panel-aprompt .ap-run-note { font-size: 12px; color: var(--muted, rgba(245,245,240,.55)); }
+#panel-aprompt .ap-run-note a { color: var(--color-accent, #ccff00); }

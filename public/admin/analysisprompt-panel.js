@@ -18,7 +18,7 @@ import { wireDropzone, fileToDataUrl } from "./studioUi.js";
 
 const POLL_MS = 2000;
 
-const state = { image: null, imageName: "", jobId: null, timer: null, ticker: null, startedAt: 0, running: false, suggesting: false };
+const state = { image: null, imageName: "", jobId: null, timer: null, ticker: null, startedAt: 0, running: false, suggesting: false, starting: false };
 
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const panel = () => document.getElementById("panel-aprompt");
@@ -93,7 +93,11 @@ function shell(info) {
           <span class="ap-label">Erzeugter Prompt</span>
           <button type="button" class="ap-copy" id="ap-copy">Kopieren</button>
         </div>
-        <textarea id="ap-text" class="ap-text" rows="20" spellcheck="false" readonly></textarea>
+        <textarea id="ap-text" class="ap-text" rows="12" spellcheck="false" readonly></textarea>
+        <div class="ap-run-row">
+          <button type="button" class="ap-run" id="ap-run">Bilder erzeugen</button>
+          <span class="ap-run-note" id="ap-run-note"></span>
+        </div>
       </div>
     </div>`;
 }
@@ -224,6 +228,7 @@ async function start() {
   if (!vibe) return showError("Bitte einen Vibe eintragen.");
 
   const out = $("ap-out"); if (out) out.hidden = true;
+  const note = $("ap-run-note"); if (note) note.innerHTML = "";
   setRunning(true);
   state.startedAt = Date.now();
   setStatus("Analyse läuft — das dauert erfahrungsgemäß mehrere Minuten.");
@@ -242,6 +247,38 @@ async function start() {
     setStatus("");
     setRunning(false);
     showError("Start fehlgeschlagen: " + (e && e.message ? e.message : e));
+  }
+}
+
+// Startet einen Auto-Flow-Lauf mit genau diesem Produktionsprompt: drei Varianten,
+// kein Referenzbild, 9:16 nativ. Der Lauf laeuft serverseitig weiter, auch wenn der
+// Reiter gewechselt wird — die Ergebnisse liegen danach unter "Letzte Laeufe".
+async function startImages() {
+  const ta = $("ap-text");
+  if (state.starting || !ta || !ta.value.trim()) return;
+  clearError();
+  const btn = $("ap-run"), note = $("ap-run-note");
+  state.starting = true;
+  if (btn) { btn.disabled = true; btn.textContent = "Startet\u2026"; }
+  if (note) note.innerHTML = "";
+  try {
+    const r = await post("/admin/aprompt/autoflow", { prompt: ta.value });
+    if (note) {
+      note.innerHTML = "Lauf " + esc(r.runId) + " gestartet \u2014 " + esc(String(r.anzahl))
+        + " Varianten, " + esc(r.model) + ", " + esc(r.size)
+        + '. Die Bilder erscheinen unter <a href="#afruns" id="ap-to-runs">Letzte L\u00e4ufe</a>.';
+      const l = $("ap-to-runs");
+      if (l) l.addEventListener("click", (e) => {
+        e.preventDefault();
+        const t = document.querySelector('.studio-tab[data-tab="afruns"]');
+        if (t) t.click();
+      });
+    }
+  } catch (e) {
+    showError("Lauf konnte nicht gestartet werden: " + (e && e.message ? e.message : e));
+  } finally {
+    state.starting = false;
+    if (btn) { btn.disabled = false; btn.textContent = "Bilder erzeugen"; }
   }
 }
 
@@ -277,6 +314,7 @@ function wire() {
   const go = $("ap-go"); if (go) go.addEventListener("click", start);
   const sug = $("ap-suggest"); if (sug) sug.addEventListener("click", suggestGenreVibe);
   const copy = $("ap-copy"); if (copy) copy.addEventListener("click", copyOut);
+  const run = $("ap-run"); if (run) run.addEventListener("click", startImages);
 }
 
 export async function initAnalysisPrompt() {
