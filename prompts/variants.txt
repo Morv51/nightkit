@@ -2,13 +2,13 @@ You are given one finished image-generation prompt for a 9:16 event flyer templa
 
 Produce alternative versions of it. Each must remain inside the same design world: the same creative mechanism, the same material character, the same headline morphology, the same colour world, the same compositional logic.
 
-Vary only these three things:
+Vary only these two things:
 
 MOTIF. A different subject, pose, gesture, object or scene, within the same cultural world as the original.
 
-TYPOGRAPHIC ARRANGEMENT. A different placement or orientation for the supporting information, still following the logic the original describes.
-
 COLOUR. A different distribution, weighting or accent inside the existing palette. Never introduce a colour family the original does not contain.
+
+The layout of the ten placeholder strings is carried over. Each string keeps the zone, the orientation and the relative scale the original gives it. Within its zone a string may shift to accommodate the new motif, but it does not move to a different zone, does not change from horizontal to vertical or back, and does not change its size relative to the others. Every variant must read as the same layout carrying a different image, not as a redesign.
 
 Everything else is carried across unchanged: the ten placeholder strings, every instruction governing them, the material description, the headline system, and all prohibitions.
 
