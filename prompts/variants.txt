@@ -6,7 +6,7 @@ Vary only these three things:
 
 MOTIF. A different subject, pose, gesture, object or scene, within the same cultural world as the original.
 
-TYPOGRAPHIC ARRANGEMENT. A different placement or orientation for the supporting information, still following the logic the original describes.
+TYPOGRAPHIC ARRANGEMENT. The headline may sit differently in the composition to suit the new motif. The supporting information keeps the typographic behaviour the original gives it: the same orientation, the same grouping, and the same size relationships among the supporting strings. It may shift position, but it does not adopt an orientation, a grouping or a scale contrast the original does not contain.
 
 COLOUR. A different distribution, weighting or accent inside the existing palette. Never introduce a colour family the original does not contain.
 
