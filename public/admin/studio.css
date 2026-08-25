@@ -910,3 +910,13 @@ html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: aut
 #panel-aprompt .ap-run:disabled { cursor: default; opacity: .5; }
 #panel-aprompt .ap-run-note { font-size: 12px; color: var(--muted, rgba(245,245,240,.55)); }
 #panel-aprompt .ap-run-note a { color: var(--color-accent, #ccff00); }
+
+/* Anzahl Varianten neben dem Bildlauf-Knopf */
+#panel-aprompt .ap-count-lab { font-size: 12px; color: var(--color-text-muted, #bbb); }
+#panel-aprompt .ap-count {
+  width: 62px; height: 34px; padding: 0 8px; font: inherit; font-size: 13px; text-align: center;
+  color: var(--color-text, #fff); background: var(--card-inset, #111);
+  border: 1px solid var(--color-border, #333); border-radius: var(--radius-md, 12px);
+}
+#panel-aprompt .ap-count:focus { outline: none; border-color: var(--color-accent, #ccff00); }
+#panel-aprompt .ap-count:disabled { opacity: .5; }
