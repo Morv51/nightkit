@@ -17,3 +17,5 @@ Do not simplify, shorten or summarise. Each variant is a complete standalone pro
 Separate the variants with a line containing only ---
 
 Return nothing else.
+
+Every variant states that the letterforms of the ten placeholder strings are rendered correctly, letter by letter, whatever passes in front of them. Parts of the motif may overlap the lettering, and that overlap is welcome, but no letter is replaced, duplicated, dropped, merged or reshaped by what crosses it.
