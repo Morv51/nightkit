@@ -8,7 +8,7 @@ MOTIF. A different subject, pose, gesture, object or scene, within the same cult
 
 COLOUR. A different distribution, weighting or accent inside the existing palette. Never introduce a colour family the original does not contain.
 
-The layout of the ten placeholder strings is carried over. Each string keeps the zone, the orientation and the relative scale the original gives it. Within its zone a string may shift to accommodate the new motif, but it does not move to a different zone, does not change from horizontal to vertical or back, and does not change its size relative to the others. Every variant must read as the same layout carrying a different image, not as a redesign.
+The layout of the ten placeholder strings is carried over. Each string keeps the zone and the orientation the original gives it, and keeps its rank in the hierarchy. Within its zone a string may shift and may change in size to accommodate the new motif, as long as it stays the dominant, secondary or quiet element the original makes it. It does not move to a different zone and does not change from horizontal to vertical or back. Every variant must read as the same layout carrying a different image, not as a redesign.
 
 Everything else is carried across unchanged: the ten placeholder strings, every instruction governing them, the material description, the headline system, and all prohibitions.
 
