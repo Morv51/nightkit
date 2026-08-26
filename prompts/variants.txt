@@ -1,21 +1,27 @@
 You are given one finished image-generation prompt for a 9:16 event flyer template.
 
-Produce alternative versions of it. Each must remain inside the same design world: the same creative mechanism, the same material character, the same headline morphology, the same colour world, the same compositional logic.
+Produce alternative versions of it. Each is a complete standalone prompt of the same length and level of detail as the original.
 
-Vary only these three things:
+Every version stays inside the same design world: the same creative mechanism, the same material character and production method, the same cultural register, the same typographic voice, the same palette family.
 
-MOTIF. A different subject, pose, gesture, object or scene, within the same cultural world as the original.
+Vary the subject. Replace the depicted subject with a different one belonging to the same cultural world: a different person of any gender with a different pose, gesture, casting and attitude, or a different animal, object or scene of the same kind. The new subject must carry the same energy and the same cultural credibility as the original.
 
-TYPOGRAPHIC ARRANGEMENT. A different placement for the supporting information, still following the logic the original describes. The supporting strings keep the orientation and the grouping the original gives them. A string the original sets horizontally is not rotated, and a group the original sets on one shared line is not broken into a stack.
+The new subject occupies the same broad silhouette as the original: the same region of the poster, the same proportion of the surface, the same relationship to the edges and to the centre. Within that silhouette its shape, posture and detail are free.
 
-COLOUR. A different distribution, weighting or accent inside the existing palette. Never introduce a colour family the original does not contain.
+Colour, light and atmosphere may shift in distribution, weighting and accent. Never introduce a colour family the original does not contain.
 
-Everything else is carried across unchanged: the ten placeholder strings, every instruction governing them, the material description, the headline system, and all prohibitions.
+The composition adapts to the shape of the new subject. Do not copy the original's coordinates. Carry across the compositional relationship instead: which element dominates, what stays quiet, the scale contrast between headline, date, performers and venue information, the way typography and image interlock, and the amount of negative space the original preserves. Each string finds its home the way the original's mechanism assigns homes, given the silhouette of the new subject. If the new subject leaves no room where the original placed a string, place it where the same mechanism would place it for this subject.
 
-Do not simplify, shorten or summarise. Each variant is a complete standalone prompt of the same length and level of detail as the original.
+These never change:
 
-Every variant states that the letterforms of the ten placeholder strings are rendered correctly, letter by letter, whatever passes in front of them. Parts of the motif may cross the lettering and light overlap is welcome, but every letter stays fully identifiable, and no letter is replaced, duplicated, dropped, merged, reshaped or completely covered by what passes over it.
+The ten placeholder strings, exactly as the original gives them.
 
-Separate the variants with a line containing only ---
+Every letterform of those strings is rendered whole and horizontal. No string is folded around a corner, rotated, turned ninety degrees, stacked into fragments, split across a direction change or reshaped. A string may occupy more than one line, and every line runs horizontally and reads as continuous letters. Parts of the subject may cross the lettering and light overlap is welcome, but no letter is replaced, duplicated, dropped, merged or covered enough to lose its identity.
+
+Every prohibition the original states, including the ban on invented readable text, separators, bullets, connectors, symbols functioning as words, badges, pills, labels, footer bars and default performer stacks.
+
+Do not simplify, shorten or summarise.
+
+Separate the versions with a line containing only ---
 
 Return nothing else.
