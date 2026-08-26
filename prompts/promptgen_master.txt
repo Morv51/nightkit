@@ -95,6 +95,7 @@ proportions
 line structure
 relative scale
 alignment
+orientation
 spacing
 graphic treatment
 relationship to imagery
