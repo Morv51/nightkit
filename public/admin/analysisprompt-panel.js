@@ -18,7 +18,7 @@ import { wireDropzone, fileToDataUrl } from "./studioUi.js";
 
 const POLL_MS = 2000;
 
-const state = { image: null, imageName: "", jobId: null, timer: null, ticker: null, startedAt: 0, running: false, suggesting: false, starting: false };
+const state = { image: null, imageName: "", jobId: null, timer: null, ticker: null, startedAt: 0, running: false, suggesting: false, starting: false, runJobId: null, runTimer: null, runTicker: null, runStartedAt: 0 };
 
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const panel = () => document.getElementById("panel-aprompt");
@@ -96,6 +96,8 @@ function shell(info) {
         <textarea id="ap-text" class="ap-text" rows="12" spellcheck="false" readonly></textarea>
         <div class="ap-run-row">
           <button type="button" class="ap-run" id="ap-run">Bilder erzeugen</button>
+          <label class="ap-count-lab" for="ap-count">Varianten</label>
+          <input type="number" id="ap-count" class="ap-count" min="1" max="10" step="1" value="3">
           <span class="ap-run-note" id="ap-run-note"></span>
         </div>
       </div>
@@ -125,6 +127,7 @@ function setRunning(on) {
   ["ap-genre", "ap-vibe"].forEach((id) => { const e = $(id); if (e) e.disabled = on; });
   const drop = $("ap-drop"); if (drop) drop.classList.toggle("ap-locked", on);
   const sug = $("ap-suggest"); if (sug) sug.disabled = on || !state.image || state.suggesting;
+  const cnt = $("ap-count"); if (cnt) cnt.disabled = on || state.starting;
 }
 
 function stopTimers() {
@@ -250,35 +253,88 @@ async function start() {
   }
 }
 
-// Startet einen Auto-Flow-Lauf mit genau diesem Produktionsprompt: drei Varianten,
-// kein Referenzbild, 9:16 nativ. Der Lauf laeuft serverseitig weiter, auch wenn der
-// Reiter gewechselt wird — die Ergebnisse liegen danach unter "Letzte Laeufe".
+// Startet einen Auto-Flow-Lauf aus diesem Produktionsprompt. Ab Anzahl 2 laeuft
+// serverseitig zuerst der Variantencall — der kann Minuten dauern, darum Job-Muster
+// mit Abfrage im Takt. Bei Anzahl 1 ist der Job praktisch sofort fertig.
+function stopRunTimers() {
+  if (state.runTimer) { clearTimeout(state.runTimer); state.runTimer = null; }
+  if (state.runTicker) { clearInterval(state.runTicker); state.runTicker = null; }
+}
+
+function runFertig() {
+  stopRunTimers();
+  state.runJobId = null;
+  state.starting = false;
+  const btn = $("ap-run"), cnt = $("ap-count");
+  if (btn) { btn.disabled = false; btn.textContent = "Bilder erzeugen"; }
+  if (cnt) cnt.disabled = false;
+}
+
+async function pollRun() {
+  if (!state.runJobId) return;
+  let job;
+  try { job = await post("/admin/aprompt/status", { jobId: state.runJobId }); }
+  catch (e) {
+    runFertig();
+    const note = $("ap-run-note"); if (note) note.textContent = "";
+    showError("Abfrage fehlgeschlagen: " + (e && e.message ? e.message : e));
+    return;
+  }
+  if (job.status === "pending") { state.runTimer = setTimeout(pollRun, 2000); return; }
+
+  runFertig();
+  const note = $("ap-run-note");
+  if (job.status === "error") {
+    if (note) note.textContent = "";
+    showError("Lauf konnte nicht gestartet werden: " + (job.error || "Unbekannter Fehler"));
+    return;
+  }
+  if (note) {
+    const wort = job.anzahl === 1 ? "Variante" : "Varianten";
+    const zuviel = job.verworfen ? " (" + job.verworfen + " ueberzaehlige verworfen)" : "";
+    note.innerHTML = "Lauf " + esc(job.runId) + " gestartet \u2014 " + esc(String(job.anzahl)) + " " + wort + zuviel
+      + ", " + esc(job.model) + ", " + esc(job.size)
+      + '. Die Bilder erscheinen unter <a href="#afruns" id="ap-to-runs">Letzte L\u00e4ufe</a>.';
+    const l = $("ap-to-runs");
+    if (l) l.addEventListener("click", (e) => {
+      e.preventDefault();
+      const t = document.querySelector('.studio-tab[data-tab="afruns"]');
+      if (t) t.click();
+    });
+  }
+}
+
 async function startImages() {
   const ta = $("ap-text");
   if (state.starting || !ta || !ta.value.trim()) return;
   clearError();
+  const cnt = $("ap-count");
+  let anzahl = parseInt(cnt && cnt.value, 10);
+  if (!Number.isFinite(anzahl)) anzahl = 3;
+  anzahl = Math.max(1, Math.min(10, anzahl));
+  if (cnt) cnt.value = String(anzahl);
+
   const btn = $("ap-run"), note = $("ap-run-note");
   state.starting = true;
+  state.runStartedAt = Date.now();
   if (btn) { btn.disabled = true; btn.textContent = "Startet\u2026"; }
-  if (note) note.innerHTML = "";
+  if (cnt) cnt.disabled = true;
+  if (note) note.textContent = anzahl > 1 ? "Varianten werden erzeugt \u2014 das dauert bei h\u00f6herer Anzahl mehrere Minuten." : "";
+  if (anzahl > 1) {
+    state.runTicker = setInterval(() => {
+      const sek = Math.round((Date.now() - state.runStartedAt) / 1000);
+      if (note) note.textContent = "Varianten werden erzeugt, seit " + sek + " s \u2014 das dauert bei h\u00f6herer Anzahl mehrere Minuten.";
+    }, 1000);
+  }
   try {
-    const r = await post("/admin/aprompt/autoflow", { prompt: ta.value });
-    if (note) {
-      note.innerHTML = "Lauf " + esc(r.runId) + " gestartet \u2014 " + esc(String(r.anzahl))
-        + " Varianten, " + esc(r.model) + ", " + esc(r.size)
-        + '. Die Bilder erscheinen unter <a href="#afruns" id="ap-to-runs">Letzte L\u00e4ufe</a>.';
-      const l = $("ap-to-runs");
-      if (l) l.addEventListener("click", (e) => {
-        e.preventDefault();
-        const t = document.querySelector('.studio-tab[data-tab="afruns"]');
-        if (t) t.click();
-      });
-    }
+    const r = await post("/admin/aprompt/autoflow", { prompt: ta.value, anzahl });
+    if (!r || !r.jobId) throw new Error("Server lieferte keine Lauf-Kennung");
+    state.runJobId = r.jobId;
+    state.runTimer = setTimeout(pollRun, 2000);
   } catch (e) {
+    runFertig();
+    if (note) note.textContent = "";
     showError("Lauf konnte nicht gestartet werden: " + (e && e.message ? e.message : e));
-  } finally {
-    state.starting = false;
-    if (btn) { btn.disabled = false; btn.textContent = "Bilder erzeugen"; }
   }
 }
 

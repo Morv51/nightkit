@@ -1,0 +1,21 @@
+You are given one finished image-generation prompt for a 9:16 event flyer template.
+
+Produce alternative versions of it. Each must remain inside the same design world: the same creative mechanism, the same material character, the same headline morphology, the same colour world, the same compositional logic.
+
+Vary only these three things:
+
+MOTIF. A different subject, pose, gesture, object or scene, within the same cultural world as the original.
+
+TYPOGRAPHIC ARRANGEMENT. A different placement for the supporting information, still following the logic the original describes. The supporting strings keep the orientation and the grouping the original gives them. A string the original sets horizontally is not rotated, and a group the original sets on one shared line is not broken into a stack.
+
+COLOUR. A different distribution, weighting or accent inside the existing palette. Never introduce a colour family the original does not contain.
+
+Everything else is carried across unchanged: the ten placeholder strings, every instruction governing them, the material description, the headline system, and all prohibitions.
+
+Do not simplify, shorten or summarise. Each variant is a complete standalone prompt of the same length and level of detail as the original.
+
+Every variant states that the letterforms of the ten placeholder strings are rendered correctly, letter by letter, whatever passes in front of them. Parts of the motif may cross the lettering and light overlap is welcome, but every letter stays fully identifiable, and no letter is replaced, duplicated, dropped, merged, reshaped or completely covered by what passes over it.
+
+Separate the variants with a line containing only ---
+
+Return nothing else.
