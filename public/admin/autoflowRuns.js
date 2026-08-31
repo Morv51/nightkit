@@ -243,7 +243,8 @@ function promptPanelHtml(runId, st) {
   const d = st.promptData;
   if (!d) return '<div class="afr-prompt-box"><div class="afr-empty">Lade Prompt …</div></div>';
   const files = Array.isArray(d.files) ? d.files : [];
-  if (!files.length) return '<div class="afr-prompt-box"><div class="afr-empty">Keine Prompts im Lauf gespeichert.</div></div>';
+  const tiles = Array.isArray(d.tiles) ? d.tiles : [];
+  if (!files.length && !tiles.length) return '<div class="afr-prompt-box"><div class="afr-empty">Keine Prompts im Lauf gespeichert.</div></div>';
   const teil = (titel, prompt, key) => {
     if (!prompt) return '<div class="afr-empty">' + esc(titel) + ": kein Prompt gespeichert.</div>";
     return '<details class="afr-prompt-det"><summary>' + esc(titel) +
@@ -252,6 +253,17 @@ function promptPanelHtml(runId, st) {
       befundHtml(prompt) +
       '<pre class="afr-prompt-pre" data-key="' + esc(key) + '">' + esc(prompt) + "</pre></details>";
   };
+  // Kachel-Prompts haben Vorrang: bei einem Analyse-Prompt-Lauf traegt JEDE Kachel
+  // ihren eigenen Prompt, waehrend files nur den ersten kennt. Fehlen sie (klassische
+  // Flows), greift unveraendert der bisherige Weg ueber files.
+  // Kein esc() auf den Titel — teil() escaped ihn selbst.
+  if (tiles.length) {
+    return '<div class="afr-prompt-box">' + tiles.map((t, i) => {
+      const rolle = i === 0 ? "Hauptflyer" : "Variante " + i;
+      return teil(t.index + " · " + rolle, t.prompt, t.index);
+    }).join("") + "</div>";
+  }
+
   return '<div class="afr-prompt-box">' + files.map((f) => {
     const kopf = '<div class="afr-prompt-h">' + esc(f.name || ("Datei " + f.fnum)) +
       (f.hand ? ' <b class="afr-hand">Handzuordnung</b>' : "") + "</div>";
