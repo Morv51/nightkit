@@ -103,6 +103,8 @@ relationship to bars, rules, shapes or other graphic elements
 
 Describe this precisely in the final production prompt.
 
+The reference headline and the placeholder HEADLINE are different words of different length. Carry across the character of the system, and adapt whatever depends on the reference word's own length or shape so that it works for HEADLINE: how the lines break, how far the artwork crosses the lettering, how the letters sit against one another. The goal is the same design behaviour applied to a different word, not the same picture.
+
 Do not ask the future model to copy a font.
 Describe the visible typographic morphology and behaviour.
 
