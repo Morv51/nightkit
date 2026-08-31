@@ -283,6 +283,8 @@ a date/time badge
 a CLUBNAME + LOCATION + website footer
 a separate module for every information category
 
+The number of performer names is not fixed. Set them so that the design would still work with two names or with five: the treatment repeats or contracts with the list rather than depending on a fixed count.
+
 Only group information when the extracted creative concept naturally calls for it.
 
 Supporting information must have a visual reason to exist inside the artwork.
