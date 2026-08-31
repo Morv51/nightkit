@@ -244,6 +244,8 @@ UHRZEIT
 www.website.com must visibly remain:
 www.website.com
 
+Overlap between the artwork and the ten strings is encouraged for depth, but every individual letterform stays substantially visible. No letter is covered by more than a small fraction of its own shape, and no letter is hidden entirely. Legibility of the word as a whole is not sufficient: each letter must be identifiable on its own, without being inferred from the surrounding letters.
+
 
 ABSOLUTELY DO NOT INVENT:
 
