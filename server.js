@@ -83,7 +83,9 @@ router.post("/api/generate", async (req, res) => {
   if (user) auth.incrementGenerations(user.id);
 
   runIdeogramJob(jobId, ev, file).catch((e) => {
-    console.error(`Job ${jobId} failed:`, e.message);
+    // e.response traegt den vollen Ideogram-Body (postMultipart setzt ihn). Ohne ihn
+    // steht im Log nur die Kurzmeldung — wie bei adjust-text und format-v4 mitloggen.
+    console.error(`Job ${jobId} failed:`, e.message, e.response || "");
     jobs.set(jobId, { status: "error", error: e.message });
   });
 });
@@ -567,7 +569,7 @@ async function runIdeogramJob(jobId, ev, file) {
     throw new Error("Template not found: " + e.message);
   }
 
-  const { url } = await ideogram.edit({
+  const { url, raw } = await ideogram.edit({
     apiKey: IDEOGRAM_KEY,
     prompt,
     imageBuffer: imgBuffer,
@@ -575,6 +577,10 @@ async function runIdeogramJob(jobId, ev, file) {
   try { usage.count("ideogram_edit"); } catch (_) {} // Nutzungs-Zähler, nachrangig
 
   jobs.set(jobId, { status: "done", url });
+  // Ideogram-Antwort mitschreiben. Sie sagt NICHT, welche Textbereiche erkannt oder
+  // ersetzt wurden — enthaelt aber Felder wie is_image_safe, seed und den ggf. vom
+  // Dienst umgeschriebenen prompt. Bisher wurde raw verworfen.
+  try { console.log(`Job ${jobId} ideogram response: ${JSON.stringify(raw).slice(0, 2000)}`); } catch (_) {}
   console.log(`Job ${jobId} done`);
 }
 
