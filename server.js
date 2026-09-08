@@ -153,7 +153,7 @@ function buildAdjustPrompt(text) {
   return [
     `Render exactly this text in the edited region: "${text}".`,
     "Correct spelling, EVERY letter present, no missing, dropped or swapped letters; spell each word in full.",
-    "Match the flyer's existing design at that spot: same font, weight, style, effect, colour and size as the text already there, seamlessly integrated with the surrounding artwork.",
+    "Match the flyer's existing design at that spot: same letterforms, material and construction as the text already there, including its font, weight, style, effect, colour and size. If the existing text is made of a physical material or object rather than printed type, build the new text from that same material in the same way, seamlessly integrated with the surrounding artwork.",
   ].join("\n");
 }
 
