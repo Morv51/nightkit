@@ -63,6 +63,32 @@ async function authHeaders() {
   return {};
 }
 
+// ── Club-Logos ───────────────────────────────────────────────────────────
+// Hochladen: rohe Bytes, Typ im Content-Type. Antwort ist der vergebene Name,
+// den clubs.js beim Club merkt.
+export async function postClubLogo(file) {
+  const res = await fetch("/api/club-logo", {
+    method: "POST",
+    headers: { "Content-Type": file.type, ...(await authHeaders()) },
+    body: file,
+  });
+  await ensureOk(res);
+  const data = await res.json();
+  if (!data.name) throw new Error("Kein Logo-Name zurueck.");
+  return data.name;
+}
+
+// Holen: der Token muss mit, deshalb fetch statt <img src>. Aus der Antwort
+// wird ein Blob-URL -- damit liegt das Logo genauso vor wie eine hochgeladene
+// Datei und der Canvas beim Komponieren bleibt sauber (kein fremder Origin).
+export async function fetchClubLogoUrl(name) {
+  const res = await fetch("/api/club-logo?name=" + encodeURIComponent(name), {
+    headers: { ...(await authHeaders()) },
+  });
+  await ensureOk(res);
+  return URL.createObjectURL(await res.blob());
+}
+
 export async function postGenerate(event) {
   const res = await fetch("/api/generate", {
     method: "POST",

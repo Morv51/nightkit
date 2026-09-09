@@ -22,7 +22,9 @@ export function initLogo() {
   applyBox();
 }
 
-function setLogo(url) {
+// Exportiert, damit ein am Club gespeichertes Logo denselben Weg nimmt wie
+// eine frisch hochgeladene Datei (clubs.js reicht einen Blob-URL herein).
+export function setLogo(url) {
   if (state.logoUrl) URL.revokeObjectURL(state.logoUrl);
   state.logoUrl = url;
   if (els.logoPreview) {
@@ -36,7 +38,7 @@ function setLogo(url) {
   if (els.previewCol) els.previewCol.classList.add("has-logo");
 }
 
-function clearLogo() {
+export function clearLogo() {
   if (state.logoUrl) {
     URL.revokeObjectURL(state.logoUrl);
     state.logoUrl = null;

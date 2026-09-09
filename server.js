@@ -18,6 +18,7 @@ const { proxy }             = require("./lib/proxy");
 const { webmToMp4 }         = require("./lib/convert");
 const { createRouter }      = require("./lib/router");
 const auth                  = require("./lib/auth");
+const clubLogos             = require("./lib/clubLogos");
 const caption               = require("./lib/caption");
 const usage                 = require("./lib/admin/usage"); // Nutzungs-Zähler (nachrangig, nie blockierend)
 const { readJson, readBody, sendJson, sendError, applyCors } = require("./lib/http");
@@ -411,6 +412,77 @@ router.post("/api/caption", async (req, res) => {
     console.error("caption error:", e.message);
     sendError(res, 502, "Caption konnte nicht erstellt werden.");
   }
+});
+
+// ── Club-Logos ────────────────────────────────────────────────────────────
+// Ein Logo je Club, in R2 unter clublogos/<nutzer-id>/<name>. Beide Routen
+// pruefen den Token; die Nutzer-ID im Schluessel kommt IMMER aus dem geprueften
+// Token, nie aus der Anfrage. Rein additiv: keine bestehende Route beruehrt.
+
+// Verifiziert den Token und liefert den Nutzer, oder beantwortet die Anfrage
+// selbst mit 401 und gibt null zurueck.
+async function logoUser(req, res) {
+  const user = await auth.verifyToken(auth.bearer(req));
+  if (!user) { sendError(res, 401, "Authentifizierung erforderlich"); return null; }
+  return user;
+}
+
+// Logo ablegen: rohe Bildbytes im Body, Typ im Content-Type. Antwort { name }.
+router.post("/api/club-logo", async (req, res) => {
+  if (!auth.isConfigured()) return sendError(res, 500, "Auth ist nicht konfiguriert");
+  const user = await logoUser(req, res);
+  if (!user) return;
+
+  // Zuerst die angekuendigte Laenge pruefen und ohne Lesen ablehnen. Wichtig:
+  // readBody zerstoert bei Ueberschreitung den Socket (req.destroy()), dann
+  // erreicht den Browser gar keine Antwort mehr, nur ein Verbindungsabbruch.
+  // So bekommt er stattdessen eine lesbare Meldung.
+  const angekuendigt = Number(req.headers["content-length"] || 0);
+  if (angekuendigt > clubLogos.MAX_BYTES) {
+    return sendError(res, 413, "Die Datei ist groesser als 2 MB.");
+  }
+
+  let buf;
+  try {
+    // Harte Grenze fuer den Fall, dass Content-Length fehlt oder luegt.
+    buf = await readBody(req, { limit: clubLogos.MAX_BYTES + 1 });
+  } catch (e) {
+    return sendError(res, 413, "Die Datei ist groesser als 2 MB.");
+  }
+
+  try {
+    const { name } = await clubLogos.put(user.id, buf, req.headers["content-type"]);
+    sendJson(res, 200, { name });
+  } catch (e) {
+    console.error("club-logo put:", e.message);
+    sendError(res, 400, e.message || "Das Logo konnte nicht gespeichert werden.");
+  }
+});
+
+// Logo holen: ?name=<name>. Nur unter dem eigenen Praefix -- ein fremder Name
+// findet nichts und ergibt 404.
+router.get("/api/club-logo", async (req, res) => {
+  if (!auth.isConfigured()) return sendError(res, 500, "Auth ist nicht konfiguriert");
+  const user = await logoUser(req, res);
+  if (!user) return;
+
+  const name = (req.urlQuery || {}).name || "";
+  let hit;
+  try {
+    hit = await clubLogos.get(user.id, name);
+  } catch (e) {
+    console.error("club-logo get:", e.message);
+    return sendError(res, 500, e.message || "Das Logo konnte nicht geladen werden.");
+  }
+  if (!hit) return sendError(res, 404, "Logo nicht gefunden");
+
+  res.setHeader("Content-Type", hit.contentType);
+  res.setHeader("Content-Length", hit.buffer.length);
+  // Privat: der Inhalt haengt am Token, darf also nicht in geteilten Caches
+  // liegen. Der Name ist einmalig, der Browser darf ihn behalten.
+  res.setHeader("Cache-Control", "private, max-age=86400");
+  res.writeHead(200);
+  res.end(hit.buffer);
 });
 
 // Verify a Supabase JWT (Authorization: Bearer <token>) and echo the user.

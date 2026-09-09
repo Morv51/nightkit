@@ -9,8 +9,17 @@
 // Formularfelder #fClub, #fLocation und #fContact. readEventForm() in
 // generator.js liest weiterhin nur diese Felder — der Generier-Pfad weiss von
 // diesem Modul nichts.
+//
+// Ein Club kann ausserdem ein Logo tragen. In user_metadata steht davon nur
+// der Name; die Bytes liegen in R2 (siehe lib/clubLogos.js). Beim Wechseln und
+// beim Laden werden sie mit Token geholt und als Blob-URL an setLogo gegeben —
+// ab da ist alles wie nach einem Datei-Upload: Overlay, Ziehen, Skalieren,
+// Komponieren. Die Logo-POSITION bleibt unberuehrt in localStorage pro
+// Template (logo.js), sie haengt nicht am Club.
 
 import { $, on } from "./dom.js";
+import { setLogo, clearLogo } from "./logo.js";
+import { postClubLogo, fetchClubLogoUrl } from "./api.js";
 
 const META_KEY = "nk_clubs";
 
@@ -19,8 +28,10 @@ const MAX_CLUBS = 20;
 const MAX_LEN = 120;
 
 const state = {
-  list: [],     // [{ name, location, website }]
-  active: -1,   // Index in list, -1 = keiner
+  list: [],          // [{ name, location, website, logo }]
+  active: -1,        // Index in list, -1 = keiner
+  logoAnsicht: "",   // Blob-URL des geladenen Logos, nur fuer die Vorschau im Streifen
+  logoFehler: "",    // letzte Meldung aus dem Logo-Weg, sichtbar im Streifen
 };
 
 // ── Supabase ─────────────────────────────────────────────────────
@@ -68,10 +79,13 @@ function readStore(meta) {
     if (!c || typeof c !== "object") continue;
     const name = String(c.name || "").trim().slice(0, MAX_LEN);
     if (!name) continue;
+    const logo = String(c.logo || "").trim();
     clean.push({
       name,
       location: String(c.location || "").trim().slice(0, MAX_LEN),
       website: String(c.website || "").trim().slice(0, MAX_LEN),
+      // Nur der Name; unbekannte Formen werden verworfen statt mitgeschleppt.
+      logo: /^[0-9a-f]{32}\.(png|jpg|webp)$/.test(logo) ? logo : "",
     });
     if (clean.length >= MAX_CLUBS) break;
   }
@@ -116,6 +130,118 @@ function activeClub() {
   return state.active >= 0 ? state.list[state.active] : null;
 }
 
+// ── Logo des Clubs ───────────────────────────────────────────────
+
+// Holt die Bytes mit Token, macht daraus einen Blob-URL und reicht ihn an
+// setLogo — ab hier ist der Zustand identisch zu einem Datei-Upload. Ohne Logo
+// wird zurueckgesetzt. Scheitert das Laden, bleibt es nicht stumm: der Streifen
+// im Overlay sagt es.
+async function applyClubLogo(club) {
+  if (!club || !club.logo) {
+    clearLogo();
+    state.logoAnsicht = "";
+    state.logoFehler = "";
+    renderLogoLeiste();
+    return;
+  }
+  try {
+    const url = await fetchClubLogoUrl(club.logo);
+    setLogo(url);          // ab hier wie nach einem Datei-Upload
+    state.logoAnsicht = url;
+    state.logoFehler = "";
+  } catch (e) {
+    clearLogo();
+    state.logoAnsicht = "";
+    state.logoFehler = "Das Logo konnte nicht geladen werden.";
+    console.error("Club-Logo nicht ladbar:", e);
+  }
+  renderLogoLeiste();
+}
+
+// Laedt die Datei hoch und haengt den Namen an den aktiven Club.
+// Erste Pruefung im Browser, damit der Nutzer die Meldung sofort sieht. Der
+// Server prueft dasselbe noch einmal (Groesse, Typ, Signatur) und hat das
+// letzte Wort -- diese Pruefung ist Bequemlichkeit, nicht die Absicherung.
+const MAX_LOGO_BYTES = 2 * 1024 * 1024;
+const LOGO_TYPEN = ["image/png", "image/jpeg", "image/webp"];
+
+function pruefeLogoDatei(datei) {
+  if (datei.size > MAX_LOGO_BYTES) return "Die Datei ist groesser als 2 MB.";
+  if (!LOGO_TYPEN.includes(datei.type)) return "Nur PNG, JPEG oder WebP sind moeglich.";
+  return "";
+}
+
+async function logoHochladen(datei) {
+  const c = activeClub();
+  if (!c) { zeigeFehler("Waehle zuerst einen Club."); return; }
+  const fehler = pruefeLogoDatei(datei);
+  if (fehler) { zeigeFehler(fehler); return; }
+  const vorher = c.logo;
+  zeigeFehler("");
+  setzeLogoBeschaeftigt(true);
+  try {
+    c.logo = await postClubLogo(datei);
+    await writeStore();
+    await applyClubLogo(c);
+  } catch (e) {
+    c.logo = vorher;
+    zeigeFehler("Das Logo konnte nicht gespeichert werden: " + e.message);
+  } finally {
+    setzeLogoBeschaeftigt(false);
+    renderLogoLeiste();
+  }
+}
+
+// Entfernt nur die Verknuepfung; die Bytes bleiben in R2 liegen.
+async function logoEntfernen() {
+  const c = activeClub();
+  if (!c || !c.logo) return;
+  const vorher = c.logo;
+  c.logo = "";
+  zeigeFehler("");
+  try {
+    await writeStore();
+    await applyClubLogo(c);
+  } catch (e) {
+    c.logo = vorher;
+    zeigeFehler("Das Logo konnte nicht entfernt werden: " + e.message);
+  }
+  renderLogoLeiste();
+}
+
+function setzeLogoBeschaeftigt(an) {
+  const w = $("clubLogoPick");
+  const e = $("clubLogoDrop");
+  if (w) w.disabled = an;
+  if (e) e.disabled = an;
+  const s = $("clubLogoState");
+  if (s && an) s.textContent = "Wird hochgeladen…";
+}
+
+// Der Streifen zeigt das Logo des AKTIVEN Clubs.
+function renderLogoLeiste() {
+  const box = $("clubLogoRow");
+  const zustand = $("clubLogoState");
+  const bild = $("clubLogoThumb");
+  const waehl = $("clubLogoPick");
+  const weg = $("clubLogoDrop");
+  if (!box || !zustand) return;
+  const c = activeClub();
+  box.hidden = !c;
+  if (!c) return;
+  const hat = !!c.logo;
+  if (bild) {
+    const url = hat ? state.logoAnsicht : "";
+    if (url) { bild.src = url; bild.hidden = false; } else { bild.removeAttribute("src"); bild.hidden = true; }
+  }
+  zustand.textContent = state.logoFehler
+    ? state.logoFehler
+    : (hat ? "Logo hinterlegt" : "Kein Logo");
+  zustand.classList.toggle("ist-fehler", !!state.logoFehler);
+  if (waehl) waehl.textContent = hat ? "Ersetzen" : "Waehlen";
+  if (weg) weg.hidden = !hat;
+}
+
 // ── Zeile ueber dem Formular ─────────────────────────────────────
 
 function renderRow() {
@@ -146,6 +272,7 @@ function openModal() {
   if (!m) return;
   zeigeFehler("");
   renderList();
+  renderLogoLeiste();
   vorbefuellen();
   m.classList.add("open");
   const f = $("clubNewName");
@@ -164,6 +291,8 @@ function vorbefuellen() {
   setField("clubNewName", q("fClub"));
   setField("clubNewLocation", q("fLocation"));
   setField("clubNewWebsite", q("fContact"));
+  const feld = $("clubNewLogo");
+  if (feld) feld.value = ""; // kein Rest aus einem frueheren Anlauf
 }
 
 // Liste als DOM-Knoten, nicht als innerHTML: Clubnamen sind Nutzertext.
@@ -226,6 +355,7 @@ async function waehle(i) {
   renderRow();
   renderList();
   zeigeFehler("");
+  await applyClubLogo(state.list[i]);
   try {
     await writeStore();
     closeModal();
@@ -251,6 +381,7 @@ async function loesche(i) {
   zeigeFehler("");
   try {
     await writeStore();
+    await applyClubLogo(activeClub());
   } catch (e) {
     state.list = sicherung.list;
     state.active = sicherung.active;
@@ -273,8 +404,27 @@ async function anlegen() {
     zeigeFehler("Mehr als " + MAX_CLUBS + " Clubs sind nicht moeglich. Loesch zuerst einen.");
     return;
   }
-  const club = { name, location: q("clubNewLocation"), website: q("clubNewWebsite") };
+  const club = { name, location: q("clubNewLocation"), website: q("clubNewWebsite"), logo: "" };
   const sicherung = { list: state.list.slice(), active: state.active };
+
+  // Optionales Logo aus dem Anlegen-Formular: erst hochladen, dann den Club
+  // speichern. Scheitert der Upload, entsteht gar kein halber Club.
+  const feld = $("clubNewLogo");
+  const datei = feld && feld.files && feld.files[0];
+  if (datei) {
+    const fehler = pruefeLogoDatei(datei);
+    if (fehler) { zeigeFehler(fehler); return; }
+    setzeLogoBeschaeftigt(true);
+    try {
+      club.logo = await postClubLogo(datei);
+    } catch (e) {
+      zeigeFehler("Das Logo konnte nicht gespeichert werden: " + e.message);
+      return;
+    } finally {
+      setzeLogoBeschaeftigt(false);
+    }
+  }
+
   state.list.push(club);
   state.active = state.list.length - 1;
   applyToForm(club);
@@ -283,6 +433,7 @@ async function anlegen() {
   zeigeFehler("");
   try {
     await writeStore();
+    await applyClubLogo(club);
     closeModal();
   } catch (e) {
     state.list = sicherung.list;
@@ -303,6 +454,12 @@ export async function initClubs() {
   on($("clubModalClose"), "click", closeModal);
   on($("clubModalBackdrop"), "click", closeModal);
   on($("clubNewSave"), "click", anlegen);
+  on($("clubLogoPick"), "click", () => { const f = $("clubLogoFile"); if (f) { f.value = ""; f.click(); } });
+  on($("clubLogoFile"), "change", (e) => {
+    const d = e.target.files && e.target.files[0];
+    if (d) logoHochladen(d);
+  });
+  on($("clubLogoDrop"), "click", logoEntfernen);
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
     const m = $("clubModal");
@@ -320,4 +477,7 @@ export async function initClubs() {
   const c = activeClub();
   if (c) applyToForm(c);
   renderRow();
+  // Logo des aktiven Clubs nachladen. Bewusst NICHT abgewartet: ein langsamer
+  // Abruf darf den App-Start nicht aufhalten, das Overlay zeigt den Stand.
+  applyClubLogo(c);
 }

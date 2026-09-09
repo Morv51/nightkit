@@ -434,12 +434,21 @@
       <button class="club-modal-close" id="clubModalClose" type="button" aria-label="Schließen">✕</button>
     </div>
     <div class="club-list" id="clubList"></div>
+    <!-- Logo des AKTIVEN Clubs. Erst wechseln, dann das Logo setzen. -->
+    <div class="club-logo-row" id="clubLogoRow" hidden>
+      <img class="club-logo-thumb" id="clubLogoThumb" alt="" hidden>
+      <div class="club-logo-state" id="clubLogoState">Kein Logo</div>
+      <button class="club-logo-btn" id="clubLogoPick" type="button">Waehlen</button>
+      <button class="club-logo-btn is-drop" id="clubLogoDrop" type="button" hidden>Entfernen</button>
+      <input type="file" id="clubLogoFile" accept="image/png,image/jpeg,image/webp" hidden>
+    </div>
     <div class="club-err" id="clubErr" hidden></div>
     <div class="club-new">
       <div class="club-new-title">Neuen Club anlegen</div>
       <div class="field"><label>Club Name</label><input id="clubNewName" placeholder="z. B. Nachtschicht"></div>
       <div class="field"><label>Location</label><input id="clubNewLocation" placeholder="z. B. Braunschweig"></div>
       <div class="field"><label>Website</label><input id="clubNewWebsite" placeholder="z. B. www.nachtschicht.de"></div>
+      <div class="field"><label>Logo (optional)</label><input type="file" id="clubNewLogo" class="file-input" accept="image/png,image/jpeg,image/webp"></div>
       <button class="club-save" id="clubNewSave" type="button">Speichern</button>
     </div>
   </div>
