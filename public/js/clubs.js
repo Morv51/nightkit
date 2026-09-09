@@ -20,6 +20,7 @@
 import { $, on } from "./dom.js";
 import { setLogo, clearLogo } from "./logo.js";
 import { postClubLogo, fetchClubLogoBlob } from "./api.js";
+import { wandleAlleFelder } from "./caseFields.js";
 // Nur lesend, fuer die Frage "liegt gerade ein Logo auf der Buehne?".
 import { state as appState } from "./state.js";
 
@@ -131,6 +132,10 @@ function applyToForm(club) {
   setField("fClub", club.name);
   setField("fLocation", club.location);
   setField("fContact", club.website);
+  // Programmatisch gesetzte Werte loesen kein input-Ereignis aus. Ohne diesen
+  // Anstoss stuenden die Clubdaten anders im Feld, als sie auf dem Flyer
+  // landen.
+  wandleAlleFelder();
 }
 
 function activeClub() {

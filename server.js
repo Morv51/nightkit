@@ -609,9 +609,9 @@ const upcase = (s) => (typeof s === "string" ? s.toUpperCase() : s);
 // sich nicht um Groß-/Kleinschreibung kümmern muss.
 function normalizeCasing(ev, file) {
   if (templates.uppercaseFor(file)) {
-    // Block-Template (default): immer-große Slots HEADLINE + WEBSITE in
-    // Versalien — exakt wie bisher, kein Regressionsrisiko.
-    return { ...ev, name: upcase(ev.name), contact: upcase(ev.contact) };
+    // Block-Template (default): HEADLINE in Versalien. Die Website bleibt, wie
+    // sie ankommt — das Formular schreibt sie bereits klein (caseFields.js).
+    return { ...ev, name: upcase(ev.name) };
   }
   // Script-Template: relevante Textfelder smart zu Title-Case (Akronyme wie RNB
   // und Eigenschreibweisen wie McMarv bleiben erhalten), damit die geschwungene

@@ -6,6 +6,7 @@ import { renderStyleButtons, previewVideo, exportVideo, exitStageVideo } from ".
 import { initLogo } from "./logo.js";
 import { initDatePicker } from "./datepicker.js";
 import { initTimeSelect } from "./timeSelect.js";
+import { initCaseFields } from "./caseFields.js";
 import { initCaption } from "./caption.js";
 import { initCorrect } from "./correct.js";
 import { initAdjust } from "./adjust.js";
@@ -49,6 +50,7 @@ async function init() {
   initLogo();
   initDatePicker();
   initTimeSelect();
+  initCaseFields();
   initCaption();
   initCorrect();
   initAdjust();
