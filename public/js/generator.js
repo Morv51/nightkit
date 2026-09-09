@@ -42,7 +42,7 @@ function stopProgress() {
 
 // Switch the stage between its three states without destroying their content,
 // so a failed call can restore exactly what was there before.
-export function showStage(which) {
+function showStage(which) {
   const isResult = which === "result";
   els.statePreview.style.display = which === "preview" ? "flex" : "none";
   els.stateLoading.style.display = which === "loading" ? "flex" : "none";
@@ -61,7 +61,7 @@ function setGenButton(loading) {
   else els.genTxt.textContent = "Flyer generieren";
 }
 
-export function readEventForm() {
+function readEventForm() {
   return {
     template: state.currentTemplateFile,
     prefix:  val("fPrefix"),
@@ -76,7 +76,7 @@ export function readEventForm() {
   };
 }
 
-export async function showResult(proxiedUrl) {
+async function showResult(proxiedUrl) {
   // Burn the uploaded logo into the result so it shows in the flyer and in
   // every export (download, copy, video). Falls back to the plain image if
   // compositing fails for any reason.

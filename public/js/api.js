@@ -75,20 +75,6 @@ export async function postGenerate(event) {
   return data.jobId;
 }
 
-// BETA-Weg: eigener Endpunkt, gleiches Job-Muster. postGenerate bleibt
-// unberuehrt — die beiden Wege teilen sich nur die Status-Abfrage.
-export async function postGenerateBeta(event) {
-  const res = await fetch("/api/generate-beta", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
-    body: JSON.stringify(event),
-  });
-  await ensureOk(res);
-  const data = await res.json();
-  if (!data.jobId) throw new Error("Kein Job zurück.");
-  return data.jobId;
-}
-
 // Sauberes Entfernen (LaMa via Replicate): image + mask als base64 data URLs.
 // Maskenkonvention: WEISS = entfernen, SCHWARZ = behalten. Liefert das
 // bereinigte Bild als base64 data URL zurück.
