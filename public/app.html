@@ -91,6 +91,17 @@
 
       <div class="sec-divider"></div>
 
+      <div class="sec-label">Club</div>
+      <div class="club-current">
+        <div class="club-cur-text">
+          <div class="club-cur-name" id="clubCurrentName">Kein Club gespeichert</div>
+          <div class="club-cur-meta" id="clubCurrentMeta" hidden></div>
+        </div>
+        <button class="club-switch" id="clubSwitch" type="button">Anlegen</button>
+      </div>
+
+      <div class="sec-divider"></div>
+
       <div class="sec-label">Event</div>
       <div class="field">
         <label>Headline <button type="button" class="hint" aria-label="Info" data-tip="Der größte Text auf der Grafik. Kurz und knackig wirkt am stärksten.">i</button></label>
@@ -387,6 +398,26 @@
     <input class="picker-search" id="pickerSearch" type="search" placeholder="Template suchen…" autocomplete="off">
     <div class="tg-cats" id="pickerCats"></div>
     <div class="tg-grid" id="pickerGrid"></div>
+  </div>
+</div>
+
+<!-- Club-Auswahl: eigene Klassen, teilt sich nichts mit dem Template-Picker -->
+<div class="club-modal" id="clubModal">
+  <div class="club-modal-backdrop" id="clubModalBackdrop"></div>
+  <div class="club-modal-panel">
+    <div class="club-modal-head">
+      <div class="club-modal-title">Club wählen</div>
+      <button class="club-modal-close" id="clubModalClose" type="button" aria-label="Schließen">✕</button>
+    </div>
+    <div class="club-list" id="clubList"></div>
+    <div class="club-err" id="clubErr" hidden></div>
+    <div class="club-new">
+      <div class="club-new-title">Neuen Club anlegen</div>
+      <div class="field"><label>Club Name</label><input id="clubNewName" placeholder="z. B. Nachtschicht"></div>
+      <div class="field"><label>Location</label><input id="clubNewLocation" placeholder="z. B. Braunschweig"></div>
+      <div class="field"><label>Website</label><input id="clubNewWebsite" placeholder="z. B. www.nachtschicht.de"></div>
+      <button class="club-save" id="clubNewSave" type="button">Speichern</button>
+    </div>
   </div>
 </div>
 

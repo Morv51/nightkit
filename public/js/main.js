@@ -12,6 +12,7 @@ import { initFormats } from "./formats.js";
 import { initCompare } from "./compare.js";
 import { initHints } from "./hints.js";
 import { initMoreFields } from "./moreFields.js";
+import { initClubs } from "./clubs.js";
 
 function bindActions() {
   on(els.genBtn, "click", generate);
@@ -53,6 +54,9 @@ async function init() {
   initCompare();
   initTabs();
   initHints();
+  // Vor initMoreFields(): der aktive Club fuellt #fClub/#fLocation/#fContact,
+  // damit moreFields die Felder befuellt sieht und den Bereich aufklappt.
+  await initClubs();
   initMoreFields();
   initPicker();
 
