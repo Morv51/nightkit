@@ -293,21 +293,33 @@ function zeigeListe() {
   for (const d of el.querySelectorAll("details")) if (offen.has(d.dataset.i)) d.open = true;
 }
 
+// Beim Kopieren vorangestellt, damit der Prompt direkt in ein Chat-Fenster
+// passt. NUR hier: die Anzeige in der Liste bleibt unveraendert, und was an die
+// API geht (ta.value) auch.
+const KOPIER_VORSATZ = "Erzeuge ein neues Bild ohne Referenzbild nach folgendem Prompt:\n\n";
+
 // Eigene Kopier-Funktion: sucht im EIGENEN Panel, nicht in einer Lauf-Kachel.
-// Dreistufig wie der Kopieren-Knopf oben — Zwischenablage, execCommand,
-// notfalls markieren.
+// Zweistufig — Zwischenablage, sonst execCommand.
 async function kopiereEintrag(i) {
   const pre = document.querySelector('#ap-list .afr-prompt-pre[data-i="' + i + '"]');
   if (!pre) return;
-  const text = pre.textContent || "";
+  const text = KOPIER_VORSATZ + (pre.textContent || "");
   let ok2 = false;
   try { await navigator.clipboard.writeText(text); ok2 = true; } catch (_) { /* zweiter Weg */ }
   if (!ok2) {
-    const aus = window.getSelection();
-    const bereich = document.createRange();
-    bereich.selectNodeContents(pre);
-    aus.removeAllRanges(); aus.addRange(bereich);
+    // execCommand kopiert die AUSWAHL, nicht einen String. Wuerde man wie bisher
+    // den <pre> markieren, fiele der Vorsatz auf diesem Weg weg. Darum ein
+    // kurzlebiges Textfeld mit dem fertigen Text — beide Wege kopieren dasselbe.
+    const feld = document.createElement("textarea");
+    feld.value = text;
+    feld.setAttribute("readonly", "readonly");
+    feld.style.position = "fixed";
+    feld.style.top = "-1000px";
+    feld.style.opacity = "0";
+    document.body.appendChild(feld);
+    feld.select();
     try { ok2 = document.execCommand("copy"); } catch (_) { ok2 = false; }
+    feld.remove();
   }
   // Die Markierung bleibt, damit bei acht Prompts klar ist, was schon durch ist.
   state.kopiert.add(i);
