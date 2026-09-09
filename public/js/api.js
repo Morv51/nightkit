@@ -78,15 +78,17 @@ export async function postClubLogo(file) {
   return data.name;
 }
 
-// Holen: der Token muss mit, deshalb fetch statt <img src>. Aus der Antwort
-// wird ein Blob-URL -- damit liegt das Logo genauso vor wie eine hochgeladene
-// Datei und der Canvas beim Komponieren bleibt sauber (kein fremder Origin).
-export async function fetchClubLogoUrl(name) {
+// Holen: der Token muss mit, deshalb fetch statt <img src>. Zurueck kommt der
+// Blob; der Aufrufer macht daraus Objekt-URLs. Bewusst der Blob und nicht eine
+// fertige URL: die Buehne und die Vorschau im Club-Overlay brauchen je eine
+// EIGENE URL, sonst reisst clearLogo() (widerruft die Buehnen-URL) die Vorschau
+// mit. Aus einem Blob lassen sich beliebig viele unabhaengige URLs bilden.
+export async function fetchClubLogoBlob(name) {
   const res = await fetch("/api/club-logo?name=" + encodeURIComponent(name), {
     headers: { ...(await authHeaders()) },
   });
   await ensureOk(res);
-  return URL.createObjectURL(await res.blob());
+  return await res.blob();
 }
 
 export async function postGenerate(event) {

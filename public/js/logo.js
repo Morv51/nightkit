@@ -19,7 +19,28 @@ export function initLogo() {
   }
   bindDrag();
   bindResize();
+  bindRemove();
   applyBox();
+}
+
+// Entfernt das Logo NUR aus diesem Flyer. Die Datei am Club (R2) bleibt
+// unangetastet: clearLogo() fasst ausschliesslich Anzeige-Zustand an, kein
+// Netz, kein user_metadata. Beim naechsten Clubwechsel oder Neuladen holt
+// clubs.js sie wieder.
+function bindRemove() {
+  const h = els.logoRemove;
+  if (!h) return;
+  // Wie beim Skalieren-Griff: der pointerdown darf nicht bis zum Overlay
+  // hochblubbern, sonst startet bindDrag ein Ziehen unter dem Klick.
+  h.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  });
+  h.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    clearLogo();
+  });
 }
 
 // Exportiert, damit ein am Club gespeichertes Logo denselben Weg nimmt wie
@@ -49,6 +70,11 @@ export function clearLogo() {
   }
   if (els.logoOverlayImg) els.logoOverlayImg.removeAttribute("src");
   if (els.logoOverlay) els.logoOverlay.classList.remove("has-logo");
+  // Dateifeld leeren, sonst kann DIESELBE Datei danach nicht erneut gewaehlt
+  // werden: der Wert aendert sich nicht, also feuert der Browser kein change.
+  // Ein programmatisches value = "" loest selbst KEIN change aus, der Handler
+  // oben ruft sich also nicht im Kreis.
+  if (els.fLogo) els.fLogo.value = "";
   // Keep the preview if a template was explicitly chosen; only drop the
   // logo-specific state (hint + logo-driven reveal).
   if (els.previewCol) els.previewCol.classList.remove("has-logo");
@@ -87,7 +113,8 @@ function bindDrag() {
   const o = els.logoOverlay;
   if (!o) return;
   o.addEventListener("pointerdown", (e) => {
-    if (e.target === els.logoResize) return; // resize has its own handler
+    // Beide Griffe haben eigene Handler und duerfen kein Ziehen ausloesen.
+    if (e.target === els.logoResize || e.target === els.logoRemove) return;
     e.preventDefault();
     const stage = els.previewStage.getBoundingClientRect();
     const start = { x: e.clientX, y: e.clientY, cx: state.logoBox.cx, cy: state.logoBox.cy };

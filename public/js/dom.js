@@ -28,7 +28,7 @@ const IDS = [
   "fPrefix", "fName", "fDatePicker", "fDay", "fDate", "fDj", "fTime", "fContact", "fLogo",
   "panelBody", "statePreview", "stateResult", "stateLoading", "skelMsg", "previewCol",
   "previewImg", "previewStage", "resultImg",
-  "logoPreview", "logoOverlay", "logoOverlayImg", "logoResize",
+  "logoPreview", "logoOverlay", "logoOverlayImg", "logoResize", "logoRemove",
   "copyBtn", "histWrap", "histRow",
   "videoStatus", "exportBtn", "stageVideo", "videoBackBtn", "stageSide", "toolHint",
   "genBtn", "genTxt", "errBox",

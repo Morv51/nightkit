@@ -19,7 +19,7 @@
 
 import { $, on } from "./dom.js";
 import { setLogo, clearLogo } from "./logo.js";
-import { postClubLogo, fetchClubLogoUrl } from "./api.js";
+import { postClubLogo, fetchClubLogoBlob } from "./api.js";
 
 const META_KEY = "nk_clubs";
 
@@ -136,22 +136,33 @@ function activeClub() {
 // setLogo — ab hier ist der Zustand identisch zu einem Datei-Upload. Ohne Logo
 // wird zurueckgesetzt. Scheitert das Laden, bleibt es nicht stumm: der Streifen
 // im Overlay sagt es.
+function verwerfeAnsicht() {
+  if (state.logoAnsicht) {
+    try { URL.revokeObjectURL(state.logoAnsicht); } catch (e) { /* egal */ }
+    state.logoAnsicht = "";
+  }
+}
+
 async function applyClubLogo(club) {
   if (!club || !club.logo) {
     clearLogo();
-    state.logoAnsicht = "";
+    verwerfeAnsicht();
     state.logoFehler = "";
     renderLogoLeiste();
     return;
   }
   try {
-    const url = await fetchClubLogoUrl(club.logo);
-    setLogo(url);          // ab hier wie nach einem Datei-Upload
-    state.logoAnsicht = url;
+    const blob = await fetchClubLogoBlob(club.logo);
+    // ZWEI unabhaengige URLs aus EINEM Abruf: eine fuer die Buehne, eine fuer
+    // die Vorschau im Overlay. Sonst macht der X-Griff (clearLogo widerruft die
+    // Buehnen-URL) auch die Vorschau kaputt.
+    setLogo(URL.createObjectURL(blob));   // ab hier wie nach einem Datei-Upload
+    verwerfeAnsicht();
+    state.logoAnsicht = URL.createObjectURL(blob);
     state.logoFehler = "";
   } catch (e) {
     clearLogo();
-    state.logoAnsicht = "";
+    verwerfeAnsicht();
     state.logoFehler = "Das Logo konnte nicht geladen werden.";
     console.error("Club-Logo nicht ladbar:", e);
   }
