@@ -32,6 +32,7 @@ const IDS = [
   "copyBtn", "histWrap", "histRow",
   "videoStatus", "exportBtn", "stageVideo", "videoBackBtn", "stageSide", "toolHint",
   "genBtn", "genTxt", "errBox",
+  "genBtnBeta", "genTxtBeta",
 ];
 
 export function initDom() {

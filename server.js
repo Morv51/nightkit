@@ -3,9 +3,10 @@
 const http = require("http");
 const path = require("path");
 
-const { buildPrompt }       = require("./lib/prompt");
+const { buildPrompt, slotsForEvent }       = require("./lib/prompt");
 const { titleCaseSmart }    = require("./lib/casing");
 const ideogram              = require("./lib/ideogram");
+const betaFill              = require("./lib/betaFill");   // Beta-Befuellweg, strikt getrennt
 const replicate             = require("./lib/replicate");
 const fal                   = require("./lib/fal");
 const jobs                  = require("./lib/jobs");
@@ -25,6 +26,7 @@ const { readJson, readBody, sendJson, sendError, applyCors } = require("./lib/ht
 const PORT            = process.env.PORT || 3000;
 const IDEOGRAM_KEY    = process.env.IDEOGRAM_API_KEY || "";
 const REPLICATE_TOKEN = process.env.REPLICATE_API_TOKEN || "";
+const OPENAI_KEY      = process.env.OPENAI_API_KEY || "";     // nur fuer den Beta-Befuellweg
 const FAL_KEY         = process.env.FAL_KEY || "";
 
 const staticFiles = createStatic({
@@ -87,6 +89,39 @@ router.post("/api/generate", async (req, res) => {
     // steht im Log nur die Kurzmeldung — wie bei adjust-text und format-v4 mitloggen.
     console.error(`Job ${jobId} failed:`, e.message, e.response || "");
     jobs.set(jobId, { status: "error", error: e.message });
+  });
+});
+
+// ── BETA-Befuellweg. Eigene Route, eigener Job, eigener Ablauf. /api/generate
+//    und runIdeogramJob bleiben unberuehrt; hier wird KEIN buildPrompt und kein
+//    ideogram.edit() benutzt, sondern Boxen + editMasked je Box.
+//    Gleiches Job-Muster wie /api/generate, weil ein Lauf mit zehn Boxen
+//    mehrere Minuten dauert.
+router.post("/api/generate-beta", async (req, res) => {
+  if (!IDEOGRAM_KEY) return sendError(res, 500, "IDEOGRAM_API_KEY not configured");
+  if (!OPENAI_KEY) return sendError(res, 500, "OPENAI_API_KEY not configured");
+
+  let user = null;
+  if (auth.isConfigured()) {
+    user = await auth.verifyToken(auth.bearer(req));
+    if (!user) return sendError(res, 401, "Authentifizierung erforderlich");
+  }
+
+  let ev;
+  try { ev = await readJson(req); }
+  catch (e) { return sendError(res, e.status || 400, e.message); }
+
+  if (!ev.name || !ev.date) return sendError(res, 400, "Event name and date are required");
+  const file = ev.template;
+  if (!file || !templates.has(file)) return sendError(res, 400, "Unknown template");
+
+  const jobId = jobs.create();
+  sendJson(res, 202, { jobId });
+  if (user) auth.incrementGenerations(user.id);
+
+  runBetaJob(jobId, ev, file).catch((e) => {
+    console.error(`Beta-Job ${jobId} failed:`, e.message, e.response || "");
+    jobs.set(jobId, { status: "error", error: e.message, noBox: !!e.noBox });
   });
 });
 
@@ -582,6 +617,44 @@ async function runIdeogramJob(jobId, ev, file) {
   // Dienst umgeschriebenen prompt. Bisher wurde raw verworfen.
   try { console.log(`Job ${jobId} ideogram response: ${JSON.stringify(raw).slice(0, 2000)}`); } catch (_) {}
   console.log(`Job ${jobId} done`);
+}
+
+// Beta-Lauf: Boxen bestimmen, leere raeumen, je Box einzeln befuellen. Nutzt
+// dieselbe Slot-Liste wie der bestehende Weg (slotsForEvent), aber weder
+// buildPrompt noch ideogram.edit(). Fortschritt geht in den Job, damit die
+// Oberflaeche zeigen kann, bei welcher Box der Lauf steht.
+async function runBetaJob(jobId, ev, file) {
+  const slots = slotsForEvent(normalizeCasing(ev, file));
+  console.log(`Beta-Job ${jobId} template=${file} slots=${slots.filter((s) => s.value).length} befuellt / ${slots.filter((s) => !s.value).length} leer`);
+
+  let imgBuffer;
+  try { imgBuffer = await templateSource.getTemplateFile(file); }
+  catch (e) { throw new Error("Template not found: " + e.message); }
+
+  const out = await betaFill.run({
+    openaiKey: OPENAI_KEY,
+    ideogramKey: IDEOGRAM_KEY,
+    replicateToken: REPLICATE_TOKEN,
+    imageBuffer: imgBuffer,
+    imageType: /\.png$/i.test(file) ? "image/png" : "image/jpeg",
+    slots,
+    onFortschritt: (o) => jobs.set(jobId, { status: "pending", fortschritt: o }),
+  });
+
+  try { usage.count("openai_promptgen"); } catch (_) {}
+  // Nur die GELUNGENEN Bild-Aufrufe zaehlen; gescheiterte liefern kein Bild.
+  for (let i = 0; i < out.gefuellt; i++) { try { usage.count("ideogram_editmasked"); } catch (_) {} }
+  if (out.geraeumt) { try { usage.count("replicate_remove"); } catch (_) {} }
+
+  // Teilergebnis wird ausgeliefert, aber mit deutlicher Warnung — niemand soll
+  // einen halbfertigen Flyer fuer fertig halten.
+  const offen = (out.fehler || []).map((f) => f.token);
+  const warnung = offen.length
+    ? `Nicht fertig: ${offen.length} von ${offen.length + out.gefuellt} Feldern konnten nicht ersetzt werden (${offen.join(", ")}). Der Flyer zeigt dort noch den Platzhalter.`
+    : "";
+
+  jobs.set(jobId, { status: "done", url: `data:image/png;base64,${out.buffer.toString("base64")}`, warnung });
+  console.log(`Beta-Job ${jobId} done — ${out.gefuellt} befuellt, ${out.geraeumt} geraeumt, ${out.boxes.length} Boxen erkannt${offen.length ? ", OFFEN: " + offen.join(", ") : ""}`);
 }
 
 const server = http.createServer(async (req, res) => {

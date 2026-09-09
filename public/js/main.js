@@ -12,9 +12,11 @@ import { initFormats } from "./formats.js";
 import { initCompare } from "./compare.js";
 import { initHints } from "./hints.js";
 import { initMoreFields } from "./moreFields.js";
+import { generateBeta } from "./generatorBeta.js";
 
 function bindActions() {
   on(els.genBtn, "click", generate);
+  on(els.genBtnBeta, "click", generateBeta);
   on(document.getElementById("btnDlPng"),   "click", () => download("png"));
   on(document.getElementById("btnDlJpg"),   "click", () => download("jpg"));
   on(els.copyBtn, "click", copyImage);
