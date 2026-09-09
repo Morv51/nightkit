@@ -20,6 +20,8 @@
 import { $, on } from "./dom.js";
 import { setLogo, clearLogo } from "./logo.js";
 import { postClubLogo, fetchClubLogoBlob } from "./api.js";
+// Nur lesend, fuer die Frage "liegt gerade ein Logo auf der Buehne?".
+import { state as appState } from "./state.js";
 
 const META_KEY = "nk_clubs";
 
@@ -32,6 +34,11 @@ const state = {
   active: -1,        // Index in list, -1 = keiner
   logoAnsicht: "",   // Blob-URL des geladenen Logos, nur fuer die Vorschau im Streifen
   logoFehler: "",    // letzte Meldung aus dem Logo-Weg, sichtbar im Streifen
+  // Die zuletzt geholten Bytes, samt Namen. Damit kostet das Wiedereinsetzen
+  // nach einem X -- ueber den Knopf oder einen Templatewechsel -- keinen
+  // weiteren Abruf. Ein anderer Name laesst den Puffer verfallen.
+  logoBlob: null,
+  logoBlobName: "",
 };
 
 // ── Supabase ─────────────────────────────────────────────────────
@@ -152,7 +159,12 @@ async function applyClubLogo(club) {
     return;
   }
   try {
-    const blob = await fetchClubLogoBlob(club.logo);
+    let blob = state.logoBlobName === club.logo ? state.logoBlob : null;
+    if (!blob) {
+      blob = await fetchClubLogoBlob(club.logo);
+      state.logoBlob = blob;
+      state.logoBlobName = club.logo;
+    }
     // ZWEI unabhaengige URLs aus EINEM Abruf: eine fuer die Buehne, eine fuer
     // die Vorschau im Overlay. Sonst macht der X-Griff (clearLogo widerruft die
     // Buehnen-URL) auch die Vorschau kaputt.
@@ -163,10 +175,35 @@ async function applyClubLogo(club) {
   } catch (e) {
     clearLogo();
     verwerfeAnsicht();
+    state.logoBlob = null;
+    state.logoBlobName = "";
     state.logoFehler = "Das Logo konnte nicht geladen werden.";
     console.error("Club-Logo nicht ladbar:", e);
   }
   renderLogoLeiste();
+}
+
+// Der EINE Weg, ein hinterlegtes Clublogo wieder auf die Buehne zu holen --
+// benutzt vom Knopf im Formular und vom Templatewechsel. Kein zweiter
+// Abrufpfad: es laeuft durch dasselbe applyClubLogo wie der Clubwechsel.
+//
+// Nur wenn die Buehne LEER ist. Liegt schon eines dort, bleibt es unberuehrt;
+// sonst wuerde ein Templatewechsel ein handisch hochgeladenes Logo
+// stillschweigend ersetzen.
+export function clubLogoEinfuegen() {
+  if (appState.logoUrl) return;
+  const c = activeClub();
+  if (!c || !c.logo) return;
+  applyClubLogo(c);
+}
+
+// Der Knopf erscheint nur, wenn ein Club mit hinterlegtem Logo aktiv ist und
+// gerade keines auf der Buehne liegt.
+function renderEinfuegenKnopf() {
+  const k = $("clubLogoInsert");
+  if (!k) return;
+  const c = activeClub();
+  k.hidden = !(c && c.logo && !appState.logoUrl);
 }
 
 // Laedt die Datei hoch und haengt den Namen an den aktiven Club.
@@ -192,6 +229,10 @@ async function logoHochladen(datei) {
   setzeLogoBeschaeftigt(true);
   try {
     c.logo = await postClubLogo(datei);
+    // Die Bytes liegen schon vor -- gleich puffern, dann holt applyClubLogo
+    // sie nicht noch einmal.
+    state.logoBlob = datei;
+    state.logoBlobName = c.logo;
     await writeStore();
     await applyClubLogo(c);
   } catch (e) {
@@ -428,6 +469,10 @@ async function anlegen() {
     setzeLogoBeschaeftigt(true);
     try {
       club.logo = await postClubLogo(datei);
+      // Wie beim Ersetzen: die Bytes liegen vor, also gleich puffern statt sie
+      // gleich darauf wieder zu holen.
+      state.logoBlob = datei;
+      state.logoBlobName = club.logo;
     } catch (e) {
       zeigeFehler("Das Logo konnte nicht gespeichert werden: " + e.message);
       return;
@@ -471,6 +516,9 @@ export async function initClubs() {
     if (d) logoHochladen(d);
   });
   on($("clubLogoDrop"), "click", logoEntfernen);
+  on($("clubLogoInsert"), "click", clubLogoEinfuegen);
+  // logo.js meldet jeden Wechsel des Buehnen-Logos; danach stimmt der Knopf.
+  document.addEventListener("nk:logo", renderEinfuegenKnopf);
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
     const m = $("clubModal");
@@ -488,6 +536,7 @@ export async function initClubs() {
   const c = activeClub();
   if (c) applyToForm(c);
   renderRow();
+  renderEinfuegenKnopf();
   // Logo des aktiven Clubs nachladen. Bewusst NICHT abgewartet: ein langsamer
   // Abruf darf den App-Start nicht aufhalten, das Overlay zeigt den Stand.
   applyClubLogo(c);

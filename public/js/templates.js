@@ -3,6 +3,7 @@ import { $ } from "./dom.js";
 import { getTemplates } from "./api.js";
 import { updateLivePreview } from "./preview.js";
 import { applyLogoForTemplate } from "./logo.js";
+import { clubLogoEinfuegen } from "./clubs.js";
 import { resetToPreview } from "./generator.js";
 
 // Template-Katalog + Auswahl. BEIDE Auswahl-Flächen — die Inline-Galerie (leerer
@@ -83,6 +84,10 @@ export function selectTemplate(file) {
   // neue Template anwenden. Formularfelder bleiben erhalten.
   resetToPreview();
   applyCurrentTemplate();
+  // Ein per X entferntes Clublogo kommt beim Templatewechsel zurueck; das X
+  // gilt damit nur fuer den Flyer, an dem es gedrueckt wurde. Liegt schon ein
+  // Logo auf der Buehne (z. B. eine hochgeladene Datei), passiert nichts.
+  clubLogoEinfuegen();
   closePicker();
 }
 

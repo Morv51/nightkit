@@ -162,6 +162,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .field input.file-input{height:auto;padding:7px 8px;font-size:12px;line-height:1.2;color:rgba(245,245,240,.6);cursor:pointer}
 .field input.file-input::file-selector-button{margin-right:9px;padding:4px 10px;background:rgba(204,255,0,.12);border:0.5px solid rgba(204,255,0,.4);border-radius:6px;color:var(--accent);font-family:inherit;font-size:11px;font-weight:500;cursor:pointer}
 .field input.file-input::file-selector-button:hover{background:rgba(204,255,0,.2)}
+.logo-insert{margin-top:7px;background:rgba(204,255,0,.12);border:0.5px solid rgba(204,255,0,.4);border-radius:6px;color:var(--color-accent);font-family:inherit;font-size:11px;font-weight:600;padding:6px 11px;cursor:pointer;transition:background .15s}
+.logo-insert:hover{background:rgba(204,255,0,.2)}
 .logo-preview{display:none;margin-top:8px;max-height:80px;width:auto;border-radius:6px;border:0.5px solid rgba(255,255,255,.1)}
 
 /* gen button */

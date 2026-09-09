@@ -170,6 +170,8 @@
         <div class="field">
           <label>Logo <button type="button" class="hint" aria-label="Info" data-tip="Am besten ein PNG mit transparentem Hintergrund. Nach dem Upload kannst du das Logo direkt auf der Grafik positionieren.">i</button></label>
           <input type="file" id="fLogo" class="file-input" accept="image/*">
+          <!-- Nur sichtbar, wenn der aktive Club ein Logo hat und keins auf der Buehne liegt -->
+          <button class="logo-insert" id="clubLogoInsert" type="button" hidden>Clublogo einfügen</button>
           <img id="logoPreview" class="logo-preview" alt="Logo-Vorschau">
         </div>
       </div>

@@ -43,6 +43,14 @@ function bindRemove() {
   });
 }
 
+// Meldet jeden Wechsel des Buehnen-Logos. Ein Ereignis statt eines Rueckrufs:
+// clubs.js muss wissen, ob gerade eines liegt (fuer den Knopf "Clublogo
+// einfuegen"), darf hier aber nicht importiert werden -- clubs.js importiert
+// bereits logo.js, das gaebe einen Ringschluss.
+function meldeLogoWechsel() {
+  try { document.dispatchEvent(new CustomEvent("nk:logo")); } catch (e) { /* egal */ }
+}
+
 // Exportiert, damit ein am Club gespeichertes Logo denselben Weg nimmt wie
 // eine frisch hochgeladene Datei (clubs.js reicht einen Blob-URL herein).
 export function setLogo(url) {
@@ -57,6 +65,7 @@ export function setLogo(url) {
   // Reveal the sharp template preview so the logo can be positioned on it
   // (the placeholder is hidden while a logo is present).
   if (els.previewCol) els.previewCol.classList.add("has-logo");
+  meldeLogoWechsel();
 }
 
 export function clearLogo() {
@@ -78,6 +87,7 @@ export function clearLogo() {
   // Keep the preview if a template was explicitly chosen; only drop the
   // logo-specific state (hint + logo-driven reveal).
   if (els.previewCol) els.previewCol.classList.remove("has-logo");
+  meldeLogoWechsel();
 }
 
 // Load the saved box for a template (or the default) and apply it.
