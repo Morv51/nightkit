@@ -5,6 +5,7 @@ import { download, copyImage } from "./download.js";
 import { renderStyleButtons, previewVideo, exportVideo, exitStageVideo } from "./video.js";
 import { initLogo } from "./logo.js";
 import { initDatePicker } from "./datepicker.js";
+import { initTimeSelect } from "./timeSelect.js";
 import { initCaption } from "./caption.js";
 import { initCorrect } from "./correct.js";
 import { initAdjust } from "./adjust.js";
@@ -47,6 +48,7 @@ async function init() {
   renderStyleButtons();
   initLogo();
   initDatePicker();
+  initTimeSelect();
   initCaption();
   initCorrect();
   initAdjust();
