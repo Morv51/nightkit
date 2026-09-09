@@ -18,7 +18,10 @@ import { wireDropzone, fileToDataUrl } from "./studioUi.js";
 
 const POLL_MS = 2000;
 
-const state = { image: null, imageName: "", jobId: null, timer: null, ticker: null, startedAt: 0, running: false, suggesting: false, starting: false, runJobId: null, runTimer: null, runTicker: null, runStartedAt: 0 };
+const state = { image: null, imageName: "", jobId: null, timer: null, ticker: null, startedAt: 0, running: false, suggesting: false, starting: false, runJobId: null, runTimer: null, runTicker: null, runStartedAt: 0,
+  // Nur-Prompts: eigener Job und die Liste. kopiert haelt fest, welche Eintraege
+  // schon in der Zwischenablage waren — nur fuer diese Sitzung, kein Speichern.
+  onlyJobId: null, onlyTimer: null, onlyStartedAt: 0, onlyRunning: false, prompts: [], kopiert: new Set() };
 
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const panel = () => document.getElementById("panel-aprompt");
@@ -96,10 +99,12 @@ function shell(info) {
         <textarea id="ap-text" class="ap-text" rows="12" spellcheck="false" readonly></textarea>
         <div class="ap-run-row">
           <button type="button" class="ap-run" id="ap-run">Bilder erzeugen</button>
+          <button type="button" class="ap-run ap-only" id="ap-only">Nur Prompts erzeugen</button>
           <label class="ap-count-lab" for="ap-count">Varianten</label>
           <input type="number" id="ap-count" class="ap-count" min="1" max="10" step="1" value="3">
           <span class="ap-run-note" id="ap-run-note"></span>
         </div>
+        <div class="ap-list" id="ap-list" hidden></div>
       </div>
     </div>`;
 }
@@ -232,6 +237,7 @@ async function start() {
 
   const out = $("ap-out"); if (out) out.hidden = true;
   const note = $("ap-run-note"); if (note) note.innerHTML = "";
+  state.prompts = []; state.kopiert = new Set(); zeigeListe();   // alte Liste raeumen
   setRunning(true);
   state.startedAt = Date.now();
   setStatus("Analyse läuft — das dauert erfahrungsgemäß mehrere Minuten.");
@@ -250,6 +256,121 @@ async function start() {
     setStatus("");
     setRunning(false);
     showError("Start fehlgeschlagen: " + (e && e.message ? e.message : e));
+  }
+}
+
+// ── Nur Prompts erzeugen ────────────────────────────────────────────────────
+// Markup und Klassen sind die der Prompt-Ansicht im Reiter "Laeufe" (afr-*, in
+// studio.css global definiert), damit es identisch aussieht. Bewusst OHNE deren
+// befundHtml(): das rendert ein Regelwerk-Urteil aus dem Auto-Flow-A/B-Schalter,
+// das hier nichts zu suchen haette. Und mit eigener Kopier-Funktion, weil
+// copyPrompt() dort nach einer Lauf-Kachel (.afr-run) sucht, die es in diesem
+// Panel nicht gibt.
+
+function listeHtml() {
+  if (!state.prompts.length) return "";
+  return state.prompts.map((p, i) => {
+    const titel = i === 0 ? "Hauptflyer" : "Variante " + i;
+    const kopiert = state.kopiert.has(i);
+    return '<details class="afr-prompt-det ap-entry' + (kopiert ? " is-kopiert" : "") + '" data-i="' + i + '">'
+      + '<summary>' + esc(titel)
+      + (kopiert ? ' <span class="ap-kopiert-mark">kopiert</span>' : "")
+      + ' <span class="afr-prompt-n">' + p.length + " Zeichen</span>"
+      + '<button class="rbtn rbtn-ghost afr-prompt-copy" type="button" data-i="' + i + '">Kopieren</button>'
+      + "</summary>"
+      + '<pre class="afr-prompt-pre" data-i="' + i + '">' + esc(p) + "</pre></details>";
+  }).join("");
+}
+
+function zeigeListe() {
+  const el = $("ap-list");
+  if (!el) return;
+  if (!state.prompts.length) { el.hidden = true; el.innerHTML = ""; return; }
+  // Aufgeklappte Eintraege ueber das Neuzeichnen retten.
+  const offen = new Set([...el.querySelectorAll("details[open]")].map((d) => d.dataset.i));
+  el.innerHTML = listeHtml();
+  el.hidden = false;
+  for (const d of el.querySelectorAll("details")) if (offen.has(d.dataset.i)) d.open = true;
+}
+
+// Eigene Kopier-Funktion: sucht im EIGENEN Panel, nicht in einer Lauf-Kachel.
+// Dreistufig wie der Kopieren-Knopf oben — Zwischenablage, execCommand,
+// notfalls markieren.
+async function kopiereEintrag(i) {
+  const pre = document.querySelector('#ap-list .afr-prompt-pre[data-i="' + i + '"]');
+  if (!pre) return;
+  const text = pre.textContent || "";
+  let ok2 = false;
+  try { await navigator.clipboard.writeText(text); ok2 = true; } catch (_) { /* zweiter Weg */ }
+  if (!ok2) {
+    const aus = window.getSelection();
+    const bereich = document.createRange();
+    bereich.selectNodeContents(pre);
+    aus.removeAllRanges(); aus.addRange(bereich);
+    try { ok2 = document.execCommand("copy"); } catch (_) { ok2 = false; }
+  }
+  // Die Markierung bleibt, damit bei acht Prompts klar ist, was schon durch ist.
+  state.kopiert.add(i);
+  zeigeListe();
+}
+
+async function pollOnly() {
+  if (!state.onlyJobId) return;
+  let job;
+  try { job = await post("/admin/aprompt/status", { jobId: state.onlyJobId }); }
+  catch (e) { onlyFertig(); showError("Abfrage fehlgeschlagen: " + (e && e.message ? e.message : e)); return; }
+  if (job.status === "pending") { state.onlyTimer = setTimeout(pollOnly, 2000); return; }
+
+  onlyFertig();
+  if (job.status === "error") { showError("Prompts konnten nicht erzeugt werden: " + (job.error || "Unbekannter Fehler")); return; }
+
+  state.prompts = Array.isArray(job.prompts) ? job.prompts : [];
+  state.kopiert = new Set();                 // neue Liste, Markierungen zuruecksetzen
+  zeigeListe();
+  const note = $("ap-run-note");
+  if (note) {
+    const zuviel = job.verworfen ? " (" + job.verworfen + " ueberzaehlige verworfen)" : "";
+    note.textContent = state.prompts.length + (state.prompts.length === 1 ? " Prompt" : " Prompts") + " erzeugt" + zuviel + " — kein Bild erzeugt.";
+  }
+}
+
+function onlyFertig() {
+  if (state.onlyTimer) { clearTimeout(state.onlyTimer); state.onlyTimer = null; }
+  state.onlyJobId = null;
+  state.onlyRunning = false;
+  const btn = $("ap-only"), cnt = $("ap-count");
+  if (btn) { btn.disabled = false; btn.textContent = "Nur Prompts erzeugen"; }
+  if (cnt) cnt.disabled = false;
+  const run = $("ap-run"); if (run) run.disabled = false;
+}
+
+async function startOnlyPrompts() {
+  const ta = $("ap-text");
+  if (state.onlyRunning || state.starting || !ta || !ta.value.trim()) return;
+  clearError();
+  const cnt = $("ap-count");
+  let anzahl = parseInt(cnt && cnt.value, 10);
+  if (!Number.isFinite(anzahl)) anzahl = 3;
+  anzahl = Math.max(1, Math.min(10, anzahl));
+  if (cnt) cnt.value = String(anzahl);
+
+  const btn = $("ap-only"), note = $("ap-run-note"), run = $("ap-run");
+  state.onlyRunning = true;
+  state.onlyStartedAt = Date.now();
+  if (btn) { btn.disabled = true; btn.textContent = "Erzeugt\u2026"; }
+  if (cnt) cnt.disabled = true;
+  if (run) run.disabled = true;
+  if (note) note.textContent = anzahl > 1 ? "Prompts werden erzeugt \u2014 das dauert bei h\u00f6herer Anzahl mehrere Minuten." : "";
+
+  try {
+    const r = await post("/admin/aprompt/variants", { prompt: ta.value, anzahl });
+    if (!r || !r.jobId) throw new Error("Server lieferte keine Lauf-Kennung");
+    state.onlyJobId = r.jobId;
+    state.onlyTimer = setTimeout(pollOnly, 2000);
+  } catch (e) {
+    onlyFertig();
+    if (note) note.textContent = "";
+    showError("Prompts konnten nicht erzeugt werden: " + (e && e.message ? e.message : e));
   }
 }
 
@@ -371,6 +492,15 @@ function wire() {
   const sug = $("ap-suggest"); if (sug) sug.addEventListener("click", suggestGenreVibe);
   const copy = $("ap-copy"); if (copy) copy.addEventListener("click", copyOut);
   const run = $("ap-run"); if (run) run.addEventListener("click", startImages);
+  const only = $("ap-only"); if (only) only.addEventListener("click", startOnlyPrompts);
+  // Ein Zuhoerer fuer alle Kopieren-Knoepfe der Liste (die Liste wird neu gezeichnet).
+  const liste = $("ap-list");
+  if (liste) liste.addEventListener("click", (e) => {
+    const k = e.target.closest(".afr-prompt-copy");
+    if (!k) return;
+    e.preventDefault(); e.stopPropagation();
+    kopiereEintrag(Number(k.dataset.i));
+  });
 }
 
 export async function initAnalysisPrompt() {

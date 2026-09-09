@@ -920,3 +920,21 @@ html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: aut
 }
 #panel-aprompt .ap-count:focus { outline: none; border-color: var(--color-accent, #ccff00); }
 #panel-aprompt .ap-count:disabled { opacity: .5; }
+
+/* "Nur Prompts erzeugen": Liste im Analyse-Prompt-Reiter. Die Eintraege nutzen
+   die afr-*-Klassen der Prompt-Ansicht (oben global definiert), damit beide
+   Ansichten gleich aussehen. Hier nur, was dazukommt. */
+#panel-aprompt .ap-only { border-color: var(--color-border, #333); color: var(--color-text-muted, #bbb); }
+#panel-aprompt .ap-only:hover:not(:disabled) { border-color: var(--color-accent, #ccff00); color: var(--color-text, #fff); background: transparent; }
+#panel-aprompt .ap-list { display: grid; gap: 0; margin-top: 4px; }
+#panel-aprompt .ap-list .afr-prompt-det:first-child { border-top: 0; }
+
+/* Bleibende Markierung: einmal kopiert, sichtbar abgehakt — bei acht Prompts
+   der Unterschied zwischen Ueberblick und Ratespiel. */
+#panel-aprompt .ap-entry.is-kopiert > summary { color: var(--color-accent, #ccff00); }
+#panel-aprompt .ap-entry.is-kopiert { border-left: 3px solid var(--color-accent, #ccff00); padding-left: 8px; }
+#panel-aprompt .ap-kopiert-mark {
+  font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  color: #0b0b0b; background: var(--color-accent, #ccff00);
+  border-radius: 999px; padding: 1px 7px;
+}
