@@ -325,9 +325,17 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .logo-overlay.has-logo{display:block}
 .logo-overlay.dragging{cursor:grabbing}
 .logo-overlay-img{display:block;width:100%;height:auto;border-radius:4px;pointer-events:none}
+/* Invertierung auf der Buehne. composite.js rechnet dasselbe fuers Ergebnis. */
+.logo-overlay.inverted .logo-overlay-img{filter:invert(1)}
 /* Entfernen-Griff: oben LINKS, diagonal weg vom Skalieren-Griff unten rechts */
 .logo-remove{position:absolute;left:-8px;top:-8px;width:16px;height:16px;padding:0;border-radius:50%;background:#f5f5f0;border:2px solid #0c0c0c;color:#0c0c0c;font-family:inherit;font-size:9px;font-weight:700;line-height:1;cursor:pointer;touch-action:none;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.5);transition:background .15s,color .15s}
 .logo-remove:hover{background:var(--color-danger);color:#fff}
+/* Invertieren-Griff: mittig ueber dem Logo, damit er unabhaengig von dessen
+   Form weder das X (oben links) noch den Skalieren-Griff (unten rechts)
+   beruehrt. Halb hell, halb dunkel -- auf jedem Untergrund erkennbar. */
+.logo-invert{position:absolute;left:50%;top:-30px;transform:translateX(-50%);width:16px;height:16px;padding:0;border-radius:50%;background:linear-gradient(90deg,#f5f5f0 0 50%,#111111 50% 100%);border:2px solid #0c0c0c;cursor:pointer;touch-action:none;box-shadow:0 1px 4px rgba(0,0,0,.5);transition:border-color .15s,box-shadow .15s}
+.logo-invert:hover{border-color:#555}
+.logo-invert[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 1px 4px rgba(0,0,0,.5),0 0 0 2px rgba(204,255,0,.28)}
 .logo-resize{position:absolute;right:-8px;bottom:-8px;width:16px;height:16px;border-radius:50%;background:var(--accent);border:2px solid #0c0c0c;cursor:nwse-resize;touch-action:none;box-shadow:0 1px 4px rgba(0,0,0,.5)}
 
 /* ── TEMPLATE PICKER MODAL ── */

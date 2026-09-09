@@ -4,8 +4,13 @@ import { els } from "./dom.js";
 // Logo handling: upload, plus drag-to-move and corner-resize of the logo on
 // the preview. The position/size (cx, cy, w as fractions of the flyer) is
 // remembered per template in localStorage, so it's auto-placed next time.
+//
+// Dazu inv: invertiert das Logo (schwarzes Logo auf dunklem Flyer und
+// umgekehrt). Der Schalter liegt im SELBEN Objekt wie cx/cy/w und wird damit
+// genauso pro Template gespeichert. Aeltere gespeicherte Boxen haben das Feld
+// nicht -- fehlend gilt als "nicht invertiert", siehe applyLogoForTemplate.
 
-const DEFAULT_BOX = { cx: 0.5, cy: 0.15, w: 0.3 };
+const DEFAULT_BOX = { cx: 0.5, cy: 0.15, w: 0.3, inv: false };
 const keyFor = (file) => "nk_logobox_" + file;
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
@@ -20,7 +25,27 @@ export function initLogo() {
   bindDrag();
   bindResize();
   bindRemove();
+  bindInvert();
   applyBox();
+}
+
+// Dritter Griff: schaltet die Invertierung um. Wie die beiden anderen haelt er
+// seinen pointerdown zurueck, damit bindDrag kein Ziehen unter dem Klick
+// startet.
+function bindInvert() {
+  const h = els.logoInvert;
+  if (!h) return;
+  h.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  });
+  h.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    state.logoBox.inv = !state.logoBox.inv;
+    applyBox();
+    saveBox();   // gleiche Ablage wie Position und Groesse
+  });
 }
 
 // Entfernt das Logo NUR aus diesem Flyer. Die Datei am Club (R2) bleibt
@@ -96,10 +121,14 @@ export function applyLogoForTemplate(file) {
   try {
     box = JSON.parse(localStorage.getItem(keyFor(file)) || "null");
   } catch {}
-  state.logoBox =
+  const roh =
     box && Number.isFinite(box.cx) && Number.isFinite(box.cy) && Number.isFinite(box.w)
       ? box
-      : { ...DEFAULT_BOX };
+      : DEFAULT_BOX;
+  // inv ausdruecklich zu einem Boolean machen: aeltere Boxen haben das Feld
+  // gar nicht (undefined -> false), und ein unerwarteter Wert kann nicht
+  // durchrutschen.
+  state.logoBox = { cx: roh.cx, cy: roh.cy, w: roh.w, inv: !!roh.inv };
   applyBox();
 }
 
@@ -110,6 +139,10 @@ function applyBox() {
   o.style.left = b.cx * 100 + "%";
   o.style.top = b.cy * 100 + "%";
   o.style.width = b.w * 100 + "%";
+  // Auf der Buehne macht das ein CSS-Filter; composite.js rechnet dasselbe
+  // beim Komponieren nach, damit Ergebnis und Vorschau uebereinstimmen.
+  o.classList.toggle("inverted", !!b.inv);
+  if (els.logoInvert) els.logoInvert.setAttribute("aria-pressed", b.inv ? "true" : "false");
 }
 
 function saveBox() {
@@ -123,8 +156,9 @@ function bindDrag() {
   const o = els.logoOverlay;
   if (!o) return;
   o.addEventListener("pointerdown", (e) => {
-    // Beide Griffe haben eigene Handler und duerfen kein Ziehen ausloesen.
-    if (e.target === els.logoResize || e.target === els.logoRemove) return;
+    // Alle drei Griffe haben eigene Handler und duerfen kein Ziehen ausloesen.
+    if (e.target === els.logoResize || e.target === els.logoRemove ||
+        e.target === els.logoInvert) return;
     e.preventDefault();
     const stage = els.previewStage.getBoundingClientRect();
     const start = { x: e.clientX, y: e.clientY, cx: state.logoBox.cx, cy: state.logoBox.cy };
